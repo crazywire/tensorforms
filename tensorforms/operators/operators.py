@@ -25,8 +25,8 @@ def _check_tensor(X):
 
 
 def _insert_position(X):
-    forms = [i for i, s in enumerate(X.slots) if s.role == "form"]
-    return forms[0] if forms else len(X.slots)
+    """Where a new form slot goes: first after the bar."""
+    return next((i for i, s in enumerate(X.slots) if s.is_form), len(X.slots))
 
 
 def _get_conn(X, conn):
@@ -38,15 +38,24 @@ def _get_conn(X, conn):
     return M.connection() if M.has_connection() else None
 
 
+def _new_form_slots(X, count):
+    """`count` fresh form slots, with names unused by X."""
+    M, used = X.manifold, list(X.names)
+    slots = []
+    for _ in range(count):
+        name = M.fresh_name(used)
+        used.append(name)
+        slots.append(Slot(name, M.tangent, "down", "form"))
+    return slots
+
+
 def _d(X):
     M = X.manifold
-    name = M.fresh_name(X.names)
     D = np.stack([np.vectorize(lambda e, xi=xi: sp.diff(e, xi), otypes=[object])(X.data)
                   for xi in M.coords], axis=-1)
     pos = _insert_position(X)
     D = np.moveaxis(D, -1, pos)
-    new = Slot(name, M.tangent, "down", "form")
-    return Tensor(M, D, X.slots[:pos] + [new] + X.slots[pos:]), pos
+    return Tensor(M, D, X.slots[:pos] + _new_form_slots(X, 1) + X.slots[pos:]), pos
 
 
 def _act(C, m, X, pos):
@@ -60,7 +69,7 @@ def _act(C, m, X, pos):
         if s.space is not X.manifold.tangent:
             raise NotImplementedError(f"slot {s.name} is not in {X.manifold.tangent.name}; Γ only acts on the tangent bundle")
         Xk = np.moveaxis(X.data, k, 0)                       # move slot k into place
-        if s.variance == "up":
+        if s.is_up:
             T, sign = np.tensordot(C, Xk, axes=([1], [0])), 1    # +C X
         else:
             T, sign = np.tensordot(C, Xk, axes=([0], [0])), -1   # −X C
@@ -93,11 +102,10 @@ def wedge_nabla(X, conn=None):
     (p+1)!/(p!·1!) · Alt — the form-slot corrections cancel when there is no torsion."""
     _check_tensor(X)
     p = len(X.form_slots)
-    Xa = X.alt() if p > 1 else X
-    Y = nabla(Xa, conn)
+    Y = nabla(X.alt(), conn)                     # alt() is a no-op with fewer than two form slots
     if p == 0:
         return Y
-    return Y.alt(*Y.form_slots) * (p + 1)
+    return Y.alt() * (p + 1)
 
 
 def curvature(X, conn=None):
@@ -115,10 +123,7 @@ def curvature_by_R(X, conn=None):
     C = _get_conn(X, conn)
     M = X.manifold
     pos = _insert_position(X)
-    used = list(X.names)
-    n1 = M.fresh_name(used)
-    n2 = M.fresh_name(used + [n1])
-    slots = X.slots[:pos] + [Slot(n1, M.tangent, "down", "form"), Slot(n2, M.tangent, "down", "form")] + X.slots[pos:]
+    slots = X.slots[:pos] + _new_form_slots(X, 2) + X.slots[pos:]
     if C is None:
         return Tensor(M, np.zeros(tuple(s.space.dim for s in slots), dtype=object), slots)
     return Tensor(M, _act(C.curvature_array(), 2, X, pos), slots)

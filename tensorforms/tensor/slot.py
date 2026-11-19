@@ -32,6 +32,14 @@ class Slot:
         """What decides pairing and adding: (space, up/down, role). The name is not part of it."""
         return (self.space, self.variance, self.role)
 
+    @property
+    def is_form(self):
+        return self.role == "form"
+
+    @property
+    def is_up(self):
+        return self.variance == "up"
+
     def renamed(self, name):
         return Slot(name, self.space, self.variance, self.role)
 
@@ -42,7 +50,7 @@ class Slot:
         return f"{self.name}: {self.variance} {self.role} slot in {self.space.name}"
 
     def __repr__(self):
-        return f"{self.name}{ARROW[self.variance]}" if self.role == "value" else f"{self.name}"
+        return self.name if self.is_form else f"{self.name}{ARROW[self.variance]}"
 
 
 class Index:

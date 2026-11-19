@@ -10,7 +10,7 @@ from ..tensor.slot import Index, Space
 from ..tensor.tensor import Tensor, contract
 from .connection import Connection
 from .curvature import einstein, ricci, scalar_curvature
-from .metric import inverse_metric, make_metric
+from .metric import Metric, inverse_metric, make_metric
 
 _NAME_POOL = ["a", "b", "c", "d", "e", "f", "h", "i", "j", "k", "l", "m", "n", "p", "q",
               "α", "β", "γ", "δ", "ε", "ζ", "η", "κ", "λ", "ξ", "τ", "χ", "ψ", "ω"]
@@ -70,7 +70,7 @@ class Manifold:
         return make_metric(self, data, signature)
 
     def use_metric(self, g):
-        if not isinstance(g, Tensor) or getattr(g, "matrix", None) is None:
+        if not isinstance(g, Metric):
             raise TypeError("use_metric needs a metric made by M.metric(...)")
         self._g, self._ginv, self._conn = g, inverse_metric(g), None
         self._cache.clear()
@@ -84,12 +84,12 @@ class Manifold:
 
     @property
     def ginv(self):
-        self.g
+        self.g                                                 # raises if there is no metric
         return self._ginv
 
     @property
     def signature(self):
-        return getattr(self.g, "signature_string", None)
+        return self.g.signature_string
 
     def lower(self, v):
         """gv: pair g's second slot with v's (single) up slot."""
@@ -112,20 +112,19 @@ class Manifold:
     def has_connection(self):
         return self._conn is not None or self._g is not None
 
+    def _cached(self, key, compute):
+        if key not in self._cache:
+            self._cache[key] = compute()
+        return self._cache[key]
+
     def curvature(self):
-        if "R" not in self._cache:
-            self._cache["R"] = self.connection().curvature()
-        return self._cache["R"]
+        return self._cached("R", lambda: self.connection().curvature())
 
     def ricci(self):
-        if "Ric" not in self._cache:
-            self._cache["Ric"] = ricci(self.curvature())
-        return self._cache["Ric"]
+        return self._cached("Ric", lambda: ricci(self.curvature()))
 
     def scalar_curvature(self):
-        if "Rs" not in self._cache:
-            self._cache["Rs"] = scalar_curvature(self.ricci(), self.ginv)
-        return self._cache["Rs"]
+        return self._cached("Rs", lambda: scalar_curvature(self.ricci(), self.ginv))
 
     def gaussian_curvature(self):
         if self.dim != 2:
@@ -133,6 +132,4 @@ class Manifold:
         return sp.simplify(self.scalar_curvature() / 2)
 
     def einstein(self):
-        if "G" not in self._cache:
-            self._cache["G"] = einstein(self.ricci(), self.scalar_curvature(), self.g)
-        return self._cache["G"]
+        return self._cached("G", lambda: einstein(self.ricci(), self.scalar_curvature(), self.g))

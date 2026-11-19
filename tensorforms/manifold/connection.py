@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 import sympy as sp
 
-from ..symbolic.simplify import clean
+from ..symbolic.simplify import clean, clean_array
 from ..tensor.tensor import Tensor
 
 
@@ -55,7 +55,7 @@ class Connection:
         M = self.manifold
         a, b, c = M.indices(3, names=("ρ", "μ", "ν"))
         G = self.Gamma
-        T = np.vectorize(clean, otypes=[object])(G - np.transpose(G, (0, 2, 1)))
+        T = clean_array(G - np.transpose(G, (0, 2, 1)))
         return Tensor(M, T, [a.up, b.form, c.form], label="torsion")
 
     def __repr__(self):

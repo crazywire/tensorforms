@@ -8,7 +8,7 @@ from ..tensor.tensor import contract, tr
 def ricci(R):
     """Ric = tr(R^S): pair R's up slot with its first form slot.
     Ric is symmetric (no torsion), so both remaining slots are returned as value slots."""
-    up = [s.name for s in R.slots if s.variance == "up"][0]
+    up = next(s.name for s in R.slots if s.is_up)
     first_form = R.form_slots[0]
     Ric = tr(R, up, first_form).with_roles("value").simplify()
     Ric.label = "Ric"
@@ -20,7 +20,7 @@ def scalar_curvature(Ric, ginv):
     a, b = Ric.names
     mixed = contract(ginv, Ric, j, a)          # (i↑, b↓)
     s = tr(mixed, i, b)
-    return clean(s.data.item() if hasattr(s.data, "item") else s.data)
+    return clean(s.data.item())
 
 
 def einstein(Ric, Rs, g):

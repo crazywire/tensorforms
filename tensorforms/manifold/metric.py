@@ -8,6 +8,18 @@ from ..symbolic.simplify import is_zero
 from ..tensor.tensor import Tensor
 
 
+class Metric(Tensor):
+    """A metric (or its inverse): a tensor that also keeps its sympy matrix and sign pattern.
+
+    `signature_string` is e.g. "-+++" (or None if unknown); `Tensor.signature` is the slot types.
+    """
+
+    def __init__(self, manifold, matrix, slots, label, signature_string=None):
+        super().__init__(manifold, np.array(matrix.tolist(), dtype=object), slots, label)
+        self.matrix = matrix
+        self.signature_string = signature_string
+
+
 def _infer_signature(m):
     """Signs of a diagonal metric, if sympy can tell them; otherwise None."""
     if not m.is_diagonal():
@@ -46,16 +58,10 @@ def make_metric(M, data=None, signature=None):
         if signature and found and signature != found:
             raise ValueError(f"signature {signature!r} doesn't match the data ({found!r})")
         signature = signature or found
-    T = Tensor(M, np.array(g.tolist(), dtype=object), [i.down, j.down], label="g")
-    T.signature_string = signature
-    T.matrix = g
-    return T
+    return Metric(M, g, [i.down, j.down], label="g", signature_string=signature)
 
 
 def inverse_metric(g):
-    gi = sp.simplify(g.matrix.inv())
     M = g.manifold
     i, j = M.indices(2, names=("μ", "ν"))
-    T = Tensor(M, np.array(gi.tolist(), dtype=object), [i.up, j.up], label="g⁻¹")
-    T.matrix = gi
-    return T
+    return Metric(M, sp.simplify(g.matrix.inv()), [i.up, j.up], label="g⁻¹")

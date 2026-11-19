@@ -13,7 +13,6 @@ import numpy as np
 import sympy as sp
 
 from ..symbolic.simplify import clean_array, is_zero as _is_zero
-from .slot import Slot
 
 
 def _name(x):
@@ -53,6 +52,13 @@ class Tensor:
         if len(set(names)) != len(names):
             raise ValueError(f"slot names must be unique within a tensor: {names}")
 
+    def _new(self, data=None, slots=None, label=None):
+        """A tensor on the same manifold; data and slots default to this tensor's."""
+        return Tensor(self.manifold,
+                      self.data if data is None else data,
+                      self.slots if slots is None else slots,
+                      label)
+
     # ---------- description ----------
     @property
     def names(self):
@@ -64,11 +70,11 @@ class Tensor:
 
     @property
     def form_slots(self):
-        return [s.name for s in self.slots if s.role == "form"]
+        return [s.name for s in self.slots if s.is_form]
 
     @property
     def value_slots(self):
-        return [s.name for s in self.slots if s.role == "value"]
+        return [s.name for s in self.slots if not s.is_form]
 
     def position(self, x):
         n = _name(x)
@@ -80,12 +86,12 @@ class Tensor:
         return self.slots[self.position(x)]
 
     def declaration(self):
-        roles = [s.role for s in self.slots]
-        if roles == sorted(roles, key=lambda r: r == "form"):
-            vals = " ".join(repr(s) for s in self.slots if s.role == "value")
-            forms = " ".join(repr(s) for s in self.slots if s.role == "form")
+        flags = [s.is_form for s in self.slots]
+        if flags == sorted(flags):                            # value slots, then form slots
+            vals = " ".join(repr(s) for s in self.slots if not s.is_form)
+            forms = " ".join(repr(s) for s in self.slots if s.is_form)
             return f"({vals} | {forms})".replace("( ", "(").replace(" )", ")")
-        return "(" + " ".join(repr(s) + ("ᶠ" if s.role == "form" else "") for s in self.slots) + ")"
+        return "(" + " ".join(repr(s) + ("ᶠ" if s.is_form else "") for s in self.slots) + ")"
 
     def describe(self):
         head = f"{self.label or 'Tensor'} on {self.manifold.name}"
@@ -105,46 +111,48 @@ class Tensor:
 
     def __add__(self, other):
         self._check_same_type(other)
-        return Tensor(self.manifold, self.data + other.data, self.slots)
+        return self._new(self.data + other.data)
 
     def __sub__(self, other):
         self._check_same_type(other)
-        return Tensor(self.manifold, self.data - other.data, self.slots)
+        return self._new(self.data - other.data)
 
     def __neg__(self):
-        return Tensor(self.manifold, -self.data, self.slots)
+        return self._new(-self.data)
 
     def __mul__(self, c):
         if isinstance(c, Tensor):
             raise TypeError("use contract, outer, product or wedge to multiply tensors")
-        return Tensor(self.manifold, self.data * sp.sympify(c), self.slots)
+        return self._new(self.data * sp.sympify(c))
 
     __rmul__ = __mul__
 
     def simplify(self):
-        return Tensor(self.manifold, clean_array(self.data), self.slots, self.label)
+        return self._new(clean_array(self.data), label=self.label)
 
     def is_zero(self):
-        return all(_is_zero(e) for e in np.asarray(self.data).flat)
+        return all(_is_zero(e) for e in self.data.flat)
 
     def equals(self, other):
         return (self - other).is_zero()
 
     # ---------- moving slots ----------
+    def _transposed(self, order):
+        return self._new(np.transpose(self.data, order), [self.slots[i] for i in order], self.label)
+
     def reorder(self, *names):
         order = [self.position(n) for n in names]
         if sorted(order) != list(range(len(self.slots))):
             raise ValueError("reorder needs every slot exactly once")
-        return Tensor(self.manifold, np.transpose(self.data, order), [self.slots[i] for i in order], self.label)
+        return self._transposed(order)
 
     def swap(self, a, b):
-        i, j = self.position(a), self.position(b)
-        return self.swap_positions(i, j)
+        return self.swap_positions(self.position(a), self.position(b))
 
     def swap_positions(self, i, j):
         order = list(range(len(self.slots)))
         order[i], order[j] = order[j], order[i]
-        return Tensor(self.manifold, np.transpose(self.data, order), [self.slots[k] for k in order], self.label)
+        return self._transposed(order)
 
     # positional swaps from the notation: T, S, U, V
     def T(self): return self.swap_positions(0, 1)
@@ -154,13 +162,13 @@ class Tensor:
 
     def rename(self, mapping):
         mapping = {_name(k): _name(v) for k, v in mapping.items()}
-        return Tensor(self.manifold, self.data, [s.renamed(mapping.get(s.name, s.name)) for s in self.slots], self.label)
+        return self._new(slots=[s.renamed(mapping.get(s.name, s.name)) for s in self.slots], label=self.label)
 
     def with_roles(self, role, *names):
         """Relabel slots as value or form (same numbers, different role)."""
         targets = {_name(n) for n in names} or set(self.names)
-        return Tensor(self.manifold, self.data,
-                      [s.with_role(role) if s.name in targets else s for s in self.slots], self.label)
+        return self._new(slots=[s.with_role(role) if s.name in targets else s for s in self.slots],
+                         label=self.label)
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
@@ -179,7 +187,7 @@ class Tensor:
                 axes[pos[dst]] = pos[src]
             term = np.transpose(self.data, axes)
             out = out + (_perm_sign(perm) if signed else 1) * term
-        return Tensor(self.manifold, out * sp.Rational(1, math.factorial(k)), self.slots, self.label)
+        return self._new(out * sp.Rational(1, math.factorial(k)), label=self.label)
 
     def alt(self, *names):
         """Antisymmetric part over the named slots (default: all form slots)."""
@@ -224,8 +232,7 @@ def tr(X, a, b):
     """Pair two slots inside X."""
     i, j = X.position(a), X.position(b)
     _check_pair(X.slots[i], X.slots[j])
-    data = np.trace(X.data, axis1=i, axis2=j)
-    data = np.asarray(data, dtype=object)
+    data = np.asarray(np.trace(X.data, axis1=i, axis2=j), dtype=object)
     return Tensor(X.manifold, data, [s for k, s in enumerate(X.slots) if k not in (i, j)])
 
 
@@ -234,45 +241,41 @@ def outer(A, B):
     return Tensor(A.manifold, np.multiply.outer(A.data, B.data), A.slots + keep_b)
 
 
-def _values_first(X, a_forms, b_forms):
+def _values_first(X, a_forms):
     """Put value slots first, then A's forms, then B's forms."""
-    vals = [s.name for s in X.slots if s.role == "value"]
-    forms = [n for n in X.names if n in a_forms] + [n for n in X.names if n not in a_forms and n not in vals]
+    vals = X.value_slots
+    forms = [n for n in X.form_slots if n in a_forms] + [n for n in X.form_slots if n not in a_forms]
     return X.reorder(*(vals + forms))
+
+
+def _default_pair(A, B):
+    """(A's last value slot, B's first value slot) if they can pair, else None."""
+    av, bv = A.value_slots, B.value_slots
+    if not (av and bv):
+        return None
+    sa, sb = A.slot(av[-1]), B.slot(bv[0])
+    if sa.space is sb.space and not sa.is_up and sb.is_up:
+        return av[-1], bv[0]
+    return None
 
 
 def product(A, B, pair=None):
     """Default product: A's last value slot with B's first value slot, if they can pair.
     pair=(a, b) chooses the slots explicitly; pair=False means outer product."""
-    a_forms = set(A.form_slots)
-    if pair is False:
-        P = outer(A, B)
-    elif pair is not None:
-        P = contract(A, B, *pair)
-    else:
-        av, bv = A.value_slots, B.value_slots
-        if av and bv:
-            sa, sb = A.slot(av[-1]), B.slot(bv[0])
-            if sa.space is sb.space and sa.variance == "down" and sb.variance == "up":
-                P = contract(A, B, av[-1], bv[0])
-            else:
-                P = outer(A, B)
-        else:
-            P = outer(A, B)
-    b_forms = [n for n in P.form_slots if n not in a_forms]
-    return _values_first(P, a_forms, b_forms)
+    if pair is None:
+        pair = _default_pair(A, B)
+    P = contract(A, B, *pair) if pair else outer(A, B)
+    return _values_first(P, set(A.form_slots))
 
 
 def _wedge_like(A, B, pair, signed):
     p, q = len(A.form_slots), len(B.form_slots)
-    A2 = A.alt() if signed else A.sym()      # step 1: each factor's own form slots
-    B2 = B.alt() if signed else B.sym()
-    P = product(A2, B2, pair)                # step 2: the product
+    project = Tensor.alt if signed else Tensor.sym
+    P = product(project(A), project(B), pair)    # each factor's own form slots, then the product
     k = p + q
     if k < 2:
         return P
-    part = P.alt(*P.form_slots) if signed else P.sym(*P.form_slots)
-    return part * sp.Rational(math.factorial(k), math.factorial(p) * math.factorial(q))
+    return project(P) * sp.Rational(math.factorial(k), math.factorial(p) * math.factorial(q))
 
 
 def wedge(A, B, pair=None):
