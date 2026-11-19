@@ -72,6 +72,9 @@ class Manifold:
     def use_metric(self, g):
         if not isinstance(g, Metric):
             raise TypeError("use_metric needs a metric made by M.metric(...)")
+        if not g.is_lower:
+            raise TypeError("use_metric needs g with two down slots; "
+                            "this looks like the inverse metric g⁻¹ (M.ginv)")
         self._g, self._ginv, self._conn = g, inverse_metric(g), None
         self._cache.clear()
         return self

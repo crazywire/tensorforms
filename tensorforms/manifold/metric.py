@@ -4,20 +4,34 @@ import itertools
 import numpy as np
 import sympy as sp
 
-from ..symbolic.simplify import is_zero
+from ..symbolic.simplify import clean, is_zero
 from ..tensor.tensor import Tensor
 
 
 class Metric(Tensor):
-    """A metric (or its inverse): a tensor that also keeps its sympy matrix and sign pattern.
+    """A metric (or its inverse): a tensor that also knows its sign pattern.
 
     `signature_string` is e.g. "-+++" (or None if unknown); `Tensor.signature` is the slot types.
+    `matrix` is a view of `data`, so the numbers have one source of truth.
+    Arithmetic and slot moves return plain Tensors; only simplify() keeps the Metric.
     """
 
     def __init__(self, manifold, matrix, slots, label, signature_string=None):
-        super().__init__(manifold, np.array(matrix.tolist(), dtype=object), slots, label)
-        self.matrix = matrix
+        super().__init__(manifold, np.array(sp.Matrix(matrix).tolist(), dtype=object), slots, label)
         self.signature_string = signature_string
+
+    @property
+    def matrix(self):
+        return sp.Matrix(self.data.tolist())
+
+    @property
+    def is_lower(self):
+        """True for g (two down value slots), False for g⁻¹."""
+        return all(not s.is_up and not s.is_form for s in self.slots)
+
+    def simplify(self):
+        return Metric(self.manifold, self.matrix.applyfunc(clean), self.slots, self.label,
+                      self.signature_string)
 
 
 def _infer_signature(m):

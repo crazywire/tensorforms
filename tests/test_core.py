@@ -158,6 +158,29 @@ def test_type_errors():
         raise AssertionError("expected a TypeError")
 
 
+def test_use_metric_rejects_inverse():
+    S = tf.geometry.sphere(r=1)
+    try:
+        S.use_metric(S.ginv)
+    except TypeError:
+        return
+    raise AssertionError("expected a TypeError")
+
+
+def test_simplified_metric_is_accepted():
+    S = tf.geometry.sphere(r=1)
+    S.use_metric(S.g.simplify())
+    assert is_zero(S.gaussian_curvature() - 1)
+
+
+def test_simplified_metric_matrix_matches_data():
+    S = tf.geometry.sphere(r=1)
+    g = S.g.simplify()
+    m = g.matrix
+    for i, j in np.ndindex(g.data.shape):
+        assert m[i, j] == g.data[i, j]
+
+
 def test_bare_manifold_has_no_metric():
     th, ph = sp.symbols("theta phi")
     M = Manifold([th, ph])
