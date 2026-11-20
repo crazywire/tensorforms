@@ -253,6 +253,20 @@ def test_scalar_multiplication():
         raise AssertionError(f"expected TypeError for {bad!r}")
 
 
+def test_labels():
+    S = tf.geometry.sphere()
+    R = S.curvature()
+    B = R._new(label="B")
+    f = S.scalar(sp.sin(S.coords[0]))
+    f.label = "f"
+    expected = {"Alt(R)": R.alt(), "Sym(R)": R.sym(), "−R": -R, "R": -(-R),
+                "R+B": R + B, "R−(−B)": R - (-B), "−(R+B)": -(R + B), "3(R+B)": 3 * (R + B),
+                "−2R": -2 * R, "1/2·R": sp.Rational(1, 2) * R, "f·R": f * R,
+                "R^U": R.U(), "R^US": R.U().S(), "(R+B)^S": (R + B).S()}
+    for label, X in expected.items():
+        assert X.label == label, (label, X.label)
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
