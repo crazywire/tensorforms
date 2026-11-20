@@ -312,6 +312,17 @@ def test_raise_lower_undo():
     assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
     assert df.as_value().as_form().signature == df.signature
 
+def test_manifold_hands_out_copies():
+    S = tf.geometry.sphere()
+    R = S.curvature()
+    R.label = "B"
+    assert S.curvature().label == "R"                           # the stored R is untouched
+    g = S.g
+    g.label = "h"
+    assert S.g.label == "g" and isinstance(S.g, type(g))         # still a Metric
+    assert isinstance(S.indices(1), list) and S.index().name == "μ"
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
