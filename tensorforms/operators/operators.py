@@ -16,15 +16,12 @@ import math
 import numpy as np
 import sympy as sp
 
-from ..manifold.connection import Connection
 from ..tensor.slot import Slot
 from ..tensor.tensor import Tensor
 
 
 # ---------------------------------------------------------------- helpers
 def _check_tensor(X):
-    if isinstance(X, Connection):
-        raise TypeError("Γ is not a tensor, so the operators don't apply to it (∇Γ has no meaning)")
     if not isinstance(X, Tensor):
         raise TypeError("the operators act on tensors")
 
