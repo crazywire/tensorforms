@@ -7,8 +7,8 @@ from ..tensor.products import wedge
 
 def riemann(Gamma):
     """R = d∧Γ + Γ∧Γ, computed with the operators themselves. Slots (ρ↑ σ↓ | μ ν)."""
-    from ..operators.operators import wedge_nabla               # here, to avoid a circular import
-    R = (wedge_nabla(Gamma, conn=False) + wedge(Gamma, Gamma)).simplify()
+    from ..operators.operators import wedge_d                   # here, to avoid a circular import
+    R = (wedge_d(Gamma) + wedge(Gamma, Gamma)).simplify()
     R = R.rename({0: "ρ", 1: "σ", 2: "μ", 3: "ν"})
     R.label = "R"
     return R
