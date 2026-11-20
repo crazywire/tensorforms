@@ -181,12 +181,6 @@ class Tensor:
         mapping = {self.names[self.position(k)]: _name(v) for k, v in mapping.items()}
         return self._new(slots=[s.renamed(mapping.get(s.name, s.name)) for s in self.slots], label=self.label)
 
-    def with_roles(self, role, *names):
-        """Relabel slots as value or form (same numbers, different role)."""
-        targets = {self.names[self.position(n)] for n in names} or set(self.names)
-        return self._new(slots=[s.with_role(role) if s.name in targets else s for s in self.slots],
-                         label=self.label)
-
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
         pos = [self.position(n) for n in (names or self.form_slots)]
