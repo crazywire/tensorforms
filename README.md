@@ -21,7 +21,7 @@ against its definition (∇ twice, antisymmetrized; ∇∧ twice).
 ```
 tensorforms/
   manifold/    Manifold (coordinates) + optional metric, connection, curvature
-  tensor/      Slot, Index, Tensor, contract, tr, outer, product, Alt/Sym, wedge, odot
+  tensor/      Slot, Index, Tensor, contract, tr, otimes, Alt/Sym, wedge, odot
   operators/   nabla, wedge_nabla, curvature, wedge_curvature, d
   geometry/    euclidean, surfaces, spacetimes, metric templates
   symbolic/    simplification helpers
@@ -67,8 +67,10 @@ BH = tf.geometry.schwarzschild()
   Latin for other spaces. Spelled-out Greek is accepted
   anywhere a name is: `"mu"` means μ. New slots from d and ∇ get the first free name.
 * **Slots can also be given by number** (0, 1, …). Numbers shift when d adds a slot, so prefer names.
-* **Pairing is explicit**: `contract(A, B, a, b)`, `tr(X, a, b)`, `outer(A, B)`.
-  `product(A, B)` is the default matrix-style product (A's last value slot with B's first).
+* **Pairing**: `contract(A, B)` is your AB: A's column (last value slot, down) with B's row
+  (first value slot, up). `contract(A, B, a, b)` pairs the slots you name, `tr(X, a, b)` pairs
+  two slots inside X, and `otimes(A, B)` is the tensor product (pairs nothing).
+  Nothing is chosen silently: when the default pair doesn't exist, contract refuses.
 * **Alt / Sym** act on any named slots (default: all form slots).
   `wedge(A, B) = k!/(p! q!) · Alt(AB)`, `odot(A, B) = k!/(p! q!) · Sym(AB)`.
 * **Γ is not a tensor** (`Connection` is a separate class), so the operators refuse it.

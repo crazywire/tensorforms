@@ -8,7 +8,7 @@ import sympy as sp
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tensorforms as tf
-from tensorforms import (Manifold, contract, curvature, nabla, product, tr,
+from tensorforms import (Manifold, contract, curvature, nabla, otimes, tr,
                          wedge, wedge_curvature, wedge_nabla)
 from tensorforms.symbolic import is_zero
 
@@ -172,7 +172,7 @@ def test_wedge_single_factor_is_one_term():
     S = tf.geometry.sphere(r=1)
     R = S.curvature()
     v = S.vector([1, 0])
-    assert wedge(R, v).equals(product(R, v))                  # R∧v = Rv
+    assert wedge(R, v).equals(contract(R, v))                 # R∧v = Rv
 
 
 def test_ricci_by_names():
@@ -265,6 +265,26 @@ def test_labels():
                 "R^U": R.U(), "R^US": R.U().S(), "(R+B)^S": (R + B).S()}
     for label, X in expected.items():
         assert X.label == label, (label, X.label)
+
+
+def test_contract_default_and_otimes():
+    S = tf.geometry.sphere(r=1)
+    R, v, u, w = S.curvature(), S.vector([1, 0]), S.vector([0, 1]), S.covector([1, 0])
+    assert contract(R, v).equals(contract(R, v, "σ", "μ"))       # default: R's column with v's row
+    assert contract(w, v, "μ", "μ").data.item() == 1             # w(v): a form slot paired by name
+    m = S.tensor(S.indices(1, names=["κ"]).down, data=[1, 0])   # a covector as a value slot (row)
+    assert contract(m, v).data.item() == 1                       # row × column: a number
+    for bad in (lambda: contract(v, u),                          # column × column: mismatch
+                lambda: contract(v, m),                          # column × row: use otimes
+                lambda: contract(m, m),                          # row × row: mismatch
+                lambda: contract(w, v)):                         # w has no value slot: name the pair
+        try:
+            bad()
+        except TypeError:
+            continue
+        raise AssertionError("expected a TypeError")
+    T = otimes(v, u)                                             # u^μ v^ν: both slots kept
+    assert [s.name for s in T.slots] == ["μ", "ν"] and T.data[0, 1] == 1
 
 
 if __name__ == "__main__":
