@@ -1,8 +1,26 @@
-"""Traces of R: Ricci, scalar curvature, Einstein tensor."""
+"""Curvature: R from Γ, then its traces Ricci, scalar curvature and the Einstein tensor."""
+import itertools
+
+import numpy as np
 import sympy as sp
 
 from ..symbolic.simplify import clean
 from ..tensor.products import contract
+from ..tensor.tensor import Tensor
+
+
+def riemann(Gamma):
+    """R = d∧Γ + Γ∧Γ, i.e.
+    R^a_bce = ∂_cΓ^a_be − ∂_eΓ^a_bc + Γ^a_sc Γ^s_be − Γ^a_se Γ^s_bc.  Slots (ρ↑ σ↓ | μ ν)."""
+    M = Gamma.manifold
+    n, x, G = M.dim, M.coords, Gamma.data
+    R = np.empty((n,) * 4, dtype=object)
+    for a, b, c, e in itertools.product(range(n), repeat=4):
+        R[a, b, c, e] = clean(
+            sp.diff(G[a, b, e], x[c]) - sp.diff(G[a, b, c], x[e])
+            + sum(G[a, s, c] * G[s, b, e] - G[a, s, e] * G[s, b, c] for s in range(n)))
+    a, b, c, d = M.indices(4, names=("ρ", "σ", "μ", "ν"))
+    return Tensor(M, R, [a.up, b.down, c.form, d.form], label="R")
 
 
 def ricci(R):

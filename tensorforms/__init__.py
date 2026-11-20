@@ -6,12 +6,12 @@
     geometry/    ready-made geometries and metric templates
     symbolic/    simplification helpers
 """
-from .manifold import Manifold, Space, Connection
+from .manifold import Manifold, Space
 from .tensor import Slot, Index, Tensor, contract, otimes, wedge, odot
 from .operators import d, nabla, wedge_nabla, curvature, wedge_curvature
 from . import geometry
 
-__all__ = ["Manifold", "Connection", "Slot", "Space", "Index", "Tensor",
+__all__ = ["Manifold", "Slot", "Space", "Index", "Tensor",
            "contract", "otimes", "wedge", "odot",
            "d", "nabla", "wedge_nabla", "curvature", "wedge_curvature",
            "geometry"]

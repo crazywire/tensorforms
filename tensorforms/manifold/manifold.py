@@ -10,8 +10,8 @@ import sympy as sp
 
 from ..tensor.slot import Index
 from ..tensor.tensor import Tensor
-from .connection import Connection
-from .curvature import einstein, ricci, scalar_curvature
+from .connection import levi_civita
+from .curvature import einstein, ricci, riemann, scalar_curvature
 from .metric import build_metric, inverse_metric
 from .space import TANGENT_NAMES, Space
 
@@ -94,7 +94,8 @@ class Manifold:
 
     # ---------- connection and curvature ----------
     def connection(self):
-        return self._cached("Γ", lambda: Connection.from_metric(self.g))
+        """Γ (ρ↑ σ↓ | μ), from the metric."""
+        return self._cached("Γ", lambda: levi_civita(self.g, self.ginv))
 
     def has_connection(self):
         return self._g is not None
@@ -105,10 +106,10 @@ class Manifold:
         if key not in self._cache:
             self._cache[key] = compute()
         X = self._cache[key]
-        return copy.copy(X) if isinstance(X, Tensor) else X     # Γ is shared: it keeps its own R cache
+        return copy.copy(X)
 
     def curvature(self):
-        return self._cached("R", lambda: self.connection().curvature())
+        return self._cached("R", lambda: riemann(self.connection()))
 
     def ricci(self):
         return self._cached("Ric", lambda: ricci(self.curvature()))
