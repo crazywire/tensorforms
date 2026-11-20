@@ -6,12 +6,31 @@ Form slots are always down: they take a step.
 
 ARROW = {"up": "↑", "down": "↓"}
 
+# Names: Greek for the tangent space, Latin for other spaces.
+# θ, φ, π are left out of the automatic list (coordinate names, the number π),
+# but you can still choose them yourself.
+TANGENT_NAMES = list("μνλκρσταβγδεζηιουξχψω")
+OTHER_NAMES = list("abcdefghijklmnopqrstuvwxyz")
+
+# Spelled-out Greek is accepted wherever a name is: "mu" means μ.
+GREEK = {"alpha": "α", "beta": "β", "gamma": "γ", "delta": "δ", "epsilon": "ε", "zeta": "ζ",
+         "eta": "η", "theta": "θ", "iota": "ι", "kappa": "κ", "lambda": "λ", "lamda": "λ",
+         "mu": "μ", "nu": "ν", "xi": "ξ", "omicron": "ο", "pi": "π", "rho": "ρ", "sigma": "σ",
+         "tau": "τ", "upsilon": "υ", "phi": "φ", "chi": "χ", "psi": "ψ", "omega": "ω"}
+
+
+def clean_name(name):
+    """A slot name as stored: spelled-out Greek becomes the letter."""
+    name = str(name)
+    return GREEK.get(name, name)
+
 
 class Space:
     """A space slots can live in, e.g. a manifold's tangent bundle."""
 
-    def __init__(self, name, dim, manifold=None):
+    def __init__(self, name, dim, manifold=None, names=None):
         self.name, self.dim, self.manifold = name, dim, manifold
+        self.names = list(names) if names else OTHER_NAMES     # names handed out automatically
 
     def __repr__(self):
         return f"Space({self.name}, dim={self.dim})"
@@ -25,7 +44,7 @@ class Slot:
             raise ValueError("role must be 'value' or 'form'")
         if role == "form" and variance != "down":
             raise ValueError("form slots are always down")
-        self.name, self.space, self.variance, self.role = name, space, variance, role
+        self.name, self.space, self.variance, self.role = clean_name(name), space, variance, role
 
     @property
     def type(self):
@@ -57,7 +76,7 @@ class Index:
     """A slot name tied to a space. Choose up, down or form when you use it."""
 
     def __init__(self, name, space):
-        self.name, self.space = name, space
+        self.name, self.space = clean_name(name), space
 
     @property
     def up(self):

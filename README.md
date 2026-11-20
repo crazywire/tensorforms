@@ -39,7 +39,7 @@ from tensorforms import Manifold, nabla, wedge_nabla, curvature, contract, tr
 th, ph = sp.symbols("theta phi", positive=True)
 M = Manifold([th, ph])                         # 1. a bare manifold: coordinates only
 
-a, b, c, d = M.indices(4)                      # 2. indices, then tensors
+a, b, c, d = M.indices(4)                      # 2. indices (μ, ν, λ, κ), then tensors
 w = M.tensor(a.form, data=[sp.cos(th), 0])     #    a covector (one form slot)
 v = M.vector([1, 0])                           #    shortcut for M.tensor(a.up, ...)
 
@@ -50,7 +50,7 @@ R = M.curvature()                              # R(ρ↑ σ↓ | μ ν)
 M.ricci(), M.scalar_curvature(), M.gaussian_curvature()
 
 nabla(v), curvature(v)                         # 4. the operators
-tr(R, "ρ", "μ")                                # 5. pairing is always explicit, by slot name
+tr(R, "ρ", "μ")                                # 5. pairing is explicit: by name ("rho" works too) or number
 
 S  = tf.geometry.sphere()                      # 6. presets (radius symbolic: K = 1/r²)
 BH = tf.geometry.schwarzschild()
@@ -63,6 +63,10 @@ BH = tf.geometry.schwarzschild()
 * **Types** are the list of (space, up/down, role). Adding needs matching types;
   pairing needs the same space and opposite up/down.
 * **d** puts its new slot first among the form slots ("first after the bar").
+* **Names**: Greek for tangent-space slots (μ ν λ κ ρ σ τ …; θ, φ, π are left out because
+  they are coordinates or the number π), Latin for other spaces. Spelled-out Greek is accepted
+  anywhere a name is: `"mu"` means μ. New slots from d and ∇ get the first free name.
+* **Slots can also be given by number** (0, 1, …). Numbers shift when d adds a slot, so prefer names.
 * **Pairing is explicit**: `contract(A, B, a, b)`, `tr(X, a, b)`, `outer(A, B)`.
   `product(A, B)` is the default matrix-style product (A's last value slot with B's first).
 * **Alt / Sym** act on any named slots (default: all form slots).

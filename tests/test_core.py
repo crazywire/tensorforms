@@ -230,6 +230,16 @@ def test_bare_manifold_has_no_metric():
     raise AssertionError("expected no metric")
 
 
+def test_names():
+    S = tf.geometry.sphere()
+    R = S.curvature()
+    assert [i.name for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
+    assert nabla(R).names == ["ρ", "σ", "λ", "μ", "ν"]              # new slot: first free Greek name
+    assert tr(R, "rho", "mu").equals(tr(R, "ρ", "μ"))                # spelled-out Greek
+    assert tr(R, 0, 2).equals(tr(R, "ρ", "μ"))                       # slot numbers
+    assert R.rename({"mu": "kappa"}).names == ["ρ", "σ", "κ", "ν"]
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]

@@ -13,10 +13,11 @@ import numpy as np
 import sympy as sp
 
 from ..symbolic.simplify import clean_array, is_zero as _is_zero
+from .slot import clean_name
 
 
 def _name(x):
-    return x.name if hasattr(x, "name") else str(x)
+    return x.name if hasattr(x, "name") else clean_name(x)
 
 
 def _perm_sign(perm):
@@ -77,6 +78,11 @@ class Tensor:
         return [s.name for s in self.slots if not s.is_form]
 
     def position(self, x):
+        """A slot by name ("μ", "mu", an Index or Slot) or by number (0, 1, …)."""
+        if isinstance(x, int) and not isinstance(x, bool):
+            if not 0 <= x < len(self.slots):
+                raise IndexError(f"no slot number {x}; this tensor has {len(self.slots)} slots")
+            return x
         n = _name(x)
         if n not in self.names:
             raise KeyError(f"no slot named {n}; slots are {self.names}")
@@ -161,19 +167,18 @@ class Tensor:
     def V(self): return self.swap_positions(3, 4)
 
     def rename(self, mapping):
-        mapping = {_name(k): _name(v) for k, v in mapping.items()}
+        mapping = {self.names[self.position(k)]: _name(v) for k, v in mapping.items()}
         return self._new(slots=[s.renamed(mapping.get(s.name, s.name)) for s in self.slots], label=self.label)
 
     def with_roles(self, role, *names):
         """Relabel slots as value or form (same numbers, different role)."""
-        targets = {_name(n) for n in names} or set(self.names)
+        targets = {self.names[self.position(n)] for n in names} or set(self.names)
         return self._new(slots=[s.with_role(role) if s.name in targets else s for s in self.slots],
                          label=self.label)
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
-        names = [_name(n) for n in names] or self.form_slots
-        pos = [self.position(n) for n in names]
+        pos = [self.position(n) for n in (names or self.form_slots)]
         types = {self.slots[p].type for p in pos}
         if len(types) > 1:
             raise TypeError("Alt/Sym need slots of the same type (space and up/down)")
