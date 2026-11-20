@@ -6,7 +6,7 @@ properties: attached with use_metric, computed when asked. Γ always comes from 
 import numpy as np
 import sympy as sp
 
-from ..tensor.slot import TANGENT_NAMES, Index, Space
+from ..tensor.slot import TANGENT_NAMES, Index, Slot, Space
 from ..tensor.tensor import Tensor, contract
 from .connection import Connection
 from .curvature import einstein, ricci, scalar_curvature
@@ -97,19 +97,34 @@ class Manifold:
     def signature(self):
         return self.g.signature_string
 
-    def lower(self, v):
-        """gv: a vector (μ↑ |) becomes a covector (μ↓ |). Only up/down changes, never the role,
-        so raise_ undoes it exactly."""
-        if len(v.slots) != 1 or not v.slots[0].is_up:
-            raise TypeError("lower takes a vector (one up slot)")
-        return contract(self.g, v, self.g.names[1], v.names[0])
+    def _move_index(self, X, slot, metric, want_up, verb):
+        """g (or g⁻¹) on one value slot of X: only up/down changes; name, position and role stay."""
+        if slot is None:
+            options = [s.name for s in X.slots if not s.is_form and s.is_up == want_up]
+            if len(options) != 1:
+                raise TypeError(f"{verb}: say which slot (candidates: {options})")
+            slot = options[0]
+        i = X.position(slot)
+        s = X.slots[i]
+        if s.is_form:
+            raise TypeError(f"{verb}: {s.name} is a form slot; form slots are never raised or lowered "
+                            "(use as_value() first)")
+        if s.is_up != want_up:
+            raise TypeError(f"{verb}: {s.name} is already {'down' if want_up else 'up'}")
+        if s.space is not self.tangent:
+            raise TypeError(f"{verb}: {s.name} is not in the tangent space")
+        data = np.moveaxis(np.tensordot(metric.data, X.data, axes=([1], [i])), 0, i)
+        flipped = Slot(s.name, s.space, "up" if s.variance == "down" else "down", "value")
+        return Tensor(self, data, X.slots[:i] + [flipped] + X.slots[i + 1:], X.label)
 
-    def raise_(self, w):
-        """g⁻¹w: a covector (μ↓ |) becomes a vector (μ↑ |); lower undoes it exactly.
-        A 1-form (| μ) can be raised too; lowering the result gives a covector, not the 1-form."""
-        if len(w.slots) != 1 or w.slots[0].is_up:
-            raise TypeError("raise_ takes a covector or a 1-form (one down slot)")
-        return contract(self.ginv, w, self.ginv.names[1], w.names[0])
+    def lower(self, X, slot=None):
+        """g on one up value slot: ↑ → ↓. Same physics; raise_ undoes it exactly.
+        lower(v) for a vector; lower(R, "ρ") for a named slot."""
+        return self._move_index(X, slot, self.g, True, "lower")
+
+    def raise_(self, X, slot=None):
+        """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
+        return self._move_index(X, slot, self.ginv, False, "raise_")
 
     # ---------- connection and curvature ----------
     def connection(self):

@@ -294,6 +294,17 @@ def test_raise_lower_undo():
     assert S.lower(v).slots[0].type == w.slots[0].type          # lowering a vector gives a covector
     assert S.raise_(S.lower(v)).equals(v)                       # exact undo, both ways
     assert S.lower(S.raise_(w)).equals(w)
+    R = S.curvature()
+    Rl = S.lower(R, "ρ")                                        # R_ρσμν: any value slot
+    assert Rl.slot("ρ").variance == "down" and S.raise_(Rl, "ρ").equals(R)
+    assert Rl.alt("ρ", "σ").equals(Rl)                          # pair symmetry shows up
+    for bad in (lambda: S.raise_(S.one_form([1, 0])),           # form slots are never raised
+                lambda: S.lower(R, "μ")):
+        try:
+            bad()
+        except TypeError:
+            continue
+        raise AssertionError("expected a TypeError")
     F = wedge_nabla(S.lower(v).as_form())                       # bridge to a 1-form, then d∧
     assert F.form_slots and not F.value_slots
     f = S.scalar(th ** 2)
