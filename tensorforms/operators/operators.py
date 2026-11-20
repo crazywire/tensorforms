@@ -19,6 +19,7 @@ import numpy as np
 import sympy as sp
 
 from ..tensor.labels import wrap
+from ..tensor.products import contract
 from ..tensor.slot import Slot
 from ..tensor.tensor import Tensor
 
@@ -35,11 +36,11 @@ def _insert_position(X):
 
 
 def _geometry(X):
-    """The manifold's (Γ, R) as arrays (R computed only when asked), or (None, None) with no metric."""
+    """The manifold's Γ and R as tensors (R computed only when asked), or (None, None) with no metric."""
     M = X.manifold
     if not M.has_connection():
         return None, None
-    return M.connection().data, (lambda: M.curvature().data)
+    return M.connection(), M.curvature
 
 
 def _label(op, X):
@@ -69,26 +70,32 @@ def _d(X, pos):
     return np.moveaxis(D, -1, pos)
 
 
-def _act(C, m, X, pos, values_only=False):
-    """C (Γ or R) acts on the slots of X: +C from the left on up slots, −C from the right on down slots.
-    C[a, b, forms…] maps slot b to slot a; its m form slots are placed at pos (first after the bar).
+def _act(C, X, slots, values_only=False):
+    """C (Γ or R) acts on each slot of X, as contractions:
+        up slot s:    +C X   (C's down slot pairs with s; C's up slot takes s's place)
+        down slot s:  −X C   (s pairs with C's up slot; C's down slot takes s's place)
+    C's form slots become the new form slots in `slots` (the result's slots, in order).
     values_only: skip X's form slots (the wedged operators)."""
-    n = X.manifold.dim
-    total = np.zeros(X.data.shape[:pos] + (n,) * m + X.data.shape[pos:], dtype=object)
-    for k, s in enumerate(X.slots):
+    used = set(X.names)
+    new = [s.name for s in slots if s.name not in used]           # the operator's new form slots
+    c_up = X.manifold.tangent.fresh_name(used | set(new))
+    c_dn = X.manifold.tangent.fresh_name(used | set(new) | {c_up})
+    Cr = C.rename({0: c_up, 1: c_dn, **{2 + i: n for i, n in enumerate(new)}})
+    final = [s.name for s in slots]
+    total = Tensor(X.manifold, np.zeros(tuple(s.space.dim for s in slots), dtype=object), slots)
+    for s in X.slots:
         if values_only and s.is_form:
             continue
         if s.space is not X.manifold.tangent:
             raise NotImplementedError(f"slot {s.name} is not in {X.manifold.tangent.name}")
-        Xk = np.moveaxis(X.data, k, 0)                           # bring slot k to the front
         if s.is_up:
-            T, sign = np.tensordot(C, Xk, axes=([1], [0])), 1    # +C X
+            T = contract(Cr, X, c_dn, s.name).rename({c_up: s.name})
         else:
-            T, sign = np.tensordot(C, Xk, axes=([0], [0])), -1   # −X C
-        rest = list(range(m + 1, T.ndim))
-        xorder = rest[:k] + [0] + rest[k:]                       # put slot k back where it was
-        total = total + sign * np.transpose(T, xorder[:pos] + list(range(1, m + 1)) + xorder[pos:])
-    return total
+            T = -contract(X, Cr, s.name, c_up).rename({c_dn: s.name})
+            if s.is_form:
+                T = T.as_form(s.name)                                # a corrected form slot stays a form slot
+        total = total + T.reorder(*final)
+    return total.data
 
 
 def _wedge_new(Y, p, new):
@@ -123,7 +130,7 @@ def nabla(X):
     data = _d(X, pos)
     G, _ = _geometry(X)
     if G is not None:
-        data = data + _act(G, 1, X, pos)
+        data = data + _act(G, X, slots)
     return Tensor(X.manifold, data, slots, _label("∇", X))
 
 
@@ -136,7 +143,7 @@ def wedge_nabla(X):
     data = _d(Xa, pos)
     G, _ = _geometry(X)
     if G is not None:
-        data = data + _act(G, 1, Xa, pos, values_only=True)
+        data = data + _act(G, Xa, slots, values_only=True)
     Y = _wedge_new(Tensor(X.manifold, data, slots), p, 1)
     return Y._new(label=_label("∇∧", X))
 
@@ -149,7 +156,7 @@ def curvature(X):
     if R is None:
         data = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
     else:
-        data = _act(R(), 2, X, pos)
+        data = _act(R(), X, slots)
     return Tensor(X.manifold, data, slots, _label("∇∧∇", X))
 
 
@@ -163,6 +170,6 @@ def wedge_curvature(X):
     if R is None:
         data = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
     else:
-        data = _act(R(), 2, Xa, pos, values_only=True)
+        data = _act(R(), Xa, slots, values_only=True)
     Y = _wedge_new(Tensor(X.manifold, data, slots), p, 2)
     return Y._new(label=_label("∇∧∇∧", X))
