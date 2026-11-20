@@ -127,9 +127,20 @@ class Tensor:
         return self._new(-self.data)
 
     def __mul__(self, c):
+        """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
+        if not self.slots and isinstance(c, Tensor):         # scalar × tensor
+            return c * self.data.item()
         if isinstance(c, Tensor):
-            raise TypeError("use contract, outer, product or wedge to multiply tensors")
-        return self._new(self.data * sp.sympify(c))
+            if c.slots:
+                raise TypeError("use contract, outer, product or wedge to multiply tensors")
+            c = c.data.item()
+        try:
+            c = sp.sympify(c, strict=True)
+        except sp.SympifyError:
+            c = None
+        if not isinstance(c, sp.Expr):
+            raise TypeError("can only multiply a tensor by a number, an expression or a scalar tensor")
+        return self._new(self.data * c)
 
     __rmul__ = __mul__
 

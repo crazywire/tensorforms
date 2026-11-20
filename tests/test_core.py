@@ -240,6 +240,19 @@ def test_names():
     assert R.rename({"mu": "kappa"}).names == ["ρ", "σ", "κ", "ν"]
 
 
+def test_scalar_multiplication():
+    S = tf.geometry.sphere()
+    th = S.coords[0]
+    v, f = S.vector([1, 0]), S.scalar(sp.sin(th))
+    assert (f * v).equals(v * sp.sin(th)) and (v * f).equals(sp.sin(th) * v)
+    for bad in ([1, 2], "abc", S.covector([1, 0])):              # only numbers, expressions, scalars
+        try:
+            v * bad
+        except TypeError:
+            continue
+        raise AssertionError(f"expected TypeError for {bad!r}")
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
