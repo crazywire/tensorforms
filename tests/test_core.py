@@ -114,7 +114,7 @@ def test_scalar_has_no_curvature():
 def test_bianchi_in_3d():
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z])
-    M.use_metric(M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2)))
+    M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     assert wedge_nabla(M.curvature()).is_zero()               # ∇∧R = 0
     u = M.vector([y, x * z, 1])
     assert curvature(u).equals(curvature_by_commutator(u))
@@ -195,27 +195,19 @@ def test_type_errors():
         raise AssertionError("expected a TypeError")
 
 
-def test_use_metric_rejects_inverse():
+def test_metric_checks():
     S = tf.geometry.sphere(r=1)
-    try:
-        S.use_metric(S.ginv)
-    except TypeError:
-        return
-    raise AssertionError("expected a TypeError")
-
-
-def test_simplified_metric_is_accepted():
-    S = tf.geometry.sphere(r=1)
-    S.use_metric(S.g.simplify())
+    for bad in (lambda: S.metric(S.ginv),                       # two up slots: that's g⁻¹
+                lambda: S.metric([[1, 0], [0, 0]]),             # determinant 0
+                lambda: S.metric([[1, 1], [0, 1]])):            # not symmetric
+        try:
+            bad()
+        except (TypeError, ValueError):
+            continue
+        raise AssertionError("expected an error")
+    S.metric(S.g.simplify())                                    # a tensor with two down slots is fine
     assert is_zero(S.gaussian_curvature() - 1)
-
-
-def test_simplified_metric_matrix_matches_data():
-    S = tf.geometry.sphere(r=1)
-    g = S.g.simplify()
-    m = g.matrix
-    for i, j in np.ndindex(g.data.shape):
-        assert m[i, j] == g.data[i, j]
+    assert tf.geometry.schwarzschild().signature == "-+++"
 
 
 def test_bare_manifold_has_no_metric():
@@ -310,7 +302,7 @@ def test_raise_lower_undo():
     f = S.scalar(th ** 2)
     df = tf.d(f)                                                # a 1-form (| μ)
     assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
-    assert df.as_value().as_form().signature == df.signature
+    assert df.as_value().as_form().types == df.types
 
 def test_manifold_hands_out_copies():
     S = tf.geometry.sphere()
@@ -319,7 +311,7 @@ def test_manifold_hands_out_copies():
     assert S.curvature().label == "R"                           # the stored R is untouched
     g = S.g
     g.label = "h"
-    assert S.g.label == "g" and isinstance(S.g, type(g))         # still a Metric
+    assert S.g.label == "g"
     assert isinstance(S.indices(1), list) and S.index().name == "μ"
 
 

@@ -46,7 +46,7 @@ v = M.vector([1, 0])                           #    shortcut for M.tensor(a.up, 
 
 wedge_nabla(w)                                 # d∧w: works with no metric
 
-M.use_metric(M.metric([[1, 0], [0, sp.sin(th)**2]]))   # 3. attach a metric
+M.metric([[1, 0], [0, sp.sin(th)**2]])                 # 3. make, check and attach a metric
 R = M.curvature()                              # R(ρ↑ σ↓ | μ ν)
 M.ricci(), M.scalar_curvature(), M.gaussian_curvature()
 
@@ -61,7 +61,7 @@ BH = tf.geometry.schwarzschild()
 
 * **Slots** have a name, a space, `up`/`down`, and a role: `value` or `form`.
   Declare them with index objects: `a.up`, `a.down`, `a.form`. Form slots are always down.
-* **Types** are the list of (space, up/down, role). Adding needs matching types;
+* **Types**: each slot has a `type` (space, up/down, role); a tensor's `types` is the list. Adding needs matching types;
   pairing needs the same space and opposite up/down.
 * **d** puts its new slot first among the form slots ("first after the bar").
 * **Names**: Greek for tangent-space slots (μ ν λ κ ρ σ τ …, with θ φ π last),
@@ -81,8 +81,10 @@ BH = tf.geometry.schwarzschild()
 * **Alt / Sym** act on any named slots (default: all form slots).
   `wedge(A, B) = k!/(p! q!) · Alt(AB)`, `odot(A, B) = k!/(p! q!) · Sym(AB)`.
 * **Γ is not a tensor** (`Connection` is a separate class), so the operators refuse it.
-* A bare `Manifold` has no metric; `M.metric(data)` makes one, `M.metric()` makes an unknown
-  one (`signature="-+++"` for Lorentzian), `M.use_metric(g)` attaches it.
+* A bare `Manifold` has no metric; `M.metric(data)` gives it one, `M.metric()` an unknown
+  one (`signature="-+++"` for Lorentzian; for unknown functions the signature is only declared).
+  `M.metric(...)` makes, checks (shape, symmetric, invertible) and attaches it in one step;
+  calling it again replaces it. The metric is a plain tensor (μ↓ ν↓ |); `M.signature` gives "-+++".
 
 ## Tests
 

@@ -13,7 +13,8 @@ def sphere(r=None):
     r = _radius(r, "r")
     th, ph = sp.symbols("theta phi", positive=True)
     M = Manifold([th, ph], name="S2")
-    return M.use_metric(M.metric(sp.diag(r ** 2, r ** 2 * sp.sin(th) ** 2), signature="++"))
+    M.metric(sp.diag(r ** 2, r ** 2 * sp.sin(th) ** 2), signature="++")
+    return M
 
 
 def cylinder(r=None):
@@ -22,7 +23,8 @@ def cylinder(r=None):
     ph = sp.Symbol("phi", positive=True)
     z = sp.Symbol("z", real=True)
     M = Manifold([ph, z], name="Cyl")
-    return M.use_metric(M.metric(sp.diag(r ** 2, 1), signature="++"))
+    M.metric(sp.diag(r ** 2, 1), signature="++")
+    return M
 
 
 def torus(R=None, r=None):
@@ -30,7 +32,8 @@ def torus(R=None, r=None):
     R, r = _radius(R, "R"), _radius(r, "r")
     th, ph = sp.symbols("theta phi", real=True)
     M = Manifold([th, ph], name="T2")
-    return M.use_metric(M.metric(sp.diag(r ** 2, (R + r * sp.cos(th)) ** 2)))
+    M.metric(sp.diag(r ** 2, (R + r * sp.cos(th)) ** 2))
+    return M
 
 
 def hyperbolic_plane():
@@ -38,4 +41,5 @@ def hyperbolic_plane():
     x = sp.Symbol("x", real=True)
     y = sp.Symbol("y", positive=True)
     M = Manifold([x, y], name="H2")
-    return M.use_metric(M.metric(sp.diag(1 / y ** 2, 1 / y ** 2), signature="++"))
+    M.metric(sp.diag(1 / y ** 2, 1 / y ** 2), signature="++")
+    return M

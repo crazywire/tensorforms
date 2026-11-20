@@ -7,7 +7,8 @@ from ..manifold.manifold import Manifold
 def minkowski():
     t, x, y, z = sp.symbols("t x y z", real=True)
     M = Manifold([t, x, y, z], name="Minkowski")
-    return M.use_metric(M.metric(sp.diag(-1, 1, 1, 1), signature="-+++"))
+    M.metric(sp.diag(-1, 1, 1, 1), signature="-+++")
+    return M
 
 
 def schwarzschild(m=None):
@@ -17,7 +18,8 @@ def schwarzschild(m=None):
     r, th, ph = sp.symbols("r theta phi", positive=True)
     f = 1 - 2 * m / r
     M = Manifold([t, r, th, ph], name="Schwarzschild")
-    return M.use_metric(M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++"))
+    M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
+    return M
 
 
 def flrw(a=None, k=0):
@@ -27,7 +29,8 @@ def flrw(a=None, k=0):
     a = sp.Function("a")(t) if a is None else a
     M = Manifold([t, r, th, ph], name="FLRW")
     g = sp.diag(-1, a ** 2 / (1 - k * r ** 2), a ** 2 * r ** 2, a ** 2 * r ** 2 * sp.sin(th) ** 2)
-    return M.use_metric(M.metric(g, signature="-+++"))
+    M.metric(g, signature="-+++")
+    return M
 
 
 def de_sitter(H=None):
@@ -36,4 +39,5 @@ def de_sitter(H=None):
     t, x, y, z = sp.symbols("t x y z", real=True)
     e = sp.exp(2 * H * t)
     M = Manifold([t, x, y, z], name="deSitter")
-    return M.use_metric(M.metric(sp.diag(-1, e, e, e), signature="-+++"))
+    M.metric(sp.diag(-1, e, e, e), signature="-+++")
+    return M

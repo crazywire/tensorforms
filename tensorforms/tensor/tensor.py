@@ -65,7 +65,7 @@ class Tensor:
         return [s.name for s in self.slots]
 
     @property
-    def signature(self):
+    def types(self):
         return [s.type for s in self.slots]
 
     @property
@@ -110,7 +110,7 @@ class Tensor:
 
     # ---------- arithmetic (needs matching types) ----------
     def _check_same_type(self, other):
-        if not isinstance(other, Tensor) or self.signature != other.signature:
+        if not isinstance(other, Tensor) or self.types != other.types:
             raise TypeError(f"can only add matching types: {self.declaration()} vs "
                             f"{getattr(other, 'declaration', lambda: other)()}")
 

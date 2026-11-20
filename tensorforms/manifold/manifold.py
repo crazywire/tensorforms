@@ -1,7 +1,7 @@
 """The Manifold: coordinates, and everything that lives on them.
 
-A bare manifold has no metric. Metric, connection and curvature are optional
-properties: attached with use_metric, computed when asked. Γ always comes from the metric.
+A bare manifold has no metric. M.metric(...) makes, checks and attaches one;
+connection and curvature are then computed when asked. Γ always comes from the metric.
 """
 import copy
 
@@ -12,7 +12,7 @@ from ..tensor.slot import Index
 from ..tensor.tensor import Tensor
 from .connection import Connection
 from .curvature import einstein, ricci, scalar_curvature
-from .metric import Metric, inverse_metric, make_metric
+from .metric import build_metric, inverse_metric
 from .space import TANGENT_NAMES, Space
 
 
@@ -22,7 +22,7 @@ class Manifold:
         self.dim = len(self.coords)
         self.name = name
         self.tangent = Space(f"T{name}", self.dim, names=TANGENT_NAMES)      # value and form slots live here
-        self._g = self._ginv = None
+        self._g = self._ginv = self._signature = None
         self._cache = {}        # Γ, R, Ric, R_s, G: computed once, cleared when the metric changes
 
     def __repr__(self):
@@ -66,23 +66,19 @@ class Manifold:
 
     # ---------- metric ----------
     def metric(self, data=None, signature=None):
-        """data → that metric; no data → unknown functions with the given signature."""
-        return make_metric(self, data, signature)
-
-    def use_metric(self, g):
-        if not isinstance(g, Metric):
-            raise TypeError("use_metric needs a metric made by M.metric(...)")
-        if not g.is_lower:
-            raise TypeError("use_metric needs g with two down slots; "
-                            "this looks like the inverse metric g⁻¹ (M.ginv)")
-        self._g, self._ginv = g, inverse_metric(g)
+        """Make, check and attach the metric; returns g.
+        data: a matrix (or a tensor with two down value slots). No data: unknown functions
+        g_ij(x), with the signature you declare (e.g. "-+++"). Calling it again replaces
+        the metric and clears everything computed from the old one."""
+        g, sig = build_metric(self, data, signature)
+        self._g, self._ginv, self._signature = g, inverse_metric(g), sig
         self._cache.clear()
-        return self
+        return copy.copy(g)
 
     @property
     def g(self):
         if self._g is None:
-            raise AttributeError("this manifold has no metric yet: call M.use_metric(M.metric(...))")
+            raise AttributeError("this manifold has no metric yet: call M.metric(...)")
         return copy.copy(self._g)
 
     @property
@@ -92,7 +88,9 @@ class Manifold:
 
     @property
     def signature(self):
-        return self.g.signature_string
+        """The metric's sign pattern, e.g. "-+++" (None if it couldn't be told)."""
+        self.g                                                 # raises if there is no metric
+        return self._signature
 
     # ---------- connection and curvature ----------
     def connection(self):

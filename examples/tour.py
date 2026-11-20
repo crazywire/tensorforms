@@ -21,7 +21,7 @@ w = M.tensor(a.form, data=[sp.cos(th), sp.sin(th) * ph])
 print("w =", w, "  d∧w (no metric needed):", wedge_nabla(w).simplify().data.tolist())
 
 # 3. Attach a metric; connection and curvature follow
-M.use_metric(M.metric([[1, 0], [0, sp.sin(th) ** 2]]))
+M.metric([[1, 0], [0, sp.sin(th) ** 2]])
 R = M.curvature()
 print("R =", R, "  R_θφ block:", R.data[:, :, 0, 1].tolist())
 print("Ric =", M.ricci().data.tolist(), "  R_s =", M.scalar_curvature(), "  K =", M.gaussian_curvature())

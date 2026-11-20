@@ -7,6 +7,7 @@ import sympy as sp
 
 from ..symbolic.simplify import clean
 from ..tensor.tensor import Tensor
+from .metric import as_matrix
 
 
 class Connection:
@@ -24,7 +25,7 @@ class Connection:
         """Levi-Civita: Γ = ½ g⁻¹(dg + dg^S − dg^{ST})."""
         M = g.manifold
         n, x = M.dim, M.coords
-        gm = g.matrix
+        gm = as_matrix(g)
         gi = sp.simplify(gm.inv())
         G = np.empty((n, n, n), dtype=object)
         for a, b, c in itertools.product(range(n), repeat=3):
