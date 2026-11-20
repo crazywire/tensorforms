@@ -6,7 +6,8 @@ properties: attached with use_metric, computed when asked. Γ always comes from 
 import numpy as np
 import sympy as sp
 
-from ..tensor.slot import TANGENT_NAMES, Index, Space
+from ..tensor.slot import Index
+from .space import TANGENT_NAMES, Space
 from ..tensor.tensor import Tensor
 from .connection import Connection
 from .curvature import einstein, ricci, scalar_curvature
@@ -17,7 +18,7 @@ class Manifold:
         self.coords = list(coords)
         self.dim = len(self.coords)
         self.name = name
-        self.tangent = Space(f"T{name}", self.dim, self, names=TANGENT_NAMES)      # value and form slots live here
+        self.tangent = Space(f"T{name}", self.dim, names=TANGENT_NAMES)      # value and form slots live here
         self._g = self._ginv = self._conn = None
         self._cache = {}
 
