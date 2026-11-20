@@ -2,15 +2,21 @@
 import sympy as sp
 
 from ..symbolic.simplify import clean
-from ..tensor.tensor import contract, tr
+from ..tensor.tensor import Tensor, contract, tr
+
+
+def _forms_to_values(X):
+    """The same numbers, with every form slot relabelled as a value slot."""
+    return Tensor(X.manifold, X.data, [s.with_role("value") if s.is_form else s for s in X.slots])
 
 
 def ricci(R):
     """Ric = tr(R^S): pair R's up slot with its first form slot.
-    Ric is symmetric (no torsion), so both remaining slots are returned as value slots."""
+    The trace leaves (σ↓ | ν). Ric is returned as (σ↓ ν↓ |) so it has g's type
+    and can be added to g in G = Ric − ½R_s g."""
     up = next(s.name for s in R.slots if s.is_up)
     first_form = R.form_slots[0]
-    Ric = tr(R, up, first_form).with_roles("value").simplify()
+    Ric = _forms_to_values(tr(R, up, first_form)).simplify()
     Ric.label = "Ric"
     return Ric
 

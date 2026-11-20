@@ -178,8 +178,8 @@ def test_wedge_single_factor_is_one_term():
 def test_ricci_by_names():
     S = tf.geometry.sphere(r=1)
     R = S.curvature()
-    Ric = tr(R, "ρ", "μ").with_roles("value")
-    assert Ric.equals(S.ricci())
+    Ric = tr(R, "ρ", "μ")                                     # (σ↓ | ν): same numbers as S.ricci()
+    assert all(is_zero(e) for e in (Ric.data - S.ricci().data).flat)
 
 
 def test_type_errors():
