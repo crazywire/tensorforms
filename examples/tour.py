@@ -8,7 +8,7 @@ import sympy as sp
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import tensorforms as tf
-from tensorforms import Manifold, contract, curvature, nabla, tr, wedge_nabla
+from tensorforms import Manifold, contract, curvature, nabla, wedge_nabla
 
 # 1. A bare manifold: coordinates only
 th, ph = sp.symbols("theta phi", positive=True)
@@ -32,8 +32,8 @@ print("∇v    =", nabla(v), nabla(v).simplify().data.tolist())
 print("∇∧∇v  =", curvature(v), "(R acting on v)")
 
 # 5. Explicit pairing by slot name
-Ric = tr(R, "ρ", "μ")
-print("tr(R, ρ, μ) =", Ric, Ric.simplify().data.tolist())
+Ric = R.tr("ρ", "μ")
+print("R.tr(ρ, μ) =", Ric, Ric.simplify().data.tolist())
 
 # 6. Presets
 for G in (tf.geometry.hyperbolic_plane(), tf.geometry.euclidean(3, "spherical")):

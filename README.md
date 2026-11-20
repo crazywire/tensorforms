@@ -21,7 +21,8 @@ against its definition (∇ twice, antisymmetrized; ∇∧ twice).
 ```
 tensorforms/
   manifold/    Manifold (coordinates) + optional metric, connection, curvature
-  tensor/      Slot, Index, Tensor, contract, tr, otimes, Alt/Sym, wedge, odot
+  tensor/      tensor.py: Tensor (one tensor: tr, raise/lower, Alt/Sym, swaps)
+               products.py: contract, otimes, wedge, odot    labels.py: result labels
   operators/   nabla, wedge_nabla, curvature, wedge_curvature, d
   geometry/    euclidean, surfaces, spacetimes, metric templates
   symbolic/    simplification helpers
@@ -34,7 +35,7 @@ examples/      tour.py
 ```python
 import sympy as sp
 import tensorforms as tf
-from tensorforms import Manifold, nabla, wedge_nabla, curvature, contract, tr
+from tensorforms import Manifold, nabla, wedge_nabla, curvature, contract
 
 th, ph = sp.symbols("theta phi", positive=True)
 M = Manifold([th, ph])                         # 1. a bare manifold: coordinates only
@@ -50,7 +51,7 @@ R = M.curvature()                              # R(ρ↑ σ↓ | μ ν)
 M.ricci(), M.scalar_curvature(), M.gaussian_curvature()
 
 nabla(v), curvature(v)                         # 4. the operators
-tr(R, "ρ", "μ")                                # 5. pairing is explicit: by name ("rho" works too) or number
+R.tr("ρ", "μ")                                 # 5. pairing is explicit: by name ("rho" works too) or number
 
 S  = tf.geometry.sphere()                      # 6. presets (radius symbolic: K = 1/r²)
 BH = tf.geometry.schwarzschild()
@@ -68,12 +69,13 @@ BH = tf.geometry.schwarzschild()
   anywhere a name is: `"mu"` means μ. New slots from d and ∇ get the first free name.
 * **Slots can also be given by number** (0, 1, …). Numbers shift when d adds a slot, so prefer names.
 * **Covectors and 1-forms**: `M.covector` is a row (μ↓ |), a down value slot; it pairs with
-  vectors by default, and `M.lower(v)` gives one. `M.lower(X, "ρ")` / `M.raise_(X, "σ")` work on any
-  value slot and undo each other exactly; form slots are never raised or lowered. `M.one_form`
+  vectors by default, and `v.lower()` gives one. `R.lower("ρ")` / `Ric.raise_("σ")` work on any
+  value slot and undo each other exactly (they use the manifold's metric); form slots are never
+  raised or lowered. `M.one_form`
   is (| μ), a form slot, for d∧ and wedge. `w.as_form()` turns a covector into a 1-form and
   `α.as_value()` turns it back (so `contract(d(f).as_value(), v)` is the directional derivative).
-* **Pairing**: `contract(A, B)` is your AB: A's column (last value slot, down) with B's row
-  (first value slot, up). `contract(A, B, a, b)` pairs the slots you name, `tr(X, a, b)` pairs
+* **Products**: `contract(A, B)` is your AB: A's column (last value slot, down) with B's row
+  (first value slot, up). `contract(A, B, a, b)` pairs the slots you name, `X.tr(a, b)` pairs
   two slots inside X, and `otimes(A, B)` is the tensor product (pairs nothing).
   Nothing is chosen silently: when the default pair doesn't exist, contract refuses.
 * **Alt / Sym** act on any named slots (default: all form slots).
