@@ -254,10 +254,17 @@ def test_scalar_multiplication():
 
 
 def test_labels():
-    R = tf.geometry.sphere().curvature()
-    assert repr(R.alt()).startswith("Alt(R)") and repr(R.sym()).startswith("Sym(R)")
-    assert repr(-R).startswith("−R") and repr(-(-R)).startswith("R(")
-    assert repr(R.U()).startswith("R(")                          # a swap is still R
+    S = tf.geometry.sphere()
+    R = S.curvature()
+    B = R._new(label="B")
+    f = S.scalar(sp.sin(S.coords[0]))
+    f.label = "f"
+    expected = {"Alt(R)": R.alt(), "Sym(R)": R.sym(), "−R": -R, "R": -(-R),
+                "R+B": R + B, "R−(−B)": R - (-B), "−(R+B)": -(R + B), "3(R+B)": 3 * (R + B),
+                "−2R": -2 * R, "1/2·R": sp.Rational(1, 2) * R, "f·R": f * R,
+                "R^U": R.U(), "R^US": R.U().S(), "(R+B)^S": (R + B).S()}
+    for label, X in expected.items():
+        assert X.label == label, (label, X.label)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ Pairing is always explicit (no Einstein summation):
 """
 import itertools
 import math
+import re
 
 import numpy as np
 import sympy as sp
@@ -18,6 +19,50 @@ from .slot import clean_name
 
 def _name(x):
     return x.name if hasattr(x, "name") else clean_name(x)
+
+
+# ---------- labels: the result's label is the operation that made it ----------
+def _wrap(label):
+    """Brackets around a label that has + or − in it, so it can sit inside a bigger expression."""
+    if label and any(ch in label for ch in "+−"):
+        return f"({label})"
+    return label
+
+
+def _join(a, op, b):
+    return f"{a}{op}{b}" if a and b else None
+
+
+def _negated(label):
+    if not label:
+        return None
+    if label.startswith("−") and not any(ch in label[1:] for ch in "+−"):
+        return label[1:]                                         # −(−A) = A
+    return "−" + _wrap(label)
+
+
+def _scaled(c, c_label, label):
+    """3A, ½·A, sin(θ)·A, f·A. Unlabelled tensor: no label."""
+    if not label:
+        return None
+    if c == 1:
+        return label
+    if c == -1:
+        return _negated(label)
+    if c_label:
+        return f"{c_label}·{_wrap(label)}"
+    if isinstance(c, sp.Integer):
+        return f"{c}{_wrap(label)}" if c > 0 else f"−{-c}{_wrap(label)}"
+    return f"{_wrap(sp.pretty(c, use_unicode=True))}·{_wrap(label)}"
+
+
+def _swapped(label, letter):
+    """R^S, then R^ST: the swap letters in the order they were applied."""
+    if not label:
+        return None
+    if re.search(r"\^[TSUV]+$", label) and _wrap(label.split("^")[0]) == label.split("^")[0]:
+        return label + letter
+    return f"{_wrap(label)}^{letter}"
 
 
 def _perm_sign(perm):
@@ -117,33 +162,32 @@ class Tensor:
 
     def __add__(self, other):
         self._check_same_type(other)
-        return self._new(self.data + other.data)
+        return self._new(self.data + other.data, label=_join(self.label, "+", _wrap(other.label)
+                                                              if other.label and other.label[0] == "−" else other.label))
 
     def __sub__(self, other):
         self._check_same_type(other)
-        return self._new(self.data - other.data)
+        return self._new(self.data - other.data, label=_join(self.label, "−", _wrap(other.label)))
 
     def __neg__(self):
-        label = None
-        if self.label:
-            label = self.label[1:] if self.label.startswith("−") else "−" + self.label
-        return self._new(-self.data, label=label)
+        return self._new(-self.data, label=_negated(self.label))
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
         if not self.slots and isinstance(c, Tensor):         # scalar × tensor
-            return c * self.data.item()
+            return c * self
+        c_label = None
         if isinstance(c, Tensor):
             if c.slots:
                 raise TypeError("use contract, outer, product or wedge to multiply tensors")
-            c = c.data.item()
+            c_label, c = c.label, c.data.item()
         try:
             c = sp.sympify(c, strict=True)
         except sp.SympifyError:
             c = None
         if not isinstance(c, sp.Expr):
             raise TypeError("can only multiply a tensor by a number, an expression or a scalar tensor")
-        return self._new(self.data * c)
+        return self._new(self.data * c, label=_scaled(c, c_label, self.label))
 
     __rmul__ = __mul__
 
@@ -175,10 +219,15 @@ class Tensor:
         return self._transposed(order)
 
     # positional swaps from the notation: T, S, U, V
-    def T(self): return self.swap_positions(0, 1)
-    def S(self): return self.swap_positions(1, 2)
-    def U(self): return self.swap_positions(2, 3)
-    def V(self): return self.swap_positions(3, 4)
+    def _letter_swap(self, i, letter):
+        X = self.swap_positions(i, i + 1)
+        X.label = _swapped(self.label, letter)
+        return X
+
+    def T(self): return self._letter_swap(0, "T")
+    def S(self): return self._letter_swap(1, "S")
+    def U(self): return self._letter_swap(2, "U")
+    def V(self): return self._letter_swap(3, "V")
 
     def rename(self, mapping):
         mapping = {self.names[self.position(k)]: _name(v) for k, v in mapping.items()}
@@ -200,7 +249,7 @@ class Tensor:
                 axes[pos[dst]] = pos[src]
             term = np.transpose(self.data, axes)
             out = out + (_perm_sign(perm) if signed else 1) * term
-        label = f"{'Alt' if signed else 'Sym'}({self.label})" if self.label else None
+        label = f"{'Alt' if signed else 'Sym'}({self.label})" if self.label else None   # brackets already
         return self._new(out * sp.Rational(1, math.factorial(k)), label=label)
 
     def alt(self, *names):
