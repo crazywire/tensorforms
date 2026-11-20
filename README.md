@@ -20,7 +20,7 @@ against its definition (∇ twice, antisymmetrized; ∇∧ twice).
 
 ```
 tensorforms/
-  manifold/    Manifold (coordinates) + optional metric, connection, curvature
+  manifold/    Manifold (coordinates), its tangent Space, optional metric, connection, curvature
   tensor/      tensor.py: Tensor (one tensor: tr, raise/lower, Alt/Sym, swaps)
                products.py: contract, otimes, wedge, odot    labels.py: result labels
   operators/   nabla, wedge_nabla, curvature, wedge_curvature, d
