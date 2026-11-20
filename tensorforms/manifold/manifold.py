@@ -6,22 +6,18 @@ properties: attached with use_metric, computed when asked. Γ always comes from 
 import numpy as np
 import sympy as sp
 
-from ..tensor.slot import Index, Space
+from ..tensor.slot import TANGENT_NAMES, Index, Space
 from ..tensor.tensor import Tensor, contract
 from .connection import Connection
 from .curvature import einstein, ricci, scalar_curvature
 from .metric import Metric, inverse_metric, make_metric
-
-_NAME_POOL = ["a", "b", "c", "d", "e", "f", "h", "i", "j", "k", "l", "m", "n", "p", "q",
-              "α", "β", "γ", "δ", "ε", "ζ", "η", "κ", "λ", "ξ", "τ", "χ", "ψ", "ω"]
-
 
 class Manifold:
     def __init__(self, coords, name="M"):
         self.coords = list(coords)
         self.dim = len(self.coords)
         self.name = name
-        self.tangent = Space(f"T{name}", self.dim, self)      # value and form slots live here
+        self.tangent = Space(f"T{name}", self.dim, self, names=TANGENT_NAMES)      # value and form slots live here
         self._g = self._ginv = self._conn = None
         self._cache = {}
 
@@ -31,19 +27,20 @@ class Manifold:
 
     # ---------- indices and names ----------
     def indices(self, n, names=None):
-        names = list(names) if names else _NAME_POOL[:n]
+        names = list(names) if names else self.tangent.names[:n]
         idx = [Index(nm, self.tangent) for nm in names]
         return idx if n > 1 else idx[0]
 
-    def fresh_name(self, used):
-        used = set(used)
-        for nm in _NAME_POOL:
+    def fresh_name(self, used, space=None):
+        """The first unused name from the space's list (Greek for the tangent space)."""
+        used, pool = set(used), (space or self.tangent).names
+        for nm in pool:
             if nm not in used:
                 return nm
         k = 1
-        while f"x{k}" in used:
+        while f"{pool[0]}{k}" in used:
             k += 1
-        return f"x{k}"
+        return f"{pool[0]}{k}"
 
     # ---------- tensors ----------
     def tensor(self, *slots, data, label=None):
