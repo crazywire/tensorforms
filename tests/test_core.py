@@ -40,7 +40,7 @@ def wedge_curvature_by_definition(X):
 # ---------------------------------------------------------------- sphere
 def test_sphere_connection():
     S = tf.geometry.sphere(r=1)
-    G = S.connection().Gamma
+    G = S.connection().data
     th = S.coords[0]
     assert is_zero(G[0, 1, 1] + sp.sin(th) * sp.cos(th))     # Γ^θ_φφ = −sinθ cosθ
     assert is_zero(G[1, 0, 1] - sp.cot(th))                  # Γ^φ_θφ = cotθ
@@ -137,7 +137,7 @@ def test_product_rule():
 def test_spherical_coordinates_are_flat():
     E = tf.geometry.euclidean(3, coords="spherical")
     assert E.curvature().is_zero()
-    assert not np.all(E.connection().Gamma == 0)              # the grid bends, the space doesn't
+    assert not np.all(E.connection().data == 0)              # the grid bends, the space doesn't
 
 
 def test_hyperbolic_plane():
@@ -153,8 +153,29 @@ def test_schwarzschild_is_vacuum():
 
 def test_connection_is_s_symmetric():
     S = tf.geometry.sphere(r=1)                               # Γ^S = Γ: no torsion
-    G = S.connection().Gamma
+    G = S.connection().data
     assert all(is_zero(G[a, b, c] - G[a, c, b]) for a in range(2) for b in range(2) for c in range(2))
+
+
+def test_gamma_and_riemann_match_index_formulas():
+    """Γ and R are computed with the operators; check them against the index formulas."""
+    x, y, z = sp.symbols("x y z", real=True)
+    M = Manifold([x, y, z])
+    M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
+    X, n = M.coords, 3
+    g, gi = M.g.data, M.ginv.data
+    G, R = M.connection().data, M.curvature().data
+    r = range(n)
+    for a in r:
+        for b in r:
+            for c in r:
+                lc = sum(gi[a, s] * (sp.diff(g[s, b], X[c]) + sp.diff(g[s, c], X[b])
+                                     - sp.diff(g[b, c], X[s])) for s in r) / 2
+                assert is_zero(G[a, b, c] - lc)
+                for e in r:
+                    ri = (sp.diff(G[a, b, e], X[c]) - sp.diff(G[a, b, c], X[e])
+                          + sum(G[a, s, c] * G[s, b, e] - G[a, s, e] * G[s, b, c] for s in r))
+                    assert is_zero(R[a, b, c, e] - ri)
 
 
 # ---------------------------------------------------------------- algebra and types
@@ -186,8 +207,7 @@ def test_type_errors():
     S = tf.geometry.sphere(r=1)
     v, w = S.vector([1, 0]), S.covector([1, 0])
     for bad in (lambda: v + w,
-                lambda: contract(S.g, S.g, "μ", "μ"),         # down with down
-                lambda: nabla(S.connection())):              # Γ is not a tensor
+                lambda: contract(S.g, S.g, "μ", "μ")):        # down with down
         try:
             bad()
         except TypeError:

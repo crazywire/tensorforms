@@ -16,6 +16,7 @@ import math
 import numpy as np
 import sympy as sp
 
+from ..manifold.curvature import riemann
 from ..tensor.slot import Slot
 from ..tensor.tensor import Tensor
 
@@ -31,13 +32,17 @@ def _insert_position(X):
     return next((i for i, s in enumerate(X.slots) if s.is_form), len(X.slots))
 
 
-def _get_conn(X, conn):
+def _geometry(X, conn):
+    """(Γ, R) as arrays, or (None, None) for the flat versions.
+    conn=None: the manifold's (if it has a metric); conn=False: flat; conn=a Γ tensor: that one."""
     if conn is False:
-        return None
-    if conn is not None:
-        return conn
+        return None, None
     M = X.manifold
-    return M.connection() if M.has_connection() else None
+    if conn is None:
+        if not M.has_connection():
+            return None, None
+        return M.connection().data, (lambda: M.curvature().data)
+    return conn.data, (lambda: riemann(conn).data)
 
 
 def _new_form_slots(X, count):
@@ -104,9 +109,9 @@ def nabla(X, conn=None):
     _check_tensor(X)
     pos, slots = _with_new_slots(X, 1)
     data = _d(X, pos)
-    C = _get_conn(X, conn)
-    if C is not None:
-        data = data + _act(C.Gamma, 1, X, pos)
+    G, _ = _geometry(X, conn)
+    if G is not None:
+        data = data + _act(G, 1, X, pos)
     return Tensor(X.manifold, data, slots)
 
 
@@ -117,9 +122,9 @@ def wedge_nabla(X, conn=None):
     Xa = X.alt()                                   # wedge factors are antisymmetric first
     pos, slots = _with_new_slots(Xa, 1)
     data = _d(Xa, pos)
-    C = _get_conn(X, conn)
-    if C is not None:
-        data = data + _act(C.Gamma, 1, Xa, pos, values_only=True)
+    G, R = _geometry(X, conn)
+    if G is not None:
+        data = data + _act(G, 1, Xa, pos, values_only=True)
     return _wedge_new(Tensor(X.manifold, data, slots), p, 1)
 
 
@@ -127,10 +132,10 @@ def curvature(X, conn=None):
     """Curvature operator: ∇∧∇X = R on every slot. X is never differentiated."""
     _check_tensor(X)
     pos, slots = _with_new_slots(X, 2)
-    C = _get_conn(X, conn)
-    if C is None:
+    G, R = _geometry(X, conn)
+    if G is None:
         return Tensor(X.manifold, np.zeros(tuple(s.space.dim for s in slots), dtype=object), slots)
-    return Tensor(X.manifold, _act(C.curvature_array(), 2, X, pos), slots)
+    return Tensor(X.manifold, _act(R(), 2, X, pos), slots)
 
 
 def wedge_curvature(X, conn=None):
@@ -139,8 +144,8 @@ def wedge_curvature(X, conn=None):
     p = len(X.form_slots)
     Xa = X.alt()
     pos, slots = _with_new_slots(Xa, 2)
-    C = _get_conn(X, conn)
-    if C is None:
+    G, R = _geometry(X, conn)
+    if G is None:
         return Tensor(X.manifold, np.zeros(tuple(s.space.dim for s in slots), dtype=object), slots)
-    Y = Tensor(X.manifold, _act(C.curvature_array(), 2, Xa, pos, values_only=True), slots)
+    Y = Tensor(X.manifold, _act(R(), 2, Xa, pos, values_only=True), slots)
     return _wedge_new(Y, p, 2)

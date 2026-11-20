@@ -1,8 +1,17 @@
-"""Traces of R: Ricci, scalar curvature, Einstein tensor."""
+"""Curvature: R from Γ, then its traces Ricci, scalar curvature and the Einstein tensor."""
 import sympy as sp
 
 from ..symbolic.simplify import clean
-from ..tensor.products import contract
+from ..tensor.products import contract, wedge
+
+
+def riemann(Gamma):
+    """R = d∧Γ + Γ∧Γ, computed with the operators themselves. Slots (ρ↑ σ↓ | μ ν)."""
+    from ..operators.operators import wedge_nabla               # here, to avoid a circular import
+    R = (wedge_nabla(Gamma, conn=False) + wedge(Gamma, Gamma)).simplify()
+    R = R.rename({0: "ρ", 1: "σ", 2: "μ", 3: "ν"})
+    R.label = "R"
+    return R
 
 
 def ricci(R):

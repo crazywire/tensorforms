@@ -80,7 +80,10 @@ BH = tf.geometry.schwarzschild()
   Nothing is chosen silently: when the default pair doesn't exist, contract refuses.
 * **Alt / Sym** act on any named slots (default: all form slots).
   `wedge(A, B) = k!/(p! q!) · Alt(AB)`, `odot(A, B) = k!/(p! q!) · Sym(AB)`.
-* **Γ is not a tensor** (`Connection` is a separate class), so the operators refuse it.
+* **Γ** (`M.connection()`) is stored as a plain tensor (ρ↑ σ↓ | μ), so you can write
+  `wedge_nabla(G, conn=False) + wedge(G, G)` for R = d∧Γ + Γ∧Γ. It is not tensorial
+  (it changes differently under a change of coordinates), so ∇Γ has no meaning; the code
+  doesn't stop you writing it.
 * A bare `Manifold` has no metric; `M.metric(data)` gives it one, `M.metric()` an unknown
   one (`signature="-+++"` for Lorentzian; for unknown functions the signature is only declared).
   `M.metric(...)` makes, checks (shape, symmetric, invertible) and attaches it in one step;
