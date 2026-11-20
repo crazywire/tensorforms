@@ -1,7 +1,7 @@
 """The Manifold: coordinates, and everything that lives on them.
 
 A bare manifold has no metric. Metric, connection and curvature are optional
-properties: attached with use_metric (or set_connection), computed when asked.
+properties: attached with use_metric, computed when asked. Γ always comes from the metric.
 """
 import numpy as np
 import sympy as sp
@@ -102,18 +102,13 @@ class Manifold:
         return contract(self.ginv, w, self.ginv.names[1], w.names[0])
 
     # ---------- connection and curvature ----------
-    def set_connection(self, conn):
-        self._conn = conn
-        self._cache.clear()
-        return self
-
     def connection(self):
         if self._conn is None:
             self._conn = Connection.from_metric(self.g)
         return self._conn
 
     def has_connection(self):
-        return self._conn is not None or self._g is not None
+        return self._g is not None
 
     def _cached(self, key, compute):
         if key not in self._cache:

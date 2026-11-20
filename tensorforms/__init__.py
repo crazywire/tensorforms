@@ -8,11 +8,11 @@
 """
 from .manifold import Manifold, Connection
 from .tensor import Slot, Space, Index, Tensor, contract, tr, outer, product, wedge, odot
-from .operators import d, nabla, wedge_nabla, curvature, curvature_by_R, wedge_curvature
+from .operators import d, nabla, wedge_nabla, curvature, wedge_curvature
 from . import geometry
 
 __all__ = ["Manifold", "Connection", "Slot", "Space", "Index", "Tensor",
            "contract", "tr", "outer", "product", "wedge", "odot",
-           "d", "nabla", "wedge_nabla", "curvature", "curvature_by_R", "wedge_curvature",
+           "d", "nabla", "wedge_nabla", "curvature", "wedge_curvature",
            "geometry"]
 __version__ = "0.1.0"

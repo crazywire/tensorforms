@@ -8,9 +8,33 @@ import sympy as sp
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tensorforms as tf
-from tensorforms import (Manifold, contract, curvature, curvature_by_R, nabla, product, tr,
+from tensorforms import (Manifold, contract, curvature, nabla, product, tr,
                          wedge, wedge_curvature, wedge_nabla)
 from tensorforms.symbolic import is_zero
+
+
+# ---- the definitions, used only to check the formulas the package uses ----
+def _first_form_position(X):
+    return next((i for i, s in enumerate(X.slots) if s.is_form), len(X.slots))
+
+
+def curvature_by_commutator(X):
+    """∇∧∇ by definition: ∇ twice, minus the order swapped."""
+    pos = _first_form_position(X)
+    Y = nabla(nabla(X))
+    return Y - Y.swap_positions(pos, pos + 1)
+
+
+def wedge_nabla_by_definition(X):
+    """∇∧ by definition: ∇ on every slot, then (p+1)·Alt over all form slots."""
+    p = len(X.form_slots)
+    Y = nabla(X.alt())
+    return Y if p == 0 else Y.alt() * (p + 1)
+
+
+def wedge_curvature_by_definition(X):
+    """∇∧∇∧ by definition: the wedge derivative twice."""
+    return wedge_nabla_by_definition(wedge_nabla_by_definition(X))
 
 
 # ---------------------------------------------------------------- sphere
@@ -53,10 +77,10 @@ def _sphere_fields():
     return S, S.vector([f1, f2]), S.covector([f1, f2])
 
 
-def test_curvature_operator_is_R_on_every_slot():
-    S, v, w = _sphere_fields()
-    assert curvature(v).equals(curvature_by_R(v))
-    assert curvature(w).equals(curvature_by_R(w))
+def test_curvature_operator_matches_its_definition():
+    S, v, w = _sphere_fields()                                # R on every slot == ∇ twice, antisymmetrized
+    assert curvature(v).equals(curvature_by_commutator(v))
+    assert curvature(w).equals(curvature_by_commutator(w))
     assert not curvature(w).is_zero()                        # −Rᵀw, not zero
 
 
@@ -65,10 +89,20 @@ def test_curl_needs_no_connection():
     assert wedge_nabla(w).equals(wedge_nabla(w, conn=False))  # ∇∧w = d∧w
 
 
+def test_wedge_nabla_matches_its_definition():
+    S, v, w = _sphere_fields()                                # form-slot corrections cancel
+    assert wedge_nabla(v).equals(wedge_nabla_by_definition(v))
+    assert wedge_nabla(w).equals(wedge_nabla_by_definition(w))
+    X = nabla(v)                                              # a vector-valued 1-form
+    assert wedge_nabla(X).equals(wedge_nabla_by_definition(X))
+
+
 def test_wedge_curvature():
     S, v, w = _sphere_fields()
     assert wedge_curvature(w).is_zero()                       # covector: no value slots
     assert wedge_curvature(v).equals(curvature(v))            # vector: same as the commutator
+    assert wedge_curvature(v).equals(wedge_curvature_by_definition(v))
+    assert wedge_curvature(w).equals(wedge_curvature_by_definition(w))
 
 
 def test_scalar_has_no_curvature():
@@ -83,7 +117,9 @@ def test_bianchi_in_3d():
     M.use_metric(M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2)))
     assert wedge_nabla(M.curvature()).is_zero()               # ∇∧R = 0
     u = M.vector([y, x * z, 1])
-    assert curvature(u).equals(curvature_by_R(u))
+    assert curvature(u).equals(curvature_by_commutator(u))
+    X = nabla(u)                                              # a vector-valued 1-form: R∧ mixes 3 directions
+    assert wedge_curvature(X).equals(wedge_curvature_by_definition(X))
 
 
 def test_product_rule():
@@ -115,9 +151,10 @@ def test_schwarzschild_is_vacuum():
     assert BH.einstein().is_zero()
 
 
-def test_torsion_free():
-    S = tf.geometry.sphere(r=1)
-    assert S.connection().torsion().is_zero()
+def test_connection_is_s_symmetric():
+    S = tf.geometry.sphere(r=1)                               # Γ^S = Γ: no torsion
+    G = S.connection().Gamma
+    assert all(is_zero(G[a, b, c] - G[a, c, b]) for a in range(2) for b in range(2) for c in range(2))
 
 
 # ---------------------------------------------------------------- algebra and types
