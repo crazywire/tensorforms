@@ -6,8 +6,8 @@ properties: attached with use_metric, computed when asked. Γ always comes from 
 import numpy as np
 import sympy as sp
 
-from ..tensor.slot import TANGENT_NAMES, Index, Slot, Space
-from ..tensor.tensor import Tensor, contract
+from ..tensor.slot import TANGENT_NAMES, Index, Space
+from ..tensor.tensor import Tensor
 from .connection import Connection
 from .curvature import einstein, ricci, scalar_curvature
 from .metric import Metric, inverse_metric, make_metric
@@ -30,17 +30,6 @@ class Manifold:
         names = list(names) if names else self.tangent.names[:n]
         idx = [Index(nm, self.tangent) for nm in names]
         return idx if n > 1 else idx[0]
-
-    def fresh_name(self, used, space=None):
-        """The first unused name from the space's list (Greek for the tangent space)."""
-        used, pool = set(used), (space or self.tangent).names
-        for nm in pool:
-            if nm not in used:
-                return nm
-        k = 1
-        while f"{pool[0]}{k}" in used:
-            k += 1
-        return f"{pool[0]}{k}"
 
     # ---------- tensors ----------
     def tensor(self, *slots, data, label=None):
@@ -96,35 +85,6 @@ class Manifold:
     @property
     def signature(self):
         return self.g.signature_string
-
-    def _move_index(self, X, slot, metric, want_up, verb):
-        """g (or g⁻¹) on one value slot of X: only up/down changes; name, position and role stay."""
-        if slot is None:
-            options = [s.name for s in X.slots if not s.is_form and s.is_up == want_up]
-            if len(options) != 1:
-                raise TypeError(f"{verb}: say which slot (candidates: {options})")
-            slot = options[0]
-        i = X.position(slot)
-        s = X.slots[i]
-        if s.is_form:
-            raise TypeError(f"{verb}: {s.name} is a form slot; form slots are never raised or lowered "
-                            "(use as_value() first)")
-        if s.is_up != want_up:
-            raise TypeError(f"{verb}: {s.name} is already {'down' if want_up else 'up'}")
-        if s.space is not self.tangent:
-            raise TypeError(f"{verb}: {s.name} is not in the tangent space")
-        data = np.moveaxis(np.tensordot(metric.data, X.data, axes=([1], [i])), 0, i)
-        flipped = Slot(s.name, s.space, "up" if s.variance == "down" else "down", "value")
-        return Tensor(self, data, X.slots[:i] + [flipped] + X.slots[i + 1:], X.label)
-
-    def lower(self, X, slot=None):
-        """g on one up value slot: ↑ → ↓. Same physics; raise_ undoes it exactly.
-        lower(v) for a vector; lower(R, "ρ") for a named slot."""
-        return self._move_index(X, slot, self.g, True, "lower")
-
-    def raise_(self, X, slot=None):
-        """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
-        return self._move_index(X, slot, self.ginv, False, "raise_")
 
     # ---------- connection and curvature ----------
     def connection(self):

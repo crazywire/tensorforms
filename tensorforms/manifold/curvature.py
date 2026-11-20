@@ -2,7 +2,8 @@
 import sympy as sp
 
 from ..symbolic.simplify import clean
-from ..tensor.tensor import Tensor, contract, tr
+from ..tensor.products import contract
+from ..tensor.tensor import Tensor
 
 
 def _forms_to_values(X):
@@ -16,7 +17,7 @@ def ricci(R):
     and can be added to g in G = Ric − ½R_s g."""
     up = next(s.name for s in R.slots if s.is_up)
     first_form = R.form_slots[0]
-    Ric = _forms_to_values(tr(R, up, first_form)).simplify()
+    Ric = _forms_to_values(R.tr(up, first_form)).simplify()
     Ric.label = "Ric"
     return Ric
 
@@ -25,7 +26,7 @@ def scalar_curvature(Ric, ginv):
     i, j = ginv.names
     a, b = Ric.names
     mixed = contract(ginv, Ric, j, a)          # (i↑, b↓)
-    s = tr(mixed, i, b)
+    s = mixed.tr(i, b)
     return clean(s.data.item())
 
 

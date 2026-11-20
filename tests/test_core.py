@@ -8,7 +8,7 @@ import sympy as sp
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tensorforms as tf
-from tensorforms import (Manifold, contract, curvature, nabla, otimes, tr,
+from tensorforms import (Manifold, contract, curvature, nabla, otimes,
                          wedge, wedge_curvature, wedge_nabla)
 from tensorforms.symbolic import is_zero
 
@@ -178,7 +178,7 @@ def test_wedge_single_factor_is_one_term():
 def test_ricci_by_names():
     S = tf.geometry.sphere(r=1)
     R = S.curvature()
-    Ric = tr(R, "ρ", "μ")                                     # (σ↓ | ν): same numbers as S.ricci()
+    Ric = R.tr("ρ", "μ")                                     # (σ↓ | ν): same numbers as S.ricci()
     assert all(is_zero(e) for e in (Ric.data - S.ricci().data).flat)
 
 
@@ -235,8 +235,8 @@ def test_names():
     R = S.curvature()
     assert [i.name for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
     assert nabla(R).names == ["ρ", "σ", "λ", "μ", "ν"]              # new slot: first free Greek name
-    assert tr(R, "rho", "mu").equals(tr(R, "ρ", "μ"))                # spelled-out Greek
-    assert tr(R, 0, 2).equals(tr(R, "ρ", "μ"))                       # slot numbers
+    assert R.tr("rho", "mu").equals(R.tr("ρ", "μ"))                # spelled-out Greek
+    assert R.tr(0, 2).equals(R.tr("ρ", "μ"))                       # slot numbers
     assert R.rename({"mu": "kappa"}).names == ["ρ", "σ", "κ", "ν"]
 
 
@@ -291,21 +291,21 @@ def test_raise_lower_undo():
     S = tf.geometry.sphere(r=1)
     th = S.coords[0]
     v, w = S.vector([th, 1]), S.covector([1, th])
-    assert S.lower(v).slots[0].type == w.slots[0].type          # lowering a vector gives a covector
-    assert S.raise_(S.lower(v)).equals(v)                       # exact undo, both ways
-    assert S.lower(S.raise_(w)).equals(w)
+    assert v.lower().slots[0].type == w.slots[0].type          # lowering a vector gives a covector
+    assert v.lower().raise_().equals(v)                       # exact undo, both ways
+    assert w.raise_().lower().equals(w)
     R = S.curvature()
-    Rl = S.lower(R, "ρ")                                        # R_ρσμν: any value slot
-    assert Rl.slot("ρ").variance == "down" and S.raise_(Rl, "ρ").equals(R)
+    Rl = R.lower("ρ")                                        # R_ρσμν: any value slot
+    assert Rl.slot("ρ").variance == "down" and Rl.raise_("ρ").equals(R)
     assert Rl.alt("ρ", "σ").equals(Rl)                          # pair symmetry shows up
-    for bad in (lambda: S.raise_(S.one_form([1, 0])),           # form slots are never raised
-                lambda: S.lower(R, "μ")):
+    for bad in (lambda: S.one_form([1, 0]).raise_(),           # form slots are never raised
+                lambda: R.lower("μ")):
         try:
             bad()
         except TypeError:
             continue
         raise AssertionError("expected a TypeError")
-    F = wedge_nabla(S.lower(v).as_form())                       # bridge to a 1-form, then d∧
+    F = wedge_nabla(v.lower().as_form())                       # bridge to a 1-form, then d∧
     assert F.form_slots and not F.value_slots
     f = S.scalar(th ** 2)
     df = tf.d(f)                                                # a 1-form (| μ)

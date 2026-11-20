@@ -45,7 +45,7 @@ def _new_form_slots(X, count):
     M, used = X.manifold, list(X.names)
     slots = []
     for _ in range(count):
-        name = M.fresh_name(used)
+        name = M.tangent.fresh_name(used)
         used.append(name)
         slots.append(Slot(name, M.tangent, "down", "form"))
     return slots

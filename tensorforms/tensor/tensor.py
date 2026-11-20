@@ -1,69 +1,22 @@
 """Tensors: data plus an ordered list of slots.
 
-Pairing is always explicit (no Einstein summation):
-    contract(A, B)         your AB: A's column (last value slot, down) with B's row (first, up)
-    contract(A, B, a, b)   pair slot a of A with slot b of B
-    tr(X, a, b)            pair two slots inside X
-    otimes(A, B)           tensor product: pair nothing
-Nothing is chosen silently: if the default pair doesn't exist, contract refuses.
+Everything here acts on one tensor: describing it, adding and scaling, moving slots,
+changing roles, Alt/Sym, trace, and raising/lowering with the manifold's metric.
+Products of two tensors are in products.py.
 """
 import itertools
 import math
-import re
 
 import numpy as np
 import sympy as sp
 
 from ..symbolic.simplify import clean_array, is_zero as _is_zero
-from .slot import clean_name
+from .labels import join, negated, scaled, swapped, wrap
+from .slot import Slot, clean_name
 
 
 def _name(x):
     return x.name if hasattr(x, "name") else clean_name(x)
-
-
-# ---------- labels: the result's label is the operation that made it ----------
-def _wrap(label):
-    """Brackets around a label that has + or − in it, so it can sit inside a bigger expression."""
-    if label and any(ch in label for ch in "+−"):
-        return f"({label})"
-    return label
-
-
-def _join(a, op, b):
-    return f"{a}{op}{b}" if a and b else None
-
-
-def _negated(label):
-    if not label:
-        return None
-    if label.startswith("−") and not any(ch in label[1:] for ch in "+−"):
-        return label[1:]                                         # −(−A) = A
-    return "−" + _wrap(label)
-
-
-def _scaled(c, c_label, label):
-    """3A, ½·A, sin(θ)·A, f·A. Unlabelled tensor: no label."""
-    if not label:
-        return None
-    if c == 1:
-        return label
-    if c == -1:
-        return _negated(label)
-    if c_label:
-        return f"{c_label}·{_wrap(label)}"
-    if isinstance(c, sp.Integer):
-        return f"{c}{_wrap(label)}" if c > 0 else f"−{-c}{_wrap(label)}"
-    return f"{_wrap(sp.pretty(c, use_unicode=True))}·{_wrap(label)}"
-
-
-def _swapped(label, letter):
-    """R^S, then R^ST: the swap letters in the order they were applied."""
-    if not label:
-        return None
-    if re.search(r"\^[TSUV]+$", label) and _wrap(label.split("^")[0]) == label.split("^")[0]:
-        return label + letter
-    return f"{_wrap(label)}^{letter}"
 
 
 def _perm_sign(perm):
@@ -163,15 +116,15 @@ class Tensor:
 
     def __add__(self, other):
         self._check_same_type(other)
-        return self._new(self.data + other.data, label=_join(self.label, "+", _wrap(other.label)
+        return self._new(self.data + other.data, label=join(self.label, "+", wrap(other.label)
                                                               if other.label and other.label[0] == "−" else other.label))
 
     def __sub__(self, other):
         self._check_same_type(other)
-        return self._new(self.data - other.data, label=_join(self.label, "−", _wrap(other.label)))
+        return self._new(self.data - other.data, label=join(self.label, "−", wrap(other.label)))
 
     def __neg__(self):
-        return self._new(-self.data, label=_negated(self.label))
+        return self._new(-self.data, label=negated(self.label))
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
@@ -188,7 +141,7 @@ class Tensor:
             c = None
         if not isinstance(c, sp.Expr):
             raise TypeError("can only multiply a tensor by a number, an expression or a scalar tensor")
-        return self._new(self.data * c, label=_scaled(c, c_label, self.label))
+        return self._new(self.data * c, label=scaled(c, c_label, self.label))
 
     __rmul__ = __mul__
 
@@ -222,7 +175,7 @@ class Tensor:
     # positional swaps from the notation: T, S, U, V
     def _letter_swap(self, i, letter):
         X = self.swap_positions(i, i + 1)
-        X.label = _swapped(self.label, letter)
+        X.label = swapped(self.label, letter)
         return X
 
     def T(self): return self._letter_swap(0, "T")
@@ -234,31 +187,66 @@ class Tensor:
         mapping = {self.names[self.position(k)]: _name(v) for k, v in mapping.items()}
         return self._new(slots=[s.renamed(mapping.get(s.name, s.name)) for s in self.slots], label=self.label)
 
-    def as_form(self, *names):
-        """The same numbers with down value slots relabelled as form slots (default: all of them).
-        The bridge from a covector (μ↓ |) to a 1-form (| μ), e.g. before d∧."""
+    def _relabel(self, names, new_role, eligible, need):
         if names:
             targets = {self.names[self.position(n)] for n in names}
-            bad = [s for s in self.slots if s.name in targets and (s.is_up or s.is_form)]
+            bad = [s for s in self.slots if s.name in targets and not eligible(s)]
             if bad:
-                raise TypeError(f"as_form needs down value slots; got {bad}")
+                raise TypeError(f"needs {need}; got {bad}")
         else:
-            targets = {s.name for s in self.slots if not s.is_up and not s.is_form}
-        return self._new(slots=[s.with_role("form") if s.name in targets else s for s in self.slots],
+            targets = {s.name for s in self.slots if eligible(s)}
+        return self._new(slots=[s.with_role(new_role) if s.name in targets else s for s in self.slots],
                          label=self.label)
 
+    def as_form(self, *names):
+        """Down value slots → form slots (default: all). Covector (μ↓ |) → 1-form (| μ). Same numbers."""
+        return self._relabel(names, "form", lambda s: not s.is_up and not s.is_form, "down value slots")
+
     def as_value(self, *names):
-        """The same numbers with form slots relabelled as down value slots (default: all of them).
-        The bridge from a 1-form (| μ) to a covector (μ↓ |), e.g. so df pairs with v by default."""
-        if names:
-            targets = {self.names[self.position(n)] for n in names}
-            bad = [s for s in self.slots if s.name in targets and not s.is_form]
-            if bad:
-                raise TypeError(f"as_value needs form slots; got {bad}")
-        else:
-            targets = set(self.form_slots)
-        return self._new(slots=[s.with_role("value") if s.name in targets else s for s in self.slots],
-                         label=self.label)
+        """Form slots → down value slots (default: all). 1-form (| μ) → covector (μ↓ |). Same numbers."""
+        return self._relabel(names, "value", lambda s: s.is_form, "form slots")
+
+    # ---------- trace ----------
+    def tr(self, a, b):
+        """Pair two slots inside this tensor (one up, one down) and sum over them."""
+        i, j = self.position(a), self.position(b)
+        si, sj = self.slots[i], self.slots[j]
+        if si.space is not sj.space or si.variance == sj.variance:
+            raise TypeError(f"can't pair {si.name} and {sj.name}: need the same space, one up and one down")
+        data = np.asarray(np.trace(self.data, axis1=i, axis2=j), dtype=object)
+        label = f"tr({self.label})" if self.label else None
+        return Tensor(self.manifold, data, [s for k, s in enumerate(self.slots) if k not in (i, j)], label)
+
+    # ---------- raising and lowering (needs the manifold's metric) ----------
+    def _move_index(self, slot, want_up, verb):
+        if slot is None:
+            options = [s.name for s in self.slots if not s.is_form and s.is_up == want_up]
+            if len(options) != 1:
+                raise TypeError(f"{verb}: say which slot (candidates: {options})")
+            slot = options[0]
+        i = self.position(slot)
+        s = self.slots[i]
+        if s.is_form:
+            raise TypeError(f"{verb}: {s.name} is a form slot; form slots are never raised or lowered "
+                            "(use as_value() first)")
+        if s.is_up != want_up:
+            raise TypeError(f"{verb}: {s.name} is already {'down' if want_up else 'up'}")
+        M = self.manifold
+        if s.space is not M.tangent:
+            raise TypeError(f"{verb}: {s.name} is not in the tangent space")
+        metric = M.g if want_up else M.ginv
+        data = np.moveaxis(np.tensordot(metric.data, self.data, axes=([1], [i])), 0, i)
+        flipped = Slot(s.name, s.space, "down" if want_up else "up", "value")
+        return self._new(data, self.slots[:i] + [flipped] + self.slots[i + 1:], self.label)
+
+    def lower(self, slot=None):
+        """g on one up value slot: ↑ → ↓. Same physics; raise_ undoes it exactly.
+        v.lower() for a vector; R.lower("ρ") for a named slot."""
+        return self._move_index(slot, True, "lower")
+
+    def raise_(self, slot=None):
+        """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
+        return self._move_index(slot, False, "raise_")
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
@@ -286,126 +274,3 @@ class Tensor:
     def sym(self, *names):
         """Symmetric part over the named slots (default: all form slots)."""
         return self._average(names, signed=False)
-
-
-# ---------------------------------------------------------------- pairing
-def _fresh(used, space):
-    """The first name from the space's list not in `used`."""
-    for n in space.names:
-        if n not in used:
-            return n
-    k = 1
-    while f"{space.names[0]}{k}" in used:
-        k += 1
-    return f"{space.names[0]}{k}"
-
-
-def _rename_clashes(keep_names, slots):
-    """B's slots, with any name already used by A replaced by a fresh one from the same space."""
-    used, out = set(keep_names) | {s.name for s in slots}, []
-    taken = set(keep_names)
-    for s in slots:
-        n = s.name
-        if n in taken:
-            n = _fresh(used, s.space)
-            used.add(n)
-        taken.add(n)
-        out.append(s.renamed(n))
-    return out
-
-
-def _check_pair(sa, sb):
-    if sa.space is not sb.space:
-        raise TypeError(f"can't pair {sa.name} ({sa.space.name}) with {sb.name} ({sb.space.name}): different spaces")
-    if sa.variance == sb.variance:
-        raise TypeError(f"can't pair {sa.name} and {sb.name}: both {sa.variance}; raise or lower one first")
-
-
-def _values_first(slots, a_forms):
-    """Order: value slots, then A's form slots, then B's form slots."""
-    vals = [k for k, s in enumerate(slots) if not s.is_form]
-    fa = [k for k, s in enumerate(slots) if s.is_form and s.name in a_forms]
-    fb = [k for k, s in enumerate(slots) if s.is_form and s.name not in a_forms]
-    return vals + fa + fb
-
-
-def _joined(A, B, data, slots, label):
-    order = _values_first(slots, set(A.form_slots))
-    return Tensor(A.manifold, np.transpose(data, order), [slots[k] for k in order], label)
-
-
-def _default_pair(A, B):
-    """A's column (last value slot, down) with B's row (first value slot, up)."""
-    av, bv = A.value_slots, B.value_slots
-    if not (av and bv):
-        raise TypeError("contract(A, B) needs value slots on both: one factor has none, "
-                        "so nothing pairs; use otimes(A, B)")
-    sa, sb = A.slot(av[-1]), B.slot(bv[0])
-    if sa.space is sb.space and not sa.is_up and sb.is_up:
-        return av[-1], bv[0]
-    if sa.space is sb.space and sa.is_up and not sb.is_up:
-        raise TypeError(f"{A.declaration()} has no column and {B.declaration()} has no row: "
-                        "nothing pairs (column × row); use otimes(A, B)")
-    raise TypeError(f"can't pair {sa.name} with {sb.name} (shape mismatch); "
-                    "name the slots, use otimes(A, B), or raise or lower one first")
-
-
-def contract(A, B, a=None, b=None):
-    """Pair one slot of A with one slot of B and sum over it.
-    contract(A, B): the default, A's column with B's row (your AB).
-    contract(A, B, a, b): the slots you name (b defaults to a).
-    Result: value slots first, then A's form slots, then B's."""
-    if a is None:
-        a, b = _default_pair(A, B)
-    b = a if b is None else b
-    i, j = A.position(a), B.position(b)
-    _check_pair(A.slots[i], B.slots[j])
-    data = np.tensordot(A.data, B.data, axes=([i], [j]))
-    keep_a = [s for k, s in enumerate(A.slots) if k != i]
-    keep_b = _rename_clashes([s.name for s in keep_a], [s for k, s in enumerate(B.slots) if k != j])
-    return _joined(A, B, data, keep_a + keep_b, _join(_wrap(A.label), "", _wrap(B.label)))
-
-
-def tr(X, a, b):
-    """Pair two slots inside X."""
-    i, j = X.position(a), X.position(b)
-    _check_pair(X.slots[i], X.slots[j])
-    data = np.asarray(np.trace(X.data, axis1=i, axis2=j), dtype=object)
-    label = f"tr({X.label})" if X.label else None
-    return Tensor(X.manifold, data, [s for k, s in enumerate(X.slots) if k not in (i, j)], label)
-
-
-def otimes(A, B):
-    """Tensor product A ⊗ B: pair nothing, keep every slot.
-    Result: value slots first, then A's form slots, then B's."""
-    keep_b = _rename_clashes(A.names, B.slots)
-    return _joined(A, B, np.multiply.outer(A.data, B.data), A.slots + keep_b,
-                   _join(_wrap(A.label), "⊗", _wrap(B.label)))
-
-
-def _wedge_like(A, B, pair, signed):
-    p, q = len(A.form_slots), len(B.form_slots)
-    project = Tensor.alt if signed else Tensor.sym
-    A2, B2 = project(A), project(B)              # each factor's own form slots first
-    if pair is not None:
-        P = contract(A2, B2, *pair)
-    elif not (A.value_slots and B.value_slots):
-        P = otimes(A2, B2)                       # a scalar-valued factor: nothing can pair
-    else:
-        P = contract(A2, B2)
-    k = p + q
-    if k >= 2:
-        P = project(P) * sp.Rational(math.factorial(k), math.factorial(p) * math.factorial(q))
-    sym = "∧" if signed else "⊙"
-    return P._new(label=_join(_wrap(A.label), sym, _wrap(B.label)))
-
-
-def wedge(A, B, pair=None):
-    """A ∧ B = k!/(p! q!) · Alt(AB) over all form slots (each interleaving once).
-    AB pairs A's column with B's row (or the slots in pair); with a scalar-valued factor it is A ⊗ B."""
-    return _wedge_like(A, B, pair, signed=True)
-
-
-def odot(A, B, pair=None):
-    """A ⊙ B = k!/(p! q!) · Sym(AB) over all form slots."""
-    return _wedge_like(A, B, pair, signed=False)
