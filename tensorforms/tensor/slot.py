@@ -7,9 +7,8 @@ Form slots are always down: they take a step.
 ARROW = {"up": "↑", "down": "↓"}
 
 # Names: Greek for the tangent space, Latin for other spaces.
-# θ, φ, π are left out of the automatic list (coordinate names, the number π),
-# but you can still choose them yourself.
-TANGENT_NAMES = list("μνλκρσταβγδεζηιουξχψω")
+# θ, φ, π come last: they are often coordinate names or the number π.
+TANGENT_NAMES = list("μνλκρσταβγδεζηιουξχψωθφπ")
 OTHER_NAMES = list("abcdefghijklmnopqrstuvwxyz")
 
 # Spelled-out Greek is accepted wherever a name is: "mu" means μ.
