@@ -157,13 +157,25 @@ def test_connection_is_s_symmetric():
     assert all(is_zero(G[a, b, c] - G[a, c, b]) for a in range(2) for b in range(2) for c in range(2))
 
 
-def test_curvature_from_gamma_by_hand():
+def test_gamma_and_riemann_match_index_formulas():
+    """Γ and R are computed with the operators; check them against the index formulas."""
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z])
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
-    G = M.connection()                                         # Γ is a plain tensor
-    R = wedge_nabla(G, conn=False) + wedge(G, G)               # R = d∧Γ + Γ∧Γ, written as on paper
-    assert R.equals(M.curvature())
+    X, n = M.coords, 3
+    g, gi = M.g.data, M.ginv.data
+    G, R = M.connection().data, M.curvature().data
+    r = range(n)
+    for a in r:
+        for b in r:
+            for c in r:
+                lc = sum(gi[a, s] * (sp.diff(g[s, b], X[c]) + sp.diff(g[s, c], X[b])
+                                     - sp.diff(g[b, c], X[s])) for s in r) / 2
+                assert is_zero(G[a, b, c] - lc)
+                for e in r:
+                    ri = (sp.diff(G[a, b, e], X[c]) - sp.diff(G[a, b, c], X[e])
+                          + sum(G[a, s, c] * G[s, b, e] - G[a, s, e] * G[s, b, c] for s in r))
+                    assert is_zero(R[a, b, c, e] - ri)
 
 
 # ---------------------------------------------------------------- algebra and types
