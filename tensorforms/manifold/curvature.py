@@ -34,8 +34,8 @@ def scalar_curvature(Ric, ginv):
 
 
 def einstein(Ric, Rs, g):
-    """G = Ric − ½ R_s g, with Ric's slots renamed to match g."""
-    Ric2 = Ric.rename(dict(zip(Ric.names, g.names)))
-    G = (Ric2 - g * (sp.Rational(1, 2) * Rs)).simplify()
+    """G = Ric − ½ R_s g (adding is slot by slot), then named (μ↓ ν↓ |)."""
+    G = (Ric - g * (sp.Rational(1, 2) * Rs)).simplify()
+    G = G.rename({0: "μ", 1: "ν"})
     G.label = "G"
     return G
