@@ -15,12 +15,11 @@ def riemann(Gamma):
 
 
 def ricci(R):
-    """Ric = tr(R^S): pair R's up slot with its first form slot.
-    The trace leaves (σ↓ | ν). Ric is returned as (σ↓ ν↓ |) so it has g's type
+    """Ric = tr(R^S): swap R's 2nd and 3rd slots, then pair the first two.
+    The trace leaves (σ↓ | ν); Ric is returned as (μ↓ ν↓ |) so it has g's type
     and can be added to g in G = Ric − ½R_s g."""
-    up = next(s.name for s in R.slots if s.is_up)
-    first_form = R.form_slots[0]
-    Ric = R.tr(up, first_form).as_value().simplify()
+    Ric = R.S().tr(0, 1).as_value().simplify()
+    Ric = Ric.rename({0: "μ", 1: "ν"})
     Ric.label = "Ric"
     return Ric
 
