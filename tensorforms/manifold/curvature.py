@@ -26,7 +26,7 @@ def ricci(R):
 
 def scalar_curvature(Ric):
     """R_s = tr(Ric^μ_ν): raise Ric's first slot, then pair the two."""
-    return clean(Ric.raise_("μ").tr("μ", "ν").data.item())
+    return clean(Ric.raise_(0).tr(0, 1).data.item())
 
 
 def einstein(Ric, Rs, g):
