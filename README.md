@@ -10,6 +10,12 @@ The calculus of tensor-valued forms, organized around four operators.
 Each operator corrects every slot: + from the left for up slots, − from the right for
 down slots. With no connection they become the flat versions (d, d∧, and zero).
 
+Each operator is computed with the formula we proved, assuming no torsion (Γ always
+comes from the metric). The two wedged operators correct only value slots, because the
+form-slot corrections cancel. The two curvatures use R directly (computed once per
+connection) and never differentiate what they act on. The tests check every formula
+against its definition (∇ twice, antisymmetrized; ∇∧ twice).
+
 ## Layout
 
 ```
@@ -75,9 +81,9 @@ Checks: sphere Γ, R, Ricci and K = 1 (and K = 1/r² with symbolic radius); ∇g
 the curvature operator equals R on every slot; ∇∧w = d∧w (curl needs no Γ); ∇∧∇∧w = 0;
 the Bianchi identity ∇∧R = 0 in a lumpy 3D space; the product rule; flat space in
 spherical coordinates has R = 0 but Γ ≠ 0; hyperbolic plane K = −1; Schwarzschild is
-vacuum (Ric = 0, G = 0); zero torsion; Alt/Sym projection rules; R∧v = Rv; type errors.
+vacuum (Ric = 0, G = 0); Γ is S-symmetric; each operator equals its definition; Alt/Sym projection rules; R∧v = Rv; type errors.
 
 ## Not yet included
 
 Embeddings (E = dP), several spaces in one tensor beyond declaring them, named-axis data,
-declared symmetries on types, the abstract (component-free) level, torsion beyond computing it.
+declared symmetries on types, the abstract (component-free) level, connections with torsion.

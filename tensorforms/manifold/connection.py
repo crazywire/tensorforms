@@ -1,10 +1,11 @@
-"""The connection Γ. Deliberately NOT a Tensor: it doesn't change like one under a frame change."""
+"""The connection Γ, built from the metric (so no torsion: Γ is S-symmetric).
+Deliberately NOT a Tensor: it doesn't change like one under a frame change."""
 import itertools
 
 import numpy as np
 import sympy as sp
 
-from ..symbolic.simplify import clean, clean_array
+from ..symbolic.simplify import clean
 from ..tensor.tensor import Tensor
 
 
@@ -36,27 +37,23 @@ class Connection:
         return self.Gamma[key]
 
     def curvature_array(self):
-        """R^a_{b c e} = ∂_cΓ^a_{be} − ∂_eΓ^a_{bc} + Γ^a_{sc}Γ^s_{be} − Γ^a_{se}Γ^s_{bc}  (R = d∧Γ + Γ∧Γ)."""
+        """R^a_{b c e} = ∂_cΓ^a_{be} − ∂_eΓ^a_{bc} + Γ^a_{sc}Γ^s_{be} − Γ^a_{se}Γ^s_{bc}  (R = d∧Γ + Γ∧Γ).
+        Computed once per connection, then reused by the curvature operators."""
+        if getattr(self, "_R", None) is not None:
+            return self._R
         n, x, G = self.manifold.dim, self.manifold.coords, self.Gamma
         R = np.empty((n,) * 4, dtype=object)
         for a, b, c, e in itertools.product(range(n), repeat=4):
             R[a, b, c, e] = clean(
                 sp.diff(G[a, b, e], x[c]) - sp.diff(G[a, b, c], x[e])
                 + sum(G[a, s, c] * G[s, b, e] - G[a, s, e] * G[s, b, c] for s in range(n)))
+        self._R = R
         return R
 
     def curvature(self):
         M = self.manifold
         a, b, c, d = M.indices(4, names=("ρ", "σ", "μ", "ν"))
         return Tensor(M, self.curvature_array(), [a.up, b.down, c.form, d.form], label="R")
-
-    def torsion(self):
-        """Γ − Γ^S as a tensor: (↑ | ↓ ↓). Zero for any connection built from a metric."""
-        M = self.manifold
-        a, b, c = M.indices(3, names=("ρ", "μ", "ν"))
-        G = self.Gamma
-        T = clean_array(G - np.transpose(G, (0, 2, 1)))
-        return Tensor(M, T, [a.up, b.form, c.form], label="torsion")
 
     def __repr__(self):
         return f"Connection on {self.manifold.name} (not a tensor)"
