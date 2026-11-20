@@ -54,8 +54,14 @@ class Manifold:
         return Tensor(self, data, [a.up], label="v")
 
     def covector(self, data, index=None):
+        """A row (μ↓ |): a down value slot. Pairs with vectors by default; lower(v) gives one."""
         a = index or self.indices(1)
-        return Tensor(self, data, [a.form], label="w")
+        return Tensor(self, data, [a.down], label="w")
+
+    def one_form(self, data, index=None):
+        """A 1-form (| μ): one form slot. For d∧ and wedge; d of a function gives one."""
+        a = index or self.indices(1)
+        return Tensor(self, data, [a.form], label="α")
 
     def map(self, data, indices=None):
         a, b = indices or self.indices(2)
@@ -92,10 +98,17 @@ class Manifold:
         return self.g.signature_string
 
     def lower(self, v):
-        """gv: pair g's second slot with v's (single) up slot."""
+        """gv: a vector (μ↑ |) becomes a covector (μ↓ |). Only up/down changes, never the role,
+        so raise_ undoes it exactly."""
+        if len(v.slots) != 1 or not v.slots[0].is_up:
+            raise TypeError("lower takes a vector (one up slot)")
         return contract(self.g, v, self.g.names[1], v.names[0])
 
     def raise_(self, w):
+        """g⁻¹w: a covector (μ↓ |) becomes a vector (μ↑ |); lower undoes it exactly.
+        A 1-form (| μ) can be raised too; lowering the result gives a covector, not the 1-form."""
+        if len(w.slots) != 1 or w.slots[0].is_up:
+            raise TypeError("raise_ takes a covector or a 1-form (one down slot)")
         return contract(self.ginv, w, self.ginv.names[1], w.names[0])
 
     # ---------- connection and curvature ----------

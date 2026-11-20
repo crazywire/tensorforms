@@ -40,7 +40,7 @@ th, ph = sp.symbols("theta phi", positive=True)
 M = Manifold([th, ph])                         # 1. a bare manifold: coordinates only
 
 a, b, c, d = M.indices(4)                      # 2. indices (μ, ν, λ, κ), then tensors
-w = M.tensor(a.form, data=[sp.cos(th), 0])     #    a covector (one form slot)
+w = M.one_form([sp.cos(th), 0])                #    a 1-form (one form slot)
 v = M.vector([1, 0])                           #    shortcut for M.tensor(a.up, ...)
 
 wedge_nabla(w)                                 # d∧w: works with no metric
@@ -67,6 +67,9 @@ BH = tf.geometry.schwarzschild()
   Latin for other spaces. Spelled-out Greek is accepted
   anywhere a name is: `"mu"` means μ. New slots from d and ∇ get the first free name.
 * **Slots can also be given by number** (0, 1, …). Numbers shift when d adds a slot, so prefer names.
+* **Covectors and 1-forms**: `M.covector` is a row (μ↓ |), a down value slot; it pairs with
+  vectors by default, and `M.lower(v)` gives one (`M.raise_` undoes it exactly). `M.one_form`
+  is (| μ), a form slot, for d∧ and wedge. `w.as_form()` turns a covector into a 1-form.
 * **Pairing**: `contract(A, B)` is your AB: A's column (last value slot, down) with B's row
   (first value slot, up). `contract(A, B, a, b)` pairs the slots you name, `tr(X, a, b)` pairs
   two slots inside X, and `otimes(A, B)` is the tensor product (pairs nothing).

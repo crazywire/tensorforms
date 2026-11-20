@@ -234,6 +234,19 @@ class Tensor:
         mapping = {self.names[self.position(k)]: _name(v) for k, v in mapping.items()}
         return self._new(slots=[s.renamed(mapping.get(s.name, s.name)) for s in self.slots], label=self.label)
 
+    def as_form(self, *names):
+        """The same numbers with down value slots relabelled as form slots (default: all of them).
+        The bridge from a covector (μ↓ |) to a 1-form (| μ), e.g. before d∧."""
+        if names:
+            targets = {self.names[self.position(n)] for n in names}
+            bad = [s for s in self.slots if s.name in targets and (s.is_up or s.is_form)]
+            if bad:
+                raise TypeError(f"as_form needs down value slots; got {bad}")
+        else:
+            targets = {s.name for s in self.slots if not s.is_up and not s.is_form}
+        return self._new(slots=[s.with_role("form") if s.name in targets else s for s in self.slots],
+                         label=self.label)
+
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
         pos = [self.position(n) for n in (names or self.form_slots)]

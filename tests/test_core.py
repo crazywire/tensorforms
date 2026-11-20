@@ -74,7 +74,7 @@ def _sphere_fields():
     S = tf.geometry.sphere(r=1)
     th, ph = S.coords
     f1, f2 = sp.Function("v1")(th, ph), sp.Function("v2")(th, ph)
-    return S, S.vector([f1, f2]), S.covector([f1, f2])
+    return S, S.vector([f1, f2]), S.one_form([f1, f2])
 
 
 def test_curvature_operator_matches_its_definition():
@@ -99,7 +99,7 @@ def test_wedge_nabla_matches_its_definition():
 
 def test_wedge_curvature():
     S, v, w = _sphere_fields()
-    assert wedge_curvature(w).is_zero()                       # covector: no value slots
+    assert wedge_curvature(w).is_zero()                       # 1-form: no value slots
     assert wedge_curvature(v).equals(curvature(v))            # vector: same as the commutator
     assert wedge_curvature(v).equals(wedge_curvature_by_definition(v))
     assert wedge_curvature(w).equals(wedge_curvature_by_definition(w))
@@ -221,7 +221,7 @@ def test_simplified_metric_matrix_matches_data():
 def test_bare_manifold_has_no_metric():
     th, ph = sp.symbols("theta phi")
     M = Manifold([th, ph])
-    w = M.covector([sp.cos(th), ph])
+    w = M.one_form([sp.cos(th), ph])
     wedge_nabla(w)                                            # d∧ works with no metric
     try:
         M.g
@@ -269,23 +269,33 @@ def test_labels():
 
 def test_contract_default_and_otimes():
     S = tf.geometry.sphere(r=1)
-    R, v, u, w = S.curvature(), S.vector([1, 0]), S.vector([0, 1]), S.covector([1, 0])
+    R, v, u = S.curvature(), S.vector([1, 0]), S.vector([0, 1])
+    w, alpha = S.covector([1, 0]), S.one_form([1, 0])
     assert contract(R, v).equals(contract(R, v, "σ", "μ"))       # default: R's column with v's row
-    assert contract(w, v, "μ", "μ").data.item() == 1             # w(v): a form slot paired by name
-    m = S.tensor(S.indices(1, names=["κ"]).down, data=[1, 0])   # a covector as a value slot (row)
-    assert contract(m, v).data.item() == 1                       # row × column: a number
+    assert contract(w, v).data.item() == 1                       # covector × vector: a number
+    assert contract(alpha, v, "μ", "μ").data.item() == 1         # a 1-form is paired by name
     for bad in (lambda: contract(v, u),                          # column × column: mismatch
-                lambda: contract(v, m),                          # column × row: use otimes
-                lambda: contract(m, m),                          # row × row: mismatch
-                lambda: contract(w, v)):                         # w has no value slot: name the pair
+                lambda: contract(v, w),                          # column × row: use otimes
+                lambda: contract(w, w),                          # row × row: mismatch
+                lambda: contract(alpha, v)):                     # form slots never pair by default
         try:
             bad()
         except TypeError:
             continue
         raise AssertionError("expected a TypeError")
-    T = otimes(v, u)                                             # u^μ v^ν: both slots kept
+    T = otimes(v, u)                                             # v^μ u^ν: both slots kept
     assert [s.name for s in T.slots] == ["μ", "ν"] and T.data[0, 1] == 1
 
+
+def test_raise_lower_undo():
+    S = tf.geometry.sphere(r=1)
+    th = S.coords[0]
+    v, w = S.vector([th, 1]), S.covector([1, th])
+    assert S.lower(v).slots[0].type == w.slots[0].type          # lowering a vector gives a covector
+    assert S.raise_(S.lower(v)).equals(v)                       # exact undo, both ways
+    assert S.lower(S.raise_(w)).equals(w)
+    F = wedge_nabla(S.lower(v).as_form())                       # bridge to a 1-form, then d∧
+    assert F.form_slots and not F.value_slots
 
 if __name__ == "__main__":
     import time
