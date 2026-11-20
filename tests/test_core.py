@@ -296,6 +296,10 @@ def test_raise_lower_undo():
     assert S.lower(S.raise_(w)).equals(w)
     F = wedge_nabla(S.lower(v).as_form())                       # bridge to a 1-form, then d∧
     assert F.form_slots and not F.value_slots
+    f = S.scalar(th ** 2)
+    df = tf.d(f)                                                # a 1-form (| μ)
+    assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
+    assert df.as_value().as_form().signature == df.signature
 
 if __name__ == "__main__":
     import time

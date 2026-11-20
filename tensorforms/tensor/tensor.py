@@ -247,6 +247,19 @@ class Tensor:
         return self._new(slots=[s.with_role("form") if s.name in targets else s for s in self.slots],
                          label=self.label)
 
+    def as_value(self, *names):
+        """The same numbers with form slots relabelled as down value slots (default: all of them).
+        The bridge from a 1-form (| μ) to a covector (μ↓ |), e.g. so df pairs with v by default."""
+        if names:
+            targets = {self.names[self.position(n)] for n in names}
+            bad = [s for s in self.slots if s.name in targets and not s.is_form]
+            if bad:
+                raise TypeError(f"as_value needs form slots; got {bad}")
+        else:
+            targets = set(self.form_slots)
+        return self._new(slots=[s.with_role("value") if s.name in targets else s for s in self.slots],
+                         label=self.label)
+
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
         pos = [self.position(n) for n in (names or self.form_slots)]

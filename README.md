@@ -69,7 +69,8 @@ BH = tf.geometry.schwarzschild()
 * **Slots can also be given by number** (0, 1, …). Numbers shift when d adds a slot, so prefer names.
 * **Covectors and 1-forms**: `M.covector` is a row (μ↓ |), a down value slot; it pairs with
   vectors by default, and `M.lower(v)` gives one (`M.raise_` undoes it exactly). `M.one_form`
-  is (| μ), a form slot, for d∧ and wedge. `w.as_form()` turns a covector into a 1-form.
+  is (| μ), a form slot, for d∧ and wedge. `w.as_form()` turns a covector into a 1-form and
+  `α.as_value()` turns it back (so `contract(d(f).as_value(), v)` is the directional derivative).
 * **Pairing**: `contract(A, B)` is your AB: A's column (last value slot, down) with B's row
   (first value slot, up). `contract(A, B, a, b)` pairs the slots you name, `tr(X, a, b)` pairs
   two slots inside X, and `otimes(A, B)` is the tensor product (pairs nothing).
