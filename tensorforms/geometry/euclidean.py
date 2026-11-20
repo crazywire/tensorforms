@@ -10,24 +10,28 @@ def euclidean(n=3, coords="cartesian"):
         xs = sp.symbols(names, real=True)
         xs = list(xs)[:n] if isinstance(xs, (tuple, list)) else [xs]
         M = Manifold(xs, name=f"E{n}")
-        return M.use_metric(M.metric(sp.eye(n), signature="+" * n))
+        M.metric(sp.eye(n), signature="+" * n)
+        return M
     if coords == "polar":
         if n != 2:
             raise ValueError("polar coordinates are 2D")
         r, ph = sp.symbols("r phi", positive=True)
         M = Manifold([r, ph], name="E2")
-        return M.use_metric(M.metric(sp.diag(1, r ** 2), signature="++"))
+        M.metric(sp.diag(1, r ** 2), signature="++")
+        return M
     if coords == "spherical":
         if n != 3:
             raise ValueError("spherical coordinates are 3D")
         r, th, ph = sp.symbols("r theta phi", positive=True)
         M = Manifold([r, th, ph], name="E3")
-        return M.use_metric(M.metric(sp.diag(1, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="+++"))
+        M.metric(sp.diag(1, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="+++")
+        return M
     if coords == "cylindrical":
         if n != 3:
             raise ValueError("cylindrical coordinates are 3D")
         r, ph = sp.symbols("r phi", positive=True)
         z = sp.Symbol("z", real=True)
         M = Manifold([r, ph, z], name="E3")
-        return M.use_metric(M.metric(sp.diag(1, r ** 2, 1), signature="+++"))
+        M.metric(sp.diag(1, r ** 2, 1), signature="+++")
+        return M
     raise ValueError(f"unknown coordinates {coords!r}")
