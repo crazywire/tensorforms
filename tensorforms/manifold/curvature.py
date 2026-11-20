@@ -2,7 +2,7 @@
 import sympy as sp
 
 from ..symbolic.simplify import clean
-from ..tensor.products import contract, wedge
+from ..tensor.products import wedge
 
 
 def riemann(Gamma):
@@ -24,12 +24,9 @@ def ricci(R):
     return Ric
 
 
-def scalar_curvature(Ric, ginv):
-    i, j = ginv.names
-    a, b = Ric.names
-    mixed = contract(ginv, Ric, j, a)          # (i↑, b↓)
-    s = mixed.tr(i, b)
-    return clean(s.data.item())
+def scalar_curvature(Ric):
+    """R_s = tr(Ric^μ_ν): raise Ric's first slot, then pair the two."""
+    return clean(Ric.raise_("μ").tr("μ", "ν").data.item())
 
 
 def einstein(Ric, Rs, g):

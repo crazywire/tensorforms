@@ -115,7 +115,7 @@ class Manifold:
         return self._cached("Ric", lambda: ricci(self.curvature()))
 
     def scalar_curvature(self):
-        return self._cached("Rs", lambda: scalar_curvature(self.ricci(), self.ginv))
+        return self._cached("Rs", lambda: scalar_curvature(self.ricci()))
 
     def gaussian_curvature(self):
         if self.dim != 2:
