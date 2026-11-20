@@ -124,7 +124,10 @@ class Tensor:
         return self._new(self.data - other.data)
 
     def __neg__(self):
-        return self._new(-self.data)
+        label = None
+        if self.label:
+            label = self.label[1:] if self.label.startswith("−") else "−" + self.label
+        return self._new(-self.data, label=label)
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
@@ -197,7 +200,8 @@ class Tensor:
                 axes[pos[dst]] = pos[src]
             term = np.transpose(self.data, axes)
             out = out + (_perm_sign(perm) if signed else 1) * term
-        return self._new(out * sp.Rational(1, math.factorial(k)), label=self.label)
+        label = f"{'Alt' if signed else 'Sym'}({self.label})" if self.label else None
+        return self._new(out * sp.Rational(1, math.factorial(k)), label=label)
 
     def alt(self, *names):
         """Antisymmetric part over the named slots (default: all form slots)."""

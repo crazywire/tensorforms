@@ -253,6 +253,13 @@ def test_scalar_multiplication():
         raise AssertionError(f"expected TypeError for {bad!r}")
 
 
+def test_labels():
+    R = tf.geometry.sphere().curvature()
+    assert repr(R.alt()).startswith("Alt(R)") and repr(R.sym()).startswith("Sym(R)")
+    assert repr(-R).startswith("−R") and repr(-(-R)).startswith("R(")
+    assert repr(R.U()).startswith("R(")                          # a swap is still R
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
