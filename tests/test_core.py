@@ -40,7 +40,7 @@ def wedge_curvature_by_definition(X):
 # ---------------------------------------------------------------- sphere
 def test_sphere_connection():
     S = tf.geometry.sphere(r=1)
-    G = S.connection().data
+    G = S.levi_civita().data
     th = S.coords[0]
     assert is_zero(G[0, 1, 1] + sp.sin(th) * sp.cos(th))     # Γ^θ_φφ = −sinθ cosθ
     assert is_zero(G[1, 0, 1] - sp.cot(th))                  # Γ^φ_θφ = cotθ
@@ -137,7 +137,7 @@ def test_product_rule():
 def test_spherical_coordinates_are_flat():
     E = tf.geometry.euclidean(3, coords="spherical")
     assert E.riemann().is_zero()
-    assert not np.all(E.connection().data == 0)              # the grid bends, the space doesn't
+    assert not np.all(E.levi_civita().data == 0)              # the grid bends, the space doesn't
 
 
 def test_hyperbolic_plane():
@@ -153,7 +153,7 @@ def test_schwarzschild_is_vacuum():
 
 def test_connection_is_s_symmetric():
     S = tf.geometry.sphere(r=1)                               # Γ^S = Γ: no torsion
-    G = S.connection().data
+    G = S.levi_civita().data
     assert all(is_zero(G[a, b, c] - G[a, c, b]) for a in range(2) for b in range(2) for c in range(2))
 
 
@@ -164,7 +164,7 @@ def test_gamma_and_riemann_match_index_formulas():
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     X, n = M.coords, 3
     g, gi = M.g.data, M.ginv.data
-    G, R = M.connection().data, M.riemann().data
+    G, R = M.levi_civita().data, M.riemann().data
     r = range(n)
     for a in r:
         for b in r:

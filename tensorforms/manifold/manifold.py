@@ -93,11 +93,11 @@ class Manifold:
         return self._signature
 
     # ---------- connection and curvature ----------
-    def connection(self):
+    def levi_civita(self):
         """Γ (ρ↑ σ↓ | μ), from the metric."""
         return self._cached("Γ", lambda: levi_civita(self.g, self.ginv))
 
-    def has_connection(self):
+    def has_metric(self):
         return self._g is not None
 
     def _cached(self, key, compute):
@@ -110,7 +110,7 @@ class Manifold:
 
     def riemann(self):
         """The Riemann curvature R (ρ↑ σ↓ | μ ν)."""
-        return self._cached("R", lambda: riemann(self.connection()))
+        return self._cached("R", lambda: riemann(self.levi_civita()))
 
     def ricci(self):
         return self._cached("Ric", lambda: ricci(self.riemann()))

@@ -64,7 +64,7 @@ G = Ric − ½ R_s g
 
 | call | gives |
 |---|---|
-| `M.connection()` | Γ (ρ↑ σ↓ \| μ) |
+| `M.levi_civita()` | Γ (ρ↑ σ↓ \| μ) |
 | `M.riemann()` | R (ρ↑ σ↓ \| μ ν) |
 | `M.ricci()` | Ric (μ↓ ν↓ \|) |
 | `M.ricci_scalar()` | R_s |
@@ -78,7 +78,7 @@ r = sp.Symbol("r", positive=True)
 S = Manifold([th, ph], name="S2")
 S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
-G = S.connection()
+G = S.levi_civita()
 print(G.data[0])        # Γ^θ: how θ-components change
 print(G.data[1])        # Γ^φ: how φ-components change
 print(S.ricci().data)

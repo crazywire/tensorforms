@@ -108,9 +108,9 @@ def _insert_position(X):
 def _geometry(X):
     """The manifold's Γ and R as tensors (R computed only when asked), or (None, None) with no metric."""
     M = X.manifold
-    if not M.has_connection():
+    if not M.has_metric():
         return None, None
-    return M.connection(), M.riemann
+    return M.levi_civita(), M.riemann
 
 
 def _label(op, X):
