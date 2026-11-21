@@ -65,6 +65,15 @@ A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then i
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
+## Geometry
+
+Ready-made manifolds with their metric attached, e.g. `tf.geometry.sphere()`:
+
+* flat space: `euclidean` (Cartesian, polar, spherical, cylindrical)
+* surfaces: `sphere`, `cylinder`, `torus`, `hyperbolic_plane`
+* spacetimes: `minkowski`, `schwarzschild`, `flrw`, `de_sitter`
+* templates with unknown functions, for solving: `templates.diagonal`, `templates.conformally_flat`, `templates.static_spherical`
+
 ## Example: how curved is a sphere?
 
 A sphere of radius r has the metric r² dθ² + r² sin²θ dφ². Its curvature should not depend on
