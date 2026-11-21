@@ -5,8 +5,8 @@ in a matrix-style notation. Built on Python and sympy.
 
 ## What it does
 
-tensorforms treats a tensor as an object whose axes are typed. Each axis lives in the tangent
-space, is up (contravariant) or down (covariant), and is either a value axis or a form axis.
+tensorforms treats a tensor as an object whose slots are typed. Each slot lives in the tangent
+space, is up (contravariant) or down (covariant), and is either a value slot or a form slot.
 
 With it you can compute the Levi-Civita connection, the Riemann curvature, the Ricci tensor and
 the Einstein tensor, using differential operators that act on the tensors.
