@@ -1,4 +1,5 @@
-"""4D Lorentzian geometries, signature (−,+,+,+)."""
+"""4D Lorentzian geometries, signature (−,+,+,+).
+r is positive; t, θ, φ and the Cartesian coordinates are real."""
 import sympy as sp
 
 from ..manifold.manifold import Manifold
@@ -12,10 +13,11 @@ def minkowski():
 
 
 def schwarzschild(m=None):
-    """Outside a round, non-rotating mass m (or black hole). Vacuum: Ric = 0."""
+    """Outside a round, non-rotating mass m (or black hole). Vacuum: Ric = 0.
+    The signature −+++ holds outside the horizon, r > 2m; inside, t and r swap roles."""
     m = sp.Symbol("m", positive=True) if m is None else sp.sympify(m)
-    t = sp.Symbol("t", real=True)
-    r, th, ph = sp.symbols("r theta phi", positive=True)
+    t, th, ph = sp.symbols("t theta phi", real=True)
+    r = sp.Symbol("r", positive=True)
     f = 1 - 2 * m / r
     M = Manifold([t, r, th, ph], name="Schwarzschild")
     M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
@@ -23,9 +25,10 @@ def schwarzschild(m=None):
 
 
 def flrw(a=None, k=0):
-    """Expanding universe. a(t) is the scale factor (unknown function by default); k = 0, +1, −1."""
-    t = sp.Symbol("t", real=True)
-    r, th, ph = sp.symbols("r theta phi", positive=True)
+    """Expanding universe. a(t) is the scale factor (unknown function by default); k = 0, +1, −1.
+    For k = +1 the signature −+++ holds for r < 1."""
+    t, th, ph = sp.symbols("t theta phi", real=True)
+    r = sp.Symbol("r", positive=True)
     a = sp.Function("a")(t) if a is None else a
     M = Manifold([t, r, th, ph], name="FLRW")
     g = sp.diag(-1, a ** 2 / (1 - k * r ** 2), a ** 2 * r ** 2, a ** 2 * r ** 2 * sp.sin(th) ** 2)
