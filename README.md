@@ -1,17 +1,16 @@
 # tensorforms
 
-Differential geometry — connections, curvature, Einstein's equations — in a matrix-style
-notation, computed with Python and sympy.
+Tensor calculus with differential forms, for Riemannian geometry and general relativity,
+in a matrix-style notation. Built on Python and sympy.
 
 ## What it does
 
-tensorforms computes connections, curvature and Einstein's equations from a metric. Tensors are
-written in a matrix-style notation: value slots and form slots separated by a bar, products as
-column with row, and six operators for differentiating. Formulas such as
+tensorforms treats a tensor as an object whose slots are typed. Each slot lives in the tangent
+space, is up (contravariant) or down (covariant), and is either a value slot or a form slot.
 
-R = d∧Γ + Γ∧Γ
-
-are written in the code the same way they are written on paper.
+With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
+Ric, the scalar curvature R_s and the Einstein tensor G, using differential operators that act
+on the tensors.
 
 ## The notation
 
