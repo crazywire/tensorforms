@@ -1,13 +1,13 @@
 # Operators
 
-| operator | function | description | formula |
-|---|---|---|---|
-| d | `d(X)` | partial derivative | |
-| d∧ | `wedge_d(X)` | exterior derivative | |
-| ∇ | `nabla(X)` | covariant derivative | d + Γ |
-| ∇∧ | `wedge_nabla(X)` | exterior covariant derivative | d∧ + Γ∧ |
-| ∇∧∇ | `curvature(X)` | commutator of covariant derivatives | R |
-| ∇∧∇∧ | `wedge_curvature(X)` | exterior covariant derivative squared | R∧ |
+| operator | function | description |
+|---|---|---|
+| d | `d(X)` | partial derivative |
+| d∧ | `wedge_d(X)` | exterior derivative |
+| ∇ = d + Γ | `nabla(X)` | covariant derivative |
+| ∇∧ = d∧ + Γ∧ | `wedge_nabla(X)` | exterior covariant derivative |
+| ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
+| ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
 
 Each takes one tensor and returns a new one, labelled by the operator (dX, ∇X, …).
