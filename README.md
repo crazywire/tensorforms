@@ -17,6 +17,17 @@ R = d∧Γ + Γ∧Γ
 
 and the code computes in that notation directly.
 
+## The six operators
+
+| operator | code | what it is |
+|---|---|---|
+| d | `d(X)` | the partial derivative of every component; adds one form slot |
+| d∧ | `wedge_d(X)` | the exterior derivative: d, then antisymmetrized with X's form slots (the curl of a 1-form) |
+| ∇ | `nabla(X)` | the covariant derivative: d + Γ on every slot |
+| ∇∧ | `wedge_nabla(X)` | the exterior covariant derivative: d∧ + Γ on value slots |
+| ∇∧∇ | `curvature(X)` | ∇ twice, antisymmetrized (the commutator of covariant derivatives): R acting on every slot |
+| ∇∧∇∧ | `wedge_curvature(X)` | the exterior covariant derivative twice: R acting on value slots |
+
 ## Example
 
 ```python
@@ -45,7 +56,7 @@ tf.geometry.schwarzschild().ricci().is_zero() # vacuum  → True
 |---|---|
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G |
 | [Tensors](docs/tensors.md) | the notation (slots, arrows, the bar), one tensor, products |
-| [Operators](docs/operators.md) | the six operators (partial, exterior, covariant and exterior covariant derivatives, and the two curvature operators) and their product rules |
+| [Operators](docs/operators.md) | the six operators and their product rules |
 | [Geometry](docs/geometry.md) | flat space, surfaces, spacetimes, templates |
 
 ## Install and test
