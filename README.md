@@ -8,8 +8,9 @@ in a matrix-style notation. Built on Python and sympy.
 tensorforms treats a tensor as an object whose slots are typed. Each slot lives in the tangent
 space, is up (contravariant) or down (covariant), and is either a value slot or a form slot.
 
-With it you can compute the Levi-Civita connection, the Riemann curvature, the Ricci tensor and
-the Einstein tensor, using differential operators that act on the tensors.
+With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
+Ric, the scalar curvature R_s and the Einstein tensor G, using differential operators that act
+on the tensors.
 
 ## The notation
 
