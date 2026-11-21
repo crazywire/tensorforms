@@ -1,7 +1,7 @@
 """2D surfaces: positive, zero, mixed and negative curvature."""
 import sympy as sp
 
-from ..manifold.manifold import Manifold
+from ..manifold import Manifold
 
 
 def _radius(value, name):

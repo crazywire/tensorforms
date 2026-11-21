@@ -40,6 +40,10 @@ A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then i
 | R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
 | G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
 
+Ready-made manifolds come as class methods: `Manifold.euclidean()`, `Manifold.sphere()`,
+`cylinder`, `torus`, `hyperbolic_plane`, `minkowski`, `schwarzschild`, `flrw`, `de_sitter`.
+Metric templates with unknown functions, for solving, are in `tf.templates`.
+
 ## Tensors
 
 | operation | function | description |
@@ -64,15 +68,6 @@ A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then i
 | ∇∧ = d∧ + Γ∧ | `wedge_nabla(X)` | exterior covariant derivative |
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
-
-## Geometry
-
-Ready-made manifolds with their metric attached, e.g. `tf.geometry.sphere()`:
-
-* flat space: `euclidean` (Cartesian, polar, spherical, cylindrical)
-* surfaces: `sphere`, `cylinder`, `torus`, `hyperbolic_plane`
-* spacetimes: `minkowski`, `schwarzschild`, `flrw`, `de_sitter`
-* templates with unknown functions, for solving: `templates.diagonal`, `templates.conformally_flat`, `templates.static_spherical`
 
 ## Example: how curved is a sphere?
 
@@ -109,10 +104,9 @@ took the traces.
 
 | | |
 |---|---|
-| [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G |
+| [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G, ready-made manifolds |
 | [Tensors](docs/tensors.md) | the notation (slots, arrows, the bar), one tensor, products |
 | [Operators](docs/operators.md) | the six operators and their product rules |
-| [Geometry](docs/geometry.md) | flat space, surfaces, spacetimes, templates |
 
 ## Install and test
 

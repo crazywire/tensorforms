@@ -2,7 +2,7 @@
 (so a mass m is a length, GM/c²). r is positive; t, θ, φ and the Cartesian coordinates are real."""
 import sympy as sp
 
-from ..manifold.manifold import Manifold
+from ..manifold import Manifold
 
 
 def minkowski():

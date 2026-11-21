@@ -1,7 +1,7 @@
 """Flat space ℝⁿ in different coordinates. R = 0 always; Γ ≠ 0 in curved coordinates."""
 import sympy as sp
 
-from ..manifold.manifold import Manifold
+from ..manifold import Manifold
 
 _DIM = {"polar": 2, "spherical": 3, "cylindrical": 3}
 
