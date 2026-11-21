@@ -342,6 +342,18 @@ def test_operator_labels():
                               curvature(v), wedge_curvature(v))] == ["dv", "d∧v", "∇v", "∇∧v", "∇∧∇v", "∇∧∇∧v"]
 
 
+def test_euclidean_options():
+    assert tf.geometry.euclidean().dim == 3 and tf.geometry.euclidean(4).dim == 4
+    assert tf.geometry.euclidean(coords="polar").dim == 2                    # n follows the coordinates
+    assert tf.geometry.euclidean(3, "Spherical").scalar_curvature() == 0     # any capitalisation
+    for bad in (lambda: tf.geometry.euclidean(3, "polar"), lambda: tf.geometry.euclidean(3, "spherial")):
+        try:
+            bad()
+        except ValueError:
+            continue
+        raise AssertionError("expected a ValueError")
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
