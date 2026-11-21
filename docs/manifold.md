@@ -101,8 +101,8 @@ Class methods on Manifold that return a manifold with its metric attached, e.g.
 
 | | flat, any coordinates | specific geometries |
 |---|---|---|
-| Riemannian (+ + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
-| Lorentzian (− + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
+| space (Riemannian, + + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
+| spacetime (Lorentzian, − + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
 
 ### Flat
 
