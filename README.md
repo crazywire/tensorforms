@@ -19,14 +19,16 @@ and the code computes in that notation directly.
 
 ## The six operators
 
-| operator | function | description |
-|---|---|---|
-| d | `d(X)` | partial derivative |
-| d∧ | `wedge_d(X)` | exterior derivative |
-| ∇ | `nabla(X)` | covariant derivative |
-| ∇∧ | `wedge_nabla(X)` | exterior covariant derivative |
-| ∇∧∇ | `curvature(X)` | commutator of covariant derivatives |
-| ∇∧∇∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
+| operator | function | description | formula |
+|---|---|---|---|
+| d | `d(X)` | partial derivative | ∂X |
+| d∧ | `wedge_d(X)` | exterior derivative | (p+1) Alt(dX) |
+| ∇ | `nabla(X)` | covariant derivative | d + Γ |
+| ∇∧ | `wedge_nabla(X)` | exterior covariant derivative | d∧ + Γ∧ |
+| ∇∧∇ | `curvature(X)` | commutator of covariant derivatives | R |
+| ∇∧∇∧ | `wedge_curvature(X)` | exterior covariant derivative squared | R∧ |
+
+p is the number of form slots of X.
 
 ## Example
 
