@@ -141,35 +141,47 @@ def _d(X, pos):
 
 
 def _act(C, X, slots, values_only=False):
-    """C (Γ or R) acts on each slot of X, as contractions:
+    """C (Γ or R) acts on each slot of X, as contractions by position (names are only labels):
         up slot s:    +C X   (C's down slot pairs with s; C's up slot takes s's place)
         down slot s:  −X C   (s pairs with C's up slot; C's down slot takes s's place)
-    C's form slots become the new form slots in `slots` (the result's slots, in order).
+    C's form slots become the new form slots, first after the bar.
     values_only: skip X's form slots (the wedged operators).
-    C must be (↑ ↓ | forms…): a matrix (one up, one down value slot) with form slots, like Γ and R."""
+    C must be (↑ ↓ | forms…): a matrix (one up, one down value slot) with form slots, like Γ and R.
+    Every term is put in the result's order: X's value slots (s replaced in place), the new form
+    slots, X's form slots (s replaced in place)."""
     if (len(C.slots) < 2 or not C.slots[0].is_up or C.slots[1].is_up
             or C.slots[0].is_form or C.slots[1].is_form or not all(s.is_form for s in C.slots[2:])):
         raise TypeError(f"_act needs C shaped (↑ ↓ | forms…) like Γ or R; got {C.declaration()}")
-    used = set(X.names)
-    new = [s.name for s in slots if s.name not in used]           # the operator's new form slots
-    c_up = X.manifold.tangent.fresh_name(used | set(new))
-    c_dn = X.manifold.tangent.fresh_name(used | set(new) | {c_up})
-    Cr = C.rename({0: c_up, 1: c_dn, **{2 + i: n for i, n in enumerate(new)}})
-    final = [s.name for s in slots]
-    total = Tensor(X.manifold, np.zeros(tuple(s.space.dim for s in slots), dtype=object), slots)
-    for s in X.slots:
+    vals = [j for j, s in enumerate(X.slots) if not s.is_form]     # positions of X's value slots
+    forms = [j for j, s in enumerate(X.slots) if s.is_form]        # positions of X's form slots
+    m, p, k = len(vals), len(forms), len(C.slots) - 2               # k: the new form slots
+    new = list(range(m + p, m + p + k))
+    total = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
+    for j, s in enumerate(X.slots):
         if values_only and s.is_form:
             continue
         if s.space is not X.manifold.tangent:
             raise NotImplementedError(f"slot {s.name} is not in {X.manifold.tangent.name}")
         if s.is_up:
-            T = contract(Cr, X, c_dn, s.name).rename({c_up: s.name})
+            # contract(C, X): [C's up, X's other values, C's forms, X's forms]
+            i = vals.index(j)
+            T = contract(C, X, 1, j)
+            order = list(range(1, i + 1)) + [0] + list(range(i + 1, m + k + p))
+            total = total + np.transpose(T.data, order)
+        elif not s.is_form:
+            # contract(X, C): [X's other values, C's down, X's forms, C's forms]
+            i = vals.index(j)
+            T = contract(X, C, j, 0)
+            order = list(range(i)) + [m - 1] + list(range(i, m - 1)) + new + list(range(m, m + p))
+            total = total - np.transpose(T.data, order)
         else:
-            T = -contract(X, Cr, s.name, c_up).rename({c_dn: s.name})
-            if s.is_form:
-                T = T.as_form(s.name)                                # a corrected form slot stays a form slot
-        total = total + T.reorder(*final)
-    return total.data
+            # contract(X, C): [X's values, C's down, X's other forms, C's forms]
+            i = forms.index(j)
+            T = contract(X, C, j, 0)
+            order = (list(range(m)) + new
+                     + list(range(m + 1, m + 1 + i)) + [m] + list(range(m + 1 + i, m + p)))
+            total = total - np.transpose(T.data, order)
+    return total
 
 
 def _wedge_new(Y, p, new):

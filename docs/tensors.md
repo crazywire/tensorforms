@@ -39,7 +39,8 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | call | does |
 |---|---|
 | `X.data`, `X[i, j]` | the components |
-| `X.names`, `X.value_slots`, `X.form_slots`, `X.types` | the slots |
+| `X.names`, `X.types` | the slots' labels and types |
+| `X.value_slots`, `X.form_slots` | positions of the value slots and of the form slots |
 | `X + Y`, `X - Y`, `-X` | slot by slot (types must match) |
 | `c * X` | c a number, an expression, or a scalar tensor |
 | `X.simplify()`, `X.equals(Y)`, `X.is_zero()` | simplify, compare |
