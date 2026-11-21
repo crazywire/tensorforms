@@ -7,12 +7,12 @@
     symbolic/    simplification helpers
 """
 from .manifold import Manifold, Space
-from .tensor import Slot, Index, Tensor, contract, otimes, wedge, odot
+from .tensor import Slot, Index, Tensor, contract, interior, otimes, wedge, odot
 from .operators import d, wedge_d, nabla, wedge_nabla, curvature, wedge_curvature
 from . import geometry
 
 __all__ = ["Manifold", "Slot", "Space", "Index", "Tensor",
-           "contract", "otimes", "wedge", "odot",
+           "contract", "interior", "otimes", "wedge", "odot",
            "d", "wedge_d", "nabla", "wedge_nabla", "curvature", "wedge_curvature",
            "geometry"]
 __version__ = "0.1.0"
