@@ -28,7 +28,7 @@ R = d∧Γ + Γ∧Γ
 
 Ric = tr(R^S)
 
-R_s = tr(Ric^μ_ν)
+R_s = tr(g⁻¹ Ric)
 
 G = Ric − ½ R_s g
 

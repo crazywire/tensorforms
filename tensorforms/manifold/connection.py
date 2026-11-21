@@ -12,7 +12,7 @@ from ..tensor.products import contract
 def levi_civita(g, ginv):
     """Γ = ½ g⁻¹(dg + dg^S − dg^{ST}), computed with the operations themselves."""
     from ..operators.operators import d                        # here, to avoid a circular import
-    D = d(g).as_value()                                        # (μ↓ ν↓ λ↓): D_μνλ = ∂_λ g_μν
+    D = d(g).as_value()                                        # dg, with all three slots as values
     X = D + D.S() - D.S().T()                                  # dg + dg^S − dg^ST
     G = sp.Rational(1, 2) * contract(ginv, X, ginv.names[1], X.names[0])
     G = G.as_form(G.names[2]).simplify()                       # the step slot becomes a form slot
