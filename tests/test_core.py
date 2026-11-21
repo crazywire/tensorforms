@@ -366,6 +366,28 @@ def test_flrw_scale_factor():
     raise AssertionError("expected a ValueError")
 
 
+def test_static_spherical_vacuum_gives_schwarzschild():
+    """Solve G = 0 for −A(r)dt² + B(r)dr² + r²dΩ²: A = 1 − 2m/r (up to scaling t), B = 1/A."""
+    t = sp.Symbol("t", real=True)
+    r = sp.Symbol("r", positive=True)
+    th, ph = sp.symbols("theta phi", real=True)
+    M = tf.geometry.templates.static_spherical(Manifold([t, r, th, ph]))
+    G = M.einstein().data
+    A, B = sp.Function("A")(r), sp.Function("B")(r)
+    Bsol = sp.solve(G[1, 1], B)                              # G_rr = 0 is algebraic in B
+    Bsol = [b for b in Bsol if b != 0][0]
+    Aeq = sp.simplify((G[0, 0] * B).subs(B, Bsol).doit())    # then G_tt = 0 is an ODE for A
+    m = sp.Symbol("m", positive=True)
+    trial = 1 - 2 * m / r
+    assert is_zero(Aeq.subs(A, trial).doit())                # A = 1 − 2m/r solves it
+    assert is_zero(sp.simplify(Bsol.subs(A, trial).doit() - 1 / trial))   # and B = 1/A
+    try:
+        tf.geometry.templates.static_spherical(Manifold([t, th, r, ph]))  # wrong order: refused
+    except ValueError:
+        return
+    raise AssertionError("expected a ValueError")
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
