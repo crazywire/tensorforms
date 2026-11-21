@@ -48,10 +48,25 @@ and returns it.
 Setting the Einstein tensor of `static_spherical` to zero and solving gives A = 1 − 2m/r,
 B = 1/A: Schwarzschild.
 
+### Example: the Friedmann equation
+
+The Einstein tensor of the expanding universe (FLRW, flat, scale factor a(t)) gives the
+equations for how the universe expands.
+
 ```python
 import tensorforms as tf
-S = tf.geometry.sphere()
-S.gaussian_curvature()                           # 1/r**2
-tf.geometry.schwarzschild().ricci().is_zero()    # True
-tf.geometry.de_sitter().scalar_curvature()       # 12*H**2
+U = tf.geometry.flrw()
+G = U.einstein()
+print(G.data[0, 0])
 ```
+
+```text
+3*Derivative(a(t), t)**2/a(t)**2
+```
+
+So G_tt = 3(ȧ/a)². Einstein's equation G = 8πT with energy density ρ (T_tt = ρ) gives the
+Friedmann equation
+
+(ȧ/a)² = 8πρ/3
+
+the expansion rate set by the density.

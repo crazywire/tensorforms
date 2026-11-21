@@ -1,4 +1,4 @@
-"""tensorforms: the calculus of tensor-valued forms, with four operators.
+"""tensorforms: the calculus of tensor-valued forms, with six operators (d, d∧, ∇, ∇∧, ∇∧∇, ∇∧∇∧).
 
     manifold/    Manifold (coordinates), its tangent Space, and its optional metric, connection, curvature
     tensor/      Slot, Index, Tensor (with tr, raise/lower, Alt/Sym); products: contract, otimes, wedge, odot

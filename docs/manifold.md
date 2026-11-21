@@ -41,9 +41,6 @@ v = M.vector([1, 0])
 it. Calling it again replaces it. With no data, `M.metric(signature="-+++")` makes an unknown
 metric of functions g_ij(x), for solving.
 
-```python
-M.metric([[1, 0], [0, sp.sin(th) ** 2]])
-```
 
 | | |
 |---|---|
@@ -74,10 +71,32 @@ G = Ric − ½ R_s g
 | `M.einstein()` | G (μ↓ ν↓ \|) |
 | `M.gaussian_curvature()` | K = R_s / 2 (2D only) |
 
+### Example: the curvature of a sphere of radius r, step by step
+
 ```python
-M.ricci()               # Ric = diag(1, sin²θ)
-M.scalar_curvature()    # 2
+r = sp.Symbol("r", positive=True)
+S = Manifold([th, ph], name="S2")
+S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
+
+G = S.connection()
+print(G.data[0])        # Γ^θ: how θ-components change
+print(G.data[1])        # Γ^φ: how φ-components change
+print(S.ricci().data)
+print(S.scalar_curvature(), S.gaussian_curvature())
 ```
+
+```text
+[[0 0]
+ [0 -sin(theta)*cos(theta)]]
+[[0 cos(theta)/sin(theta)]
+ [cos(theta)/sin(theta) 0]]
+[[1 0]
+ [0 sin(theta)**2]]
+2/r**2 r**(-2)
+```
+
+Γ is not zero, because the coordinate grid bends; Ric, R_s and K are not zero because the
+surface itself is curved. K = 1/r², the same at every point.
 
 Each is computed once and stored; you get a copy each time.
 
