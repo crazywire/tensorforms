@@ -1,7 +1,7 @@
 # tensorforms
 
-Differential geometry — connections, curvature, Einstein's equations — in a matrix-style
-notation, computed with Python and sympy.
+Tensor calculus with differential forms, for Riemannian geometry and general relativity,
+in a matrix-style notation. Built on Python and sympy.
 
 ## What it does
 
