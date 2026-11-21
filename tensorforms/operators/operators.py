@@ -110,7 +110,7 @@ def _geometry(X):
     M = X.manifold
     if not M.has_connection():
         return None, None
-    return M.connection(), M.curvature
+    return M.connection(), M.riemann
 
 
 def _label(op, X):

@@ -71,7 +71,7 @@ R^US, −A, Alt(R), tr(R), …
 Ric = tr(R^S): swap R's second and third slots, then pair the first two.
 
 ```python
-R = S.curvature()                 # R(ρ↑ σ↓ | μ ν)
+R = S.riemann()                 # R(ρ↑ σ↓ | μ ν)
 Ric = R.S().tr(0, 1)
 print(Ric)
 print(Ric.simplify().data)

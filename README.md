@@ -9,7 +9,7 @@ tensorforms treats a tensor as an object whose slots are typed. Each slot lives 
 space, is up (contravariant) or down (covariant), and is either a value slot or a form slot.
 
 With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
-Ric, the scalar curvature R_s and the Einstein tensor G, using differential operators that act
+Ric, the Ricci scalar R_s and the Einstein tensor G, using differential operators that act
 on the tensors.
 
 ## The notation
@@ -55,7 +55,7 @@ S = Manifold([th, ph], name="S2")
 S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 print(S.ricci().data)
-print(S.scalar_curvature())
+print(S.ricci_scalar())
 print(S.gaussian_curvature())
 ```
 

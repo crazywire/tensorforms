@@ -50,11 +50,11 @@ def test_sphere_connection():
 def test_sphere_curvature():
     S = tf.geometry.sphere(r=1)
     th = S.coords[0]
-    R = S.curvature()
+    R = S.riemann()
     block = R.data[:, :, 0, 1]                               # R_θφ = [0, sin²θ; −1, 0]
     assert is_zero(block[0, 1] - sp.sin(th) ** 2) and is_zero(block[1, 0] + 1)
     assert S.ricci().equals(S.g.rename(dict(zip(S.g.names, S.ricci().names))))
-    assert is_zero(S.scalar_curvature() - 2)
+    assert is_zero(S.ricci_scalar() - 2)
     assert is_zero(S.gaussian_curvature() - 1)
 
 
@@ -115,7 +115,7 @@ def test_bianchi_in_3d():
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z])
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
-    assert wedge_nabla(M.curvature()).is_zero()               # ∇∧R = 0
+    assert wedge_nabla(M.riemann()).is_zero()               # ∇∧R = 0
     u = M.vector([y, x * z, 1])
     assert curvature(u).equals(curvature_by_commutator(u))
     X = nabla(u)                                              # a vector-valued 1-form: R∧ mixes 3 directions
@@ -136,7 +136,7 @@ def test_product_rule():
 # ---------------------------------------------------------------- flat space and spacetime
 def test_spherical_coordinates_are_flat():
     E = tf.geometry.euclidean(3, coords="spherical")
-    assert E.curvature().is_zero()
+    assert E.riemann().is_zero()
     assert not np.all(E.connection().data == 0)              # the grid bends, the space doesn't
 
 
@@ -164,7 +164,7 @@ def test_gamma_and_riemann_match_index_formulas():
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     X, n = M.coords, 3
     g, gi = M.g.data, M.ginv.data
-    G, R = M.connection().data, M.curvature().data
+    G, R = M.connection().data, M.riemann().data
     r = range(n)
     for a in r:
         for b in r:
@@ -191,14 +191,14 @@ def test_alt_sym_rules():
 
 def test_wedge_single_factor_is_one_term():
     S = tf.geometry.sphere(r=1)
-    R = S.curvature()
+    R = S.riemann()
     v = S.vector([1, 0])
     assert wedge(R, v).equals(contract(R, v))                 # R∧v = Rv
 
 
 def test_ricci_by_names():
     S = tf.geometry.sphere(r=1)
-    R = S.curvature()
+    R = S.riemann()
     Ric = R.tr("ρ", "μ")                                     # (σ↓ | ν): same numbers as S.ricci()
     assert all(is_zero(e) for e in (Ric.data - S.ricci().data).flat)
 
@@ -244,7 +244,7 @@ def test_bare_manifold_has_no_metric():
 
 def test_names():
     S = tf.geometry.sphere()
-    R = S.curvature()
+    R = S.riemann()
     assert [i.name for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
     assert nabla(R).names == ["ρ", "σ", "λ", "μ", "ν"]              # new slot: first free Greek name
     assert R.tr("rho", "mu").equals(R.tr("ρ", "μ"))                # spelled-out Greek
@@ -267,7 +267,7 @@ def test_scalar_multiplication():
 
 def test_labels():
     S = tf.geometry.sphere()
-    R = S.curvature()
+    R = S.riemann()
     B = R._new(label="B")
     f = S.scalar(sp.sin(S.coords[0]))
     f.label = "f"
@@ -281,7 +281,7 @@ def test_labels():
 
 def test_contract_default_and_otimes():
     S = tf.geometry.sphere(r=1)
-    R, v, u = S.curvature(), S.vector([1, 0]), S.vector([0, 1])
+    R, v, u = S.riemann(), S.vector([1, 0]), S.vector([0, 1])
     w, alpha = S.covector([1, 0]), S.one_form([1, 0])
     assert contract(R, v).equals(contract(R, v, "σ", "μ"))       # default: R's column with v's row
     assert contract(w, v).data.item() == 1                       # covector × vector: a number
@@ -306,7 +306,7 @@ def test_raise_lower_undo():
     assert v.lower().slots[0].type == w.slots[0].type          # lowering a vector gives a covector
     assert v.lower().raise_().equals(v)                       # exact undo, both ways
     assert w.raise_().lower().equals(w)
-    R = S.curvature()
+    R = S.riemann()
     Rl = R.lower("ρ")                                        # R_ρσμν: any value slot
     assert Rl.slot("ρ").variance == "down" and Rl.raise_("ρ").equals(R)
     assert Rl.alt("ρ", "σ").equals(Rl)                          # pair symmetry shows up
@@ -326,9 +326,9 @@ def test_raise_lower_undo():
 
 def test_manifold_hands_out_copies():
     S = tf.geometry.sphere()
-    R = S.curvature()
+    R = S.riemann()
     R.label = "B"
-    assert S.curvature().label == "R"                           # the stored R is untouched
+    assert S.riemann().label == "R"                           # the stored R is untouched
     g = S.g
     g.label = "h"
     assert S.g.label == "g"
@@ -345,7 +345,7 @@ def test_operator_labels():
 def test_euclidean_options():
     assert tf.geometry.euclidean().dim == 3 and tf.geometry.euclidean(4).dim == 4
     assert tf.geometry.euclidean(coords="polar").dim == 2                    # n follows the coordinates
-    assert tf.geometry.euclidean(3, "Spherical").scalar_curvature() == 0     # any capitalisation
+    assert tf.geometry.euclidean(3, "Spherical").ricci_scalar() == 0     # any capitalisation
     for bad in (lambda: tf.geometry.euclidean(3, "polar"), lambda: tf.geometry.euclidean(3, "spherial")):
         try:
             bad()
@@ -356,8 +356,8 @@ def test_euclidean_options():
 
 def test_flrw_scale_factor():
     t = sp.Symbol("t", real=True)
-    a1 = tf.geometry.flrw(a=t ** 2).scalar_curvature()               # the preset's t
-    a2 = tf.geometry.flrw(a=lambda T: T ** 2).scalar_curvature()     # a function of t
+    a1 = tf.geometry.flrw(a=t ** 2).ricci_scalar()               # the preset's t
+    a2 = tf.geometry.flrw(a=lambda T: T ** 2).ricci_scalar()     # a function of t
     assert a1 != 0 and is_zero(a1 - a2)
     try:
         tf.geometry.flrw(a=sp.Symbol("t") ** 2)                       # a different t: refused
@@ -401,7 +401,7 @@ def test_interior():
     lhs = interior(wedge(a, b), v)                                    # ι(a∧b) = (ι a) b − a (ι b)
     rhs = b * interior(a, v).data.item() - a * interior(b, v).data.item()
     assert lhs.equals(rhs)
-    R = M.curvature()
+    R = M.riemann()
     assert interior(R, v).equals(contract(R, v, "μ", v.names[0]))     # contract with X's first form slot
     for bad in (lambda: interior(v, v), lambda: interior(df, df)):     # no form slot / no row
         try:

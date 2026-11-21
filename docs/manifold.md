@@ -65,9 +65,9 @@ G = Ric − ½ R_s g
 | call | gives |
 |---|---|
 | `M.connection()` | Γ (ρ↑ σ↓ \| μ) |
-| `M.curvature()` | R (ρ↑ σ↓ \| μ ν) |
+| `M.riemann()` | R (ρ↑ σ↓ \| μ ν) |
 | `M.ricci()` | Ric (μ↓ ν↓ \|) |
-| `M.scalar_curvature()` | R_s |
+| `M.ricci_scalar()` | R_s |
 | `M.einstein()` | G (μ↓ ν↓ \|) |
 | `M.gaussian_curvature()` | K = R_s / 2 (2D only) |
 
@@ -82,7 +82,7 @@ G = S.connection()
 print(G.data[0])        # Γ^θ: how θ-components change
 print(G.data[1])        # Γ^φ: how φ-components change
 print(S.ricci().data)
-print(S.scalar_curvature(), S.gaussian_curvature())
+print(S.ricci_scalar(), S.gaussian_curvature())
 ```
 
 ```text

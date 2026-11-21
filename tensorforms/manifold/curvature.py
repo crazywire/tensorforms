@@ -24,7 +24,7 @@ def ricci(R):
     return Ric
 
 
-def scalar_curvature(Ric):
+def ricci_scalar(Ric):
     """R_s = tr(g⁻¹ Ric): raising Ric's first slot is multiplying by g⁻¹; then take the trace."""
     return clean(Ric.raise_(0).tr(0, 1).data.item())
 
