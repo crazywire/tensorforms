@@ -13,19 +13,20 @@ def diagonal(M, prefix="f"):
 
 
 def conformally_flat(M, signature=None):
-    """e^{2φ(x)} × (the flat metric of the given signature)."""
+    """e^{2ω(x)} × (the flat metric of the given signature). ω is named so it can't be
+    confused with a coordinate φ."""
     signature = signature or "+" * M.dim
-    phi = sp.Function("phi")(*M.coords)
+    omega = sp.Function("omega")(*M.coords)
     signs = [1 if s == "+" else -1 for s in signature]
-    M.metric(sp.exp(2 * phi) * sp.diag(*signs), signature=signature)
+    M.metric(sp.exp(2 * omega) * sp.diag(*signs), signature=signature)
     return M
 
 
 def static_spherical(M):
     """−A(r) dt² + B(r) dr² + r² (dθ² + sin²θ dφ²). M must have coordinates (t, r, θ, φ).
     Setting the Einstein tensor to zero and solving for A, B gives Schwarzschild."""
-    if M.dim != 4:
-        raise ValueError("static_spherical needs coordinates (t, r, θ, φ)")
+    if M.dim != 4 or [str(c) for c in M.coords][1:3] != ["r", "theta"]:
+        raise ValueError(f"static_spherical needs coordinates (t, r, θ, φ) in that order; got {tuple(M.coords)}")
     t, r, th, ph = M.coords
     A, B = sp.Function("A")(r), sp.Function("B")(r)
     M.metric(sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
