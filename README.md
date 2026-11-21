@@ -4,11 +4,12 @@ The calculus of tensor-valued forms, organized around four operators.
 
 |            | every slot              | wedged (form slots antisymmetrized) |
 |------------|-------------------------|-------------------------------------|
+| plain      | `d`                     | `wedge_d` = d∧                      |
 | once       | `nabla`  = d + Γ        | `wedge_nabla` = d∧ + Γ∧             |
 | twice      | `curvature` = R         | `wedge_curvature` = R∧              |
 
-Each operator corrects every slot: + from the left for up slots, − from the right for
-down slots. With no connection they become the flat versions (d, d∧, and zero).
+Γ and R come from the manifold's metric (no torsion). Corrections: + from the left for up slots,
+− from the right for down slots. With no metric, ∇ and ∇∧ act as d and d∧, and the curvatures are zero.
 
 Each operator is computed with the formula we proved, assuming no torsion (Γ always
 comes from the metric). The two wedged operators correct only value slots, because the
@@ -23,7 +24,7 @@ tensorforms/
   manifold/    Manifold (coordinates), its tangent Space, optional metric, connection, curvature
   tensor/      tensor.py: Tensor (one tensor: tr, raise/lower, Alt/Sym, swaps)
                products.py: contract, otimes, wedge, odot    labels.py: result labels
-  operators/   nabla, wedge_nabla, curvature, wedge_curvature, d
+  operators/   d, wedge_d, nabla, wedge_nabla, curvature, wedge_curvature
   geometry/    euclidean, surfaces, spacetimes, metric templates
   symbolic/    simplification helpers
 tests/         every result derived by hand, checked
@@ -81,7 +82,7 @@ BH = tf.geometry.schwarzschild()
 * **Alt / Sym** act on any named slots (default: all form slots).
   `wedge(A, B) = k!/(p! q!) · Alt(AB)`, `odot(A, B) = k!/(p! q!) · Sym(AB)`.
 * **Γ** (`M.connection()`) is stored as a plain tensor (ρ↑ σ↓ | μ), so you can write
-  `wedge_nabla(G, conn=False) + wedge(G, G)` for R = d∧Γ + Γ∧Γ. It is not tensorial
+  `wedge_d(G) + wedge(G, G)` for R = d∧Γ + Γ∧Γ. It is not tensorial
   (it changes differently under a change of coordinates), so ∇Γ has no meaning; the code
   doesn't stop you writing it.
 * A bare `Manifold` has no metric; `M.metric(data)` gives it one, `M.metric()` an unknown

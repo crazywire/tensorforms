@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tensorforms as tf
 from tensorforms import (Manifold, contract, curvature, nabla, otimes,
-                         wedge, wedge_curvature, wedge_nabla)
+                         wedge, wedge_curvature, wedge_d, wedge_nabla)
 from tensorforms.symbolic import is_zero
 
 
@@ -86,7 +86,7 @@ def test_curvature_operator_matches_its_definition():
 
 def test_curl_needs_no_connection():
     S, v, w = _sphere_fields()
-    assert wedge_nabla(w).equals(wedge_nabla(w, conn=False))  # ∇∧w = d∧w
+    assert wedge_nabla(w).equals(wedge_d(w))                  # ∇∧w = d∧w
 
 
 def test_wedge_nabla_matches_its_definition():
@@ -333,6 +333,13 @@ def test_manifold_hands_out_copies():
     g.label = "h"
     assert S.g.label == "g"
     assert isinstance(S.indices(1), list) and S.index().name == "μ"
+
+
+def test_operator_labels():
+    S = tf.geometry.sphere()
+    v = S.vector([1, 0])
+    assert [X.label for X in (tf.d(v), wedge_d(v), nabla(v), wedge_nabla(v),
+                              curvature(v), wedge_curvature(v))] == ["dv", "d∧v", "∇v", "∇∧v", "∇∧∇v", "∇∧∇∧v"]
 
 
 if __name__ == "__main__":
