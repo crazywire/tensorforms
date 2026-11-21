@@ -11,7 +11,7 @@ import sympy as sp
 from ..tensor.slot import Index
 from ..tensor.tensor import Tensor
 from .connection import levi_civita
-from .curvature import einstein, ricci, riemann, scalar_curvature
+from .curvature import einstein, ricci, riemann, ricci_scalar
 from .metric import build_metric, inverse_metric
 from .space import TANGENT_NAMES, Space
 
@@ -93,11 +93,11 @@ class Manifold:
         return self._signature
 
     # ---------- connection and curvature ----------
-    def connection(self):
+    def levi_civita(self):
         """Γ (ρ↑ σ↓ | μ), from the metric."""
         return self._cached("Γ", lambda: levi_civita(self.g, self.ginv))
 
-    def has_connection(self):
+    def has_metric(self):
         return self._g is not None
 
     def _cached(self, key, compute):
@@ -108,19 +108,20 @@ class Manifold:
         X = self._cache[key]
         return copy.copy(X)
 
-    def curvature(self):
-        return self._cached("R", lambda: riemann(self.connection()))
+    def riemann(self):
+        """The Riemann curvature R (ρ↑ σ↓ | μ ν)."""
+        return self._cached("R", lambda: riemann(self.levi_civita()))
 
     def ricci(self):
-        return self._cached("Ric", lambda: ricci(self.curvature()))
+        return self._cached("Ric", lambda: ricci(self.riemann()))
 
-    def scalar_curvature(self):
-        return self._cached("Rs", lambda: scalar_curvature(self.ricci()))
+    def ricci_scalar(self):
+        return self._cached("Rs", lambda: ricci_scalar(self.ricci()))
 
     def gaussian_curvature(self):
         if self.dim != 2:
             raise ValueError("Gaussian curvature is for 2D surfaces")
-        return sp.simplify(self.scalar_curvature() / 2)
+        return sp.simplify(self.ricci_scalar() / 2)
 
     def einstein(self):
-        return self._cached("G", lambda: einstein(self.ricci(), self.scalar_curvature(), self.g))
+        return self._cached("G", lambda: einstein(self.ricci(), self.ricci_scalar(), self.g))

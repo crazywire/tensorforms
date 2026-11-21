@@ -52,24 +52,15 @@ metric of functions g_ij(x), for solving.
 
 Everything follows from g (no torsion):
 
-Γ = ½ g⁻¹(dg + dg^S − dg^ST)
-
-R = d∧Γ + Γ∧Γ
-
-Ric = tr(R^S)
-
-R_s = tr(g⁻¹ Ric)
-
-G = Ric − ½ R_s g
-
-| call | gives |
-|---|---|
-| `M.connection()` | Γ (ρ↑ σ↓ \| μ) |
-| `M.curvature()` | R (ρ↑ σ↓ \| μ ν) |
-| `M.ricci()` | Ric (μ↓ ν↓ \|) |
-| `M.scalar_curvature()` | R_s |
-| `M.einstein()` | G (μ↓ ν↓ \|) |
-| `M.gaussian_curvature()` | K = R_s / 2 (2D only) |
+| tensor | method | description |
+|---|---|---|
+| g | `M.g` | metric (μ↓ ν↓ \|) |
+| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
+| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
+| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
+| R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
+| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
+| K = R_s / 2 | `M.gaussian_curvature()` | Gaussian curvature (2D only) |
 
 ### Example: the curvature of a sphere of radius r, step by step
 
@@ -78,11 +69,11 @@ r = sp.Symbol("r", positive=True)
 S = Manifold([th, ph], name="S2")
 S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
-G = S.connection()
+G = S.levi_civita()
 print(G.data[0])        # Γ^θ: how θ-components change
 print(G.data[1])        # Γ^φ: how φ-components change
 print(S.ricci().data)
-print(S.scalar_curvature(), S.gaussian_curvature())
+print(S.ricci_scalar(), S.gaussian_curvature())
 ```
 
 ```text

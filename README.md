@@ -9,7 +9,7 @@ tensorforms treats a tensor as an object whose slots are typed. Each slot lives 
 space, is up (contravariant) or down (covariant), and is either a value slot or a form slot.
 
 With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
-Ric, the scalar curvature R_s and the Einstein tensor G, using differential operators that act
+Ric, the Ricci scalar R_s and the Einstein tensor G, using differential operators that act
 on the tensors.
 
 ## The notation
@@ -38,6 +38,16 @@ A bar separates them, value slots first:
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
+## The geometry of a metric
+
+| tensor | method | description |
+|---|---|---|
+| g | `M.g` | metric (μ↓ ν↓ \|) |
+| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
+| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
+| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
+| R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
+| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
 
 ## Example: how curved is a sphere?
 
@@ -55,7 +65,7 @@ S = Manifold([th, ph], name="S2")
 S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 print(S.ricci().data)
-print(S.scalar_curvature())
+print(S.ricci_scalar())
 print(S.gaussian_curvature())
 ```
 

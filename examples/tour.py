@@ -21,9 +21,9 @@ print(wedge_d(w), wedge_d(w).simplify().data.tolist())
 
 # 3. Attach a metric; Γ and R follow
 M.metric([[1, 0], [0, sp.sin(th) ** 2]])
-G, R = M.connection(), M.curvature()
+G, R = M.levi_civita(), M.riemann()
 print(G, R, " R = d∧Γ + Γ∧Γ:", (wedge_d(G) + wedge(G, G)).equals(R))
-print("Ric =", M.ricci().data.tolist(), "  R_s =", M.scalar_curvature(), "  K =", M.gaussian_curvature())
+print("Ric =", M.ricci().data.tolist(), "  R_s =", M.ricci_scalar(), "  K =", M.gaussian_curvature())
 
 # 4. The operators on a vector
 v = M.vector([1, 0])                       # e_θ
@@ -35,6 +35,6 @@ print(contract(R, v), "   ", R.tr("ρ", "μ"), R.tr("ρ", "μ").simplify().data.
 
 # 6. Presets
 for P in (tf.geometry.hyperbolic_plane(), tf.geometry.euclidean(coords="spherical")):
-    print(P, " scalar curvature:", P.scalar_curvature())
+    print(P, " scalar curvature:", P.ricci_scalar())
 BH = tf.geometry.schwarzschild()
 print(BH, " Ricci is zero (vacuum):", BH.ricci().is_zero())
