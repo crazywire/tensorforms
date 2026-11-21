@@ -23,19 +23,53 @@ Details:
   of form slots of X.
 * The two curvature operators never differentiate X; they only multiply by R.
 
+### Example: how does e_θ change as you move on a sphere?
+
+e_θ has constant components (1, 0), so its partial derivative is zero. Its covariant derivative
+is not, because the direction "θ" itself turns as you move.
+
 ```python
 import sympy as sp
-from tensorforms import Manifold, d, wedge_d, nabla, wedge_nabla, curvature, wedge_curvature, contract
+from tensorforms import Manifold, d, nabla
 th, ph = sp.symbols("theta phi", real=True)
-M = Manifold([th, ph], name="S2")
-M.metric([[1, 0], [0, sp.sin(th) ** 2]])
-v, alpha = M.vector([1, 0]), M.one_form([sp.cos(th), 0])
+S = Manifold([th, ph], name="S2")
+S.metric([[1, 0], [0, sp.sin(th)**2]])
 
-nabla(v)                                # ∇v(μ↑ | ν)
-wedge_d(alpha)                          # d∧α, the curl
-curvature(v).equals(contract(M.curvature(), v))   # ∇∧∇v = Rv → True
-wedge_nabla(alpha).equals(wedge_d(alpha))         # ∇∧ of a 1-form needs no Γ → True
+e_theta = S.vector([1, 0])
+print(d(e_theta).data)
+print(nabla(e_theta).simplify().data)
 ```
+
+```text
+[[0 0]
+ [0 0]]
+[[0 0]
+ [0 cos(theta)/sin(theta)]]
+```
+
+Moving in the φ direction, e_θ picks up a part cot θ · e_φ. Moving in θ, it doesn't change.
+
+### Example: the curl of a rotation
+
+In the flat plane, the 1-form α = −y dx + x dy describes a rotation. Its exterior derivative is
+its curl:
+
+```python
+import tensorforms as tf
+from tensorforms import wedge_d
+P = tf.geometry.euclidean(2)
+x, y = P.coords
+
+alpha = P.one_form([-y, x])
+print(wedge_d(alpha).data)
+```
+
+```text
+[[0 2]
+ [-2 0]]
+```
+
+d∧α = 2 dx∧dy: the rotation has constant curl 2.
 
 ## Product rules
 

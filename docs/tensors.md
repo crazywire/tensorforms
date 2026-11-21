@@ -23,16 +23,15 @@ Names are Greek (μ ν λ κ ρ σ …), and `"mu"` works for μ. A slot can als
 A slot's **type** is (space, up/down, role). Adding needs matching types; pairing needs one
 up and one down.
 
-The examples below continue from [manifold.md](manifold.md):
+The examples below use a sphere of radius r:
 
 ```python
 import sympy as sp
-from tensorforms import Manifold, contract, otimes, wedge
+from tensorforms import Manifold, contract
+r = sp.Symbol("r", positive=True)
 th, ph = sp.symbols("theta phi", real=True)
-M = Manifold([th, ph], name="S2")
-M.metric([[1, 0], [0, sp.sin(th) ** 2]])
-R, v, w = M.curvature(), M.vector([1, 0]), M.covector([0, 1])
-alpha = M.one_form([sp.cos(th), 0])
+S = Manifold([th, ph], name="S2")
+S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 ```
 
 ## One tensor
@@ -53,11 +52,24 @@ alpha = M.one_form([sp.cos(th), 0])
 
 So X^US is `X.U().S()`. A result's label says how it was made: R^US, −A, Alt(R), tr(R), …
 
+### Example: Ricci from Riemann by a trace
+
+Ric = tr(R^S): swap R's second and third slots, then pair the first two.
+
 ```python
-R.tr("ρ", "μ")          # tr(R)(σ↓ | ν): the Ricci numbers
-R.lower("ρ")            # R with ρ down
-v.lower()               # a covector
+R = S.curvature()                 # R(ρ↑ σ↓ | μ ν)
+Ric = R.S().tr(0, 1)
+print(Ric)
+print(Ric.simplify().data)
 ```
+
+```text
+tr(R^S)(σ↓ | ν)
+[[1 0]
+ [0 sin(theta)**2]]
+```
+
+The trace leaves one value slot and one form slot; the numbers are the Ricci tensor.
 
 Raising and lowering never act on form slots; use `as_value()` first.
 
@@ -82,9 +94,37 @@ A∧B = k!/(p! q!) · Alt(AB),  k = p + q
 | `otimes(A, B)` | A ⊗ B: pair nothing |
 | `wedge(A, B)`, `odot(A, B)` | A∧B, A⊙B |
 
+### Example: how long is the φ direction on a sphere?
+
+The length² of a vector v is the row (lowered v) times the column v.
+
 ```python
-contract(R, v)                  # Rv(ρ↑ | μ ν)
-contract(w, v)                  # row × column: a number
-contract(alpha, v, "μ", "μ")    # a 1-form on a vector: name the slots
-otimes(v, v)                    # v ⊗ v (μ↑ ν↑ |)
+e_phi = S.vector([0, 1])
+length2 = contract(e_phi.lower(), e_phi)
+print(length2.data.item())
 ```
+
+```text
+r**2*sin(theta)**2
+```
+
+So e_φ has length r sin θ: the radius of the circle of latitude, which shrinks to zero at the poles.
+
+### Example: what does curvature do to a vector?
+
+Multiply R by e_θ (R's column with the vector's row):
+
+```python
+e_theta = S.vector([1, 0])
+Rv = contract(R, e_theta)
+print(Rv)
+print(Rv.simplify().data[:, 0, 1])     # the θφ part
+```
+
+```text
+Rv(ρ↑ | μ ν)
+[0 -1]
+```
+
+Rv is a vector-valued 2-form: for a small loop in the θ and φ directions, it rotates e_θ into
+−e_φ. On a flat surface it would be zero.

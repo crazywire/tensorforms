@@ -3,19 +3,15 @@
 Differential geometry — connections, curvature, Einstein's equations — in a matrix-style
 notation, computed with Python and sympy.
 
-## Why
+## What it does
 
-Curvature is usually written in index notation:
-
-R^ρ_σμν = ∂_μ Γ^ρ_νσ − ∂_ν Γ^ρ_μσ + Γ^ρ_μλ Γ^λ_νσ − Γ^ρ_νλ Γ^λ_μσ
-
-Most of the work is bookkeeping: which letters are summed, in what order, with which sign.
-Here tensors are treated like matrices whose entries can be forms, products are "column with
-row", and a few operators do all the differentiating. The same tensor becomes
+tensorforms computes connections, curvature and Einstein's equations from a metric. Tensors are
+written in a matrix-style notation: value slots and form slots separated by a bar, products as
+column with row, and six operators for differentiating. Formulas such as
 
 R = d∧Γ + Γ∧Γ
 
-and the code computes in that notation directly.
+are written in the code the same way they are written on paper.
 
 ## The six operators
 
@@ -29,27 +25,36 @@ and the code computes in that notation directly.
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
 
-## Example
+## Example: how curved is a sphere?
+
+A sphere of radius r has the metric r² dθ² + r² sin²θ dφ². Its curvature should not depend on
+where you are, and should grow as the sphere gets smaller. Let's compute it.
 
 ```python
 import sympy as sp
-import tensorforms as tf
-from tensorforms import Manifold, nabla, curvature, contract, wedge, wedge_d
+from tensorforms import Manifold
 
+r = sp.Symbol("r", positive=True)
 th, ph = sp.symbols("theta phi", real=True)
-M = Manifold([th, ph], name="S2")
-M.metric([[1, 0], [0, sp.sin(th)**2]])        # the unit sphere
 
-G, R = M.connection(), M.curvature()          # Γ(ρ↑ σ↓ | μ), R(ρ↑ σ↓ | μ ν)
-(wedge_d(G) + wedge(G, G)).equals(R)          # R = d∧Γ + Γ∧Γ  → True
+S = Manifold([th, ph], name="S2")
+S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
-v = M.vector([1, 0])
-nabla(v)                                      # ∇v(μ↑ | ν)
-curvature(v).equals(contract(R, v))           # ∇∧∇v = Rv  → True
-M.scalar_curvature()                          # 2
-
-tf.geometry.schwarzschild().ricci().is_zero() # vacuum  → True
+print(S.ricci().data)
+print(S.scalar_curvature())
+print(S.gaussian_curvature())
 ```
+
+```text
+[[1 0]
+ [0 sin(theta)**2]]
+2/r**2
+r**(-2)
+```
+
+The Gaussian curvature is K = 1/r²: the same everywhere on the sphere, and larger for a
+smaller sphere. Behind those three lines the package built Γ from g, then R = d∧Γ + Γ∧Γ, then
+took the traces.
 
 ## Documentation
 
