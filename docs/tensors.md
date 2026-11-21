@@ -105,6 +105,7 @@ A∧B = k!/(p! q!) · Alt(AB),  k = p + q
 |---|---|
 | `contract(A, B)` | AB; refuses if the pair doesn't exist |
 | `contract(A, B, a, b)` | pair the slots you name |
+| `interior(X, V)` | the interior product: like `contract(X, V)`, but X's first form slot with V's row |
 | `otimes(A, B)` | A ⊗ B: pair nothing |
 | `wedge(A, B)`, `odot(A, B)` | A∧B, A⊙B |
 
@@ -142,3 +143,23 @@ Rv(ρ↑ | μ ν)
 
 Rv is a vector-valued 2-form: for a small loop in the θ and φ directions, it rotates e_θ into
 −e_φ. On a flat surface it would be zero.
+
+### Example: how fast does the height change as you move south?
+
+On a sphere, cos θ measures height (1 at the north pole, −1 at the south pole). Feeding the
+direction e_θ into its derivative df gives the rate of change along e_θ:
+
+```python
+from tensorforms import d, interior
+f = S.scalar(sp.cos(th))              # height on the sphere
+v = S.vector([1, 0])                  # e_θ: moving south
+print(interior(d(f), v).data.item())
+```
+
+```text
+-sin(theta)
+```
+
+Moving south (increasing θ), the height drops at rate sin θ: fastest at the equator, zero at
+the poles.
+

@@ -2,6 +2,7 @@
 
     contract(A, B)         your AB: A's column (last value slot, down) with B's row (first, up)
     contract(A, B, a, b)   the paired product over the slots you name
+    interior(X, V)         X's first form slot with V's row (the interior product)
     otimes(A, B)           tensor product: pairs nothing
     wedge(A, B)            A ∧ B = k!/(p! q!) · Alt(AB) over all form slots
     odot(A, B)             A ⊙ B = k!/(p! q!) · Sym(AB)
@@ -81,6 +82,19 @@ def contract(A, B, a=None, b=None):
     keep_a = [s for k, s in enumerate(A.slots) if k != i]
     keep_b = _rename_clashes([s.name for s in keep_a], [s for k, s in enumerate(B.slots) if k != j])
     return _joined(A, B, data, keep_a + keep_b, join(wrap(A.label), "", wrap(B.label)))
+
+
+def interior(X, V):
+    """The interior product: X's first form slot (right after the bar) with V's row
+    (its first value slot, up). Like contract(X, V), but using X's first form slot instead of
+    its column. Everything else is carried along: value slots first, then X's form slots, then V's."""
+    if not X.form_slots:
+        raise TypeError(f"interior needs a form slot in X; {X.declaration()} has none")
+    if not V.value_slots or not V.slot(V.value_slots[0]).is_up:
+        raise TypeError(f"interior needs a row (first value slot, up) in V; got {V.declaration()}")
+    P = contract(X, V, X.form_slots[0], V.value_slots[0])
+    label = f"ι({X.label},{V.label})" if X.label and V.label else None
+    return P._new(label=label)
 
 
 def otimes(A, B):

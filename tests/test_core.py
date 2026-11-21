@@ -8,7 +8,7 @@ import sympy as sp
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tensorforms as tf
-from tensorforms import (Manifold, contract, curvature, nabla, otimes,
+from tensorforms import (Manifold, contract, curvature, interior, nabla, otimes,
                          wedge, wedge_curvature, wedge_d, wedge_nabla)
 from tensorforms.symbolic import is_zero
 
@@ -386,6 +386,29 @@ def test_static_spherical_vacuum_gives_schwarzschild():
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
+
+
+def test_interior():
+    x, y, z = sp.symbols("x y z", real=True)
+    M = Manifold([x, y, z])
+    M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
+    f = M.scalar(x * y ** 2 + sp.sin(z))
+    v = M.vector([y, x * z, 1])
+    df = tf.d(f)
+    dv = sum(v.data[i] * sp.diff(f.data.item(), c) for i, c in enumerate(M.coords))
+    assert is_zero(interior(df, v).data.item() - dv)                  # df(v): the directional derivative
+    a, b = M.one_form([x, y * z, 1]), M.one_form([z, 1, x * y])
+    lhs = interior(wedge(a, b), v)                                    # ι(a∧b) = (ι a) b − a (ι b)
+    rhs = b * interior(a, v).data.item() - a * interior(b, v).data.item()
+    assert lhs.equals(rhs)
+    R = M.curvature()
+    assert interior(R, v).equals(contract(R, v, "μ", v.names[0]))     # contract with X's first form slot
+    for bad in (lambda: interior(v, v), lambda: interior(df, df)):     # no form slot / no row
+        try:
+            bad()
+        except TypeError:
+            continue
+        raise AssertionError("expected a TypeError")
 
 
 if __name__ == "__main__":
