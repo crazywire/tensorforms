@@ -21,12 +21,12 @@ and the code computes in that notation directly.
 
 | operator | function | description |
 |---|---|---|
-| d | `d(X)` | the partial derivative of every component; adds one form slot |
-| d∧ | `wedge_d(X)` | the exterior derivative: d, then antisymmetrized with X's form slots (the curl of a 1-form) |
-| ∇ | `nabla(X)` | the covariant derivative: d + Γ on every slot |
-| ∇∧ | `wedge_nabla(X)` | the exterior covariant derivative: d∧ + Γ on value slots |
-| ∇∧∇ | `curvature(X)` | ∇ twice, antisymmetrized (the commutator of covariant derivatives): R acting on every slot |
-| ∇∧∇∧ | `wedge_curvature(X)` | the exterior covariant derivative twice: R acting on value slots |
+| d | `d(X)` | partial derivative |
+| d∧ | `wedge_d(X)` | exterior derivative |
+| ∇ | `nabla(X)` | covariant derivative: d + Γ on every slot |
+| ∇∧ | `wedge_nabla(X)` | exterior covariant derivative: d∧ + Γ on value slots |
+| ∇∧∇ | `curvature(X)` | curvature operator: R on every slot |
+| ∇∧∇∧ | `wedge_curvature(X)` | exterior covariant derivative twice: R on value slots |
 
 ## Example
 
