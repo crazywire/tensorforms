@@ -1,4 +1,4 @@
-"""A short tour: manifold, tensors, metric, the four operators, presets.
+"""A short tour: manifold, tensors, metric, the operators, products, presets.
 Run from the project folder:  python examples/tour.py
 """
 import os
@@ -8,35 +8,33 @@ import sympy as sp
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import tensorforms as tf
-from tensorforms import Manifold, contract, curvature, nabla, wedge_nabla
+from tensorforms import Manifold, contract, curvature, nabla, wedge, wedge_d
 
 # 1. A bare manifold: coordinates only
-th, ph = sp.symbols("theta phi", positive=True)
+th, ph = sp.symbols("theta phi", real=True)
 M = Manifold([th, ph], name="S2")
 print(M)
 
-# 2. Indices, then tensors made from them
-a, b, c, d = M.indices(4)
-w = M.tensor(a.form, data=[sp.cos(th), sp.sin(th) * ph])
-print("w =", w, "  d∧w (no metric needed):", wedge_nabla(w).simplify().data.tolist())
+# 2. Tensors; d∧ needs no metric
+w = M.one_form([sp.cos(th), sp.sin(th) * ph])
+print(wedge_d(w), wedge_d(w).simplify().data.tolist())
 
-# 3. Attach a metric; connection and curvature follow
+# 3. Attach a metric; Γ and R follow
 M.metric([[1, 0], [0, sp.sin(th) ** 2]])
-R = M.curvature()
-print("R =", R, "  R_θφ block:", R.data[:, :, 0, 1].tolist())
+G, R = M.connection(), M.curvature()
+print(G, R, " R = d∧Γ + Γ∧Γ:", (wedge_d(G) + wedge(G, G)).equals(R))
 print("Ric =", M.ricci().data.tolist(), "  R_s =", M.scalar_curvature(), "  K =", M.gaussian_curvature())
 
-# 4. The four operators on a vector
+# 4. The operators on a vector
 v = M.vector([1, 0])                       # e_θ
-print("∇v    =", nabla(v), nabla(v).simplify().data.tolist())
-print("∇∧∇v  =", curvature(v), "(R acting on v)")
+print(nabla(v), nabla(v).simplify().data.tolist())
+print(curvature(v), "= R acting on v")
 
-# 5. Explicit pairing by slot name
-Ric = R.tr("ρ", "μ")
-print("R.tr(ρ, μ) =", Ric, Ric.simplify().data.tolist())
+# 5. Products and traces
+print(contract(R, v), "   ", R.tr("ρ", "μ"), R.tr("ρ", "μ").simplify().data.tolist())
 
 # 6. Presets
-for G in (tf.geometry.hyperbolic_plane(), tf.geometry.euclidean(3, "spherical")):
-    print(G, " scalar curvature:", G.scalar_curvature())
+for P in (tf.geometry.hyperbolic_plane(), tf.geometry.euclidean(coords="spherical")):
+    print(P, " scalar curvature:", P.scalar_curvature())
 BH = tf.geometry.schwarzschild()
 print(BH, " Ricci is zero (vacuum):", BH.ricci().is_zero())
