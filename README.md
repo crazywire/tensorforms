@@ -13,6 +13,47 @@ R = d∧Γ + Γ∧Γ
 
 are written in the code the same way they are written on paper.
 
+## The notation
+
+A tensor is a list of **slots**, one per index. Each slot has two properties:
+
+* **Up or down** (↑ / ↓). As in a matrix, an up slot is a row index and a down slot is a column
+  index. A vector (one up slot) is a column, a covector (one down slot) is a row, and a matrix
+  has one of each. Pairing always joins an up slot with a down slot.
+* **Value or form.** Value slots say what the tensor *is* (a vector, a matrix, …). Form slots are
+  the directions it acts on, like dx and dy in a differential form; they are always down.
+
+A bar separates the two kinds, value slots first:
+
+| object | slots | meaning |
+|---|---|---|
+| vector v | (μ↑ \|) | a column |
+| covector w | (μ↓ \|) | a row |
+| 1-form α | (\| μ) | one direction, e.g. α = α_μ dx^μ |
+| connection Γ | (ρ↑ σ↓ \| μ) | a matrix for each direction μ |
+| curvature R | (ρ↑ σ↓ \| μ ν) | a matrix for each pair of directions μ, ν |
+| metric g | (μ↓ ν↓ \|) | two down value slots |
+
+The letters are only labels; the arrows and the bar carry the meaning.
+
+**Products.** AB pairs A's column (its last value slot, ↓) with B's row (its first value
+slot, ↑), as in matrix multiplication. Everything else is carried along, value slots first,
+then form slots. For example, R(ρ↑ σ↓ | μ ν) times v(κ↑ |) pairs σ with κ and gives
+Rv(ρ↑ | μ ν).
+
+**Swaps.** Slot order matters, and is changed with named swaps of neighbouring positions,
+counted from 0 across all slots:
+
+| swap | exchanges positions |
+|---|---|
+| T | 0 and 1 |
+| S | 1 and 2 |
+| U | 2 and 3 |
+| V | 3 and 4 |
+
+X^US means apply U, then S. For example, R(ρ↑ σ↓ | μ ν) with S applied is (ρ↑ μ σ↓ ν): the
+second and third slots trade places. This is how Ricci is written: Ric = tr(R^S).
+
 ## The six operators
 
 | operator | function | description |
