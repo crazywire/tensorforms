@@ -35,18 +35,36 @@ wedge_nabla(alpha).equals(wedge_d(alpha))         # ∇∧ of a 1-form needs no 
 
 ## Product rules
 
-For ∇, the new slot has to be moved back first after the bar with swaps:
+A and B are any two tensors. **AB** is their product as defined in [tensors.md](tensors.md):
+A's column (last value slot, ↓) paired with B's row (first value slot, ↑), everything else
+carried along. **p** and **q** are the numbers of form slots of A and B.
+
+**∇ (every slot).** Each term keeps all slots, but the new slot from ∇ must end up first after
+the bar, so terms where it lands later are moved back with swaps. For example, with
+R (ρ↑ σ↓ | μ ν) and a vector v:
 
 ∇(Rv) = (∇R)v + (R∇v)^US
 
-For the wedged operators, swaps become signs (p = number of form slots of A):
+In R∇v the new slot comes last (after μ ν), and US moves it to the front.
+
+**∇∧ (wedged).** For a wedge product, swaps become signs:
 
 ∇∧(A∧B) = (∇∧A)∧B + (−1)^p A∧(∇∧B)
 
+**∇∧∇∧.** No signs and no cross terms:
+
 ∇∧∇∧(A∧B) = (∇∧∇∧A)∧B + A∧(∇∧∇∧B)
 
-For a plain product AB, rewrite it as a wedge first:
+**Applying ∇∧ or ∇∧∇∧ to a plain product AB.** These operators only see the antisymmetric part
+of AB, which is a multiple of A∧B. So rewrite first, then use the rules above:
 
-AB = p! q!/(p+q)! · A∧B
+∇∧(AB) = p! q!/(p+q)! · ∇∧(A∧B)
 
-The factor is 1 when either has no form slots, as in Rv.
+∇∧∇∧(AB) = p! q!/(p+q)! · ∇∧∇∧(A∧B)
+
+The factor is 1 when A or B has no form slots, so then AB = A∧B. Example, Rv (p = 2, q = 0):
+
+∇∧(Rv) = (∇∧R)v + R∧(∇v) = R∧(∇v)
+
+using ∇∧R = 0 (the Bianchi identity) and ∇∧v = ∇v (v has no form slots). The sign is +
+because p = 2 is even.
