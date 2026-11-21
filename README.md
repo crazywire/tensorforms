@@ -12,7 +12,7 @@ With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, 
 Ric, the Ricci scalar R_s and the Einstein tensor G, using differential operators that act
 on the tensors.
 
-## The notation
+## Notation
 
 Each slot of a tensor is **up or down** (↑ / ↓: like a matrix's row and column index) and
 either a **value** slot (what the tensor is) or a **form** slot (a direction it acts on, like dx).
@@ -27,7 +27,34 @@ A bar separates them, value slots first:
 | curvature R | (ρ↑ σ↓ \| μ ν) |
 | metric g | (μ↓ ν↓ \|) |
 
-## The six operators
+## Manifold
+
+A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then it provides:
+
+| tensor | method | description |
+|---|---|---|
+| g | `M.g` | metric (μ↓ ν↓ \|) |
+| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
+| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
+| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
+| R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
+| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
+
+## Tensors
+
+| operation | function | description |
+|---|---|---|
+| AB | `contract(A, B)` | product: A's column with B's row |
+| | `contract(A, B, a, b)` | pair the slots you name |
+| | `interior(X, V)` | X's first form slot with V's row |
+| A ⊗ B | `otimes(A, B)` | tensor product |
+| A∧B, A⊙B | `wedge(A, B)`, `odot(A, B)` | wedge and symmetric products |
+| tr X | `X.tr(a, b)` | trace over two slots |
+| X^T, X^S, X^U, X^V | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap neighbouring slots |
+| Alt X, Sym X | `X.alt()`, `X.sym()` | antisymmetric and symmetric parts |
+| | `X.lower(a)`, `X.raise_(a)` | lower or raise a value slot with g |
+
+## Operators
 
 | operator | function | description |
 |---|---|---|
@@ -38,16 +65,14 @@ A bar separates them, value slots first:
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
-## The geometry of a metric
+## Geometry
 
-| tensor | method | description |
-|---|---|---|
-| g | `M.g` | metric (μ↓ ν↓ \|) |
-| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
-| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
-| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
-| R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
-| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
+Ready-made manifolds with their metric attached, e.g. `tf.geometry.sphere()`:
+
+* flat space: `euclidean` (Cartesian, polar, spherical, cylindrical)
+* surfaces: `sphere`, `cylinder`, `torus`, `hyperbolic_plane`
+* spacetimes: `minkowski`, `schwarzschild`, `flrw`, `de_sitter`
+* templates with unknown functions, for solving: `templates.diagonal`, `templates.conformally_flat`, `templates.static_spherical`
 
 ## Example: how curved is a sphere?
 
