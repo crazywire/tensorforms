@@ -5,13 +5,11 @@ in a matrix-style notation. Built on Python and sympy.
 
 ## What it does
 
-tensorforms computes connections, curvature and Einstein's equations from a metric. Tensors are
-written in a matrix-style notation: value slots and form slots separated by a bar, products as
-column with row, and six operators for differentiating. Formulas such as
+tensorforms treats a tensor as an object whose axes are typed. Each axis lives in the tangent
+space, is up (contravariant) or down (covariant), and is either a value axis or a form axis.
 
-R = d∧Γ + Γ∧Γ
-
-are written in the code the same way they are written on paper.
+With it you can compute the Levi-Civita connection, the Riemann curvature, the Ricci tensor and
+the Einstein tensor, using differential operators that act on the tensors.
 
 ## The notation
 
