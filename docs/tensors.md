@@ -17,6 +17,8 @@ value slots first:
 | g | (μ↓ ν↓ \|) | |
 
 Form slots are always down. The letters are labels; the arrows and the bar carry the meaning.
+Nothing is computed by name. Within one tensor the letters are all different so it reads
+clearly; when a product would repeat one, the result gets a fresh letter.
 Names are Greek (μ ν λ κ ρ σ …), and `"mu"` works for μ. A slot can also be given by number
 (0, 1, …).
 
