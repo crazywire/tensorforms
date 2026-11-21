@@ -23,9 +23,6 @@ The package computes in that notation directly: you build tensors, multiply them
 operators, and get components back — with each formula in the code written the way it is
 written on paper.
 
-The notation is Abdullahi's own. The formulas themselves are standard results (Levi-Civita,
-Cartan, the graded Leibniz rule) rewritten in it.
-
 ## The notation
 
 ### Slots, arrows and the bar
