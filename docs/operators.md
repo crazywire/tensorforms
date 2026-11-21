@@ -2,14 +2,13 @@
 
 | operator | function | description | formula |
 |---|---|---|---|
-| d | `d(X)` | partial derivative | ∂X |
-| d∧ | `wedge_d(X)` | exterior derivative | (p+1) Alt(dX) |
+| d | `d(X)` | partial derivative | |
+| d∧ | `wedge_d(X)` | exterior derivative | |
 | ∇ | `nabla(X)` | covariant derivative | d + Γ |
 | ∇∧ | `wedge_nabla(X)` | exterior covariant derivative | d∧ + Γ∧ |
 | ∇∧∇ | `curvature(X)` | commutator of covariant derivatives | R |
 | ∇∧∇∧ | `wedge_curvature(X)` | exterior covariant derivative squared | R∧ |
 
-p is the number of form slots of X.
 
 Each takes one tensor and returns a new one, labelled by the operator (dX, ∇X, …).
 New form slots go first after the bar. Γ and R come from the manifold; with no metric, ∇ and
