@@ -19,7 +19,7 @@ and the code computes in that notation directly.
 
 ## The six operators
 
-| operator | code | what it is |
+| operator | function | description |
 |---|---|---|
 | d | `d(X)` | the partial derivative of every component; adds one form slot |
 | d∧ | `wedge_d(X)` | the exterior derivative: d, then antisymmetrized with X's form slots (the curl of a 1-form) |
