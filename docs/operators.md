@@ -57,7 +57,7 @@ its curl:
 ```python
 import tensorforms as tf
 from tensorforms import wedge_d
-P = tf.geometry.euclidean(2)
+P = tf.Manifold.euclidean(2)
 x, y = P.coords
 
 alpha = P.one_form([-y, x])

@@ -29,6 +29,61 @@ class Manifold:
         g = "with a metric" if self._g is not None else "no metric"
         return f"Manifold {self.name}{tuple(self.coords)} ({g})"
 
+    # ---------- ready-made manifolds (class methods: Manifold.sphere(), …) ----------
+    @classmethod
+    def euclidean(cls, n=None, coords="cartesian"):
+        """Flat space: coords "cartesian" (any n, default 3), "polar", "spherical", "cylindrical"."""
+        from .presets import euclidean
+        return euclidean(n, coords)
+
+    @classmethod
+    def sphere(cls, r=None):
+        """Sphere of radius r (symbolic if not given): K = 1/r²."""
+        from .presets import sphere
+        return sphere(r)
+
+    @classmethod
+    def cylinder(cls, r=None):
+        """Cylinder of radius r: flat, K = 0."""
+        from .presets import cylinder
+        return cylinder(r)
+
+    @classmethod
+    def torus(cls, R=None, r=None):
+        """Torus with radii R (around the hole) and r (of the tube): K changes sign."""
+        from .presets import torus
+        return torus(R, r)
+
+    @classmethod
+    def hyperbolic_plane(cls):
+        """Upper half-plane, (dx² + dy²)/y²: K = −1."""
+        from .presets import hyperbolic_plane
+        return hyperbolic_plane()
+
+    @classmethod
+    def minkowski(cls, n=None, coords="cartesian"):
+        """Flat spacetime: −dt² plus flat space in the given coordinates (default 4D Cartesian)."""
+        from .presets import minkowski
+        return minkowski(n, coords)
+
+    @classmethod
+    def schwarzschild(cls, m=None):
+        """Outside a round, non-rotating mass m (G = c = 1): vacuum."""
+        from .presets import schwarzschild
+        return schwarzschild(m)
+
+    @classmethod
+    def flrw(cls, a=None, k=0):
+        """Expanding universe with scale factor a(t) and spatial curvature k."""
+        from .presets import flrw
+        return flrw(a, k)
+
+    @classmethod
+    def de_sitter(cls, H=None):
+        """Accelerating universe, −dt² + e^{2Ht}(dx² + dy² + dz²): R_s = 12H²."""
+        from .presets import de_sitter
+        return de_sitter(H)
+
     # ---------- indices and names ----------
     def indices(self, n, names=None):
         """A list of n indices in the tangent space (always a list, even for n = 1)."""

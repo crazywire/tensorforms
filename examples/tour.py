@@ -34,7 +34,7 @@ print(curvature(v), "= R acting on v")
 print(contract(R, v), "   ", R.tr("ρ", "μ"), R.tr("ρ", "μ").simplify().data.tolist())
 
 # 6. Presets
-for P in (tf.geometry.hyperbolic_plane(), tf.geometry.euclidean(coords="spherical")):
+for P in (tf.Manifold.hyperbolic_plane(), tf.Manifold.euclidean(coords="spherical")):
     print(P, " scalar curvature:", P.ricci_scalar())
-BH = tf.geometry.schwarzschild()
+BH = tf.Manifold.schwarzschild()
 print(BH, " Ricci is zero (vacuum):", BH.ricci().is_zero())

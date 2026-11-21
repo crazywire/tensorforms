@@ -39,7 +39,7 @@ def wedge_curvature_by_definition(X):
 
 # ---------------------------------------------------------------- sphere
 def test_sphere_connection():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     G = S.levi_civita().data
     th = S.coords[0]
     assert is_zero(G[0, 1, 1] + sp.sin(th) * sp.cos(th))     # Γ^θ_φφ = −sinθ cosθ
@@ -48,7 +48,7 @@ def test_sphere_connection():
 
 
 def test_sphere_curvature():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     th = S.coords[0]
     R = S.riemann()
     block = R.data[:, :, 0, 1]                               # R_θφ = [0, sin²θ; −1, 0]
@@ -59,19 +59,19 @@ def test_sphere_curvature():
 
 
 def test_sphere_symbolic_radius():
-    S = tf.geometry.sphere()                                 # r symbolic
+    S = tf.Manifold.sphere()                                 # r symbolic
     r = sp.Symbol("r", positive=True)
     assert is_zero(S.gaussian_curvature() - 1 / r ** 2)
 
 
 def test_nabla_g_is_zero():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     assert nabla(S.g).is_zero()
 
 
 # ---------------------------------------------------------------- the four operators
 def _sphere_fields():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     th, ph = S.coords
     f1, f2 = sp.Function("v1")(th, ph), sp.Function("v2")(th, ph)
     return S, S.vector([f1, f2]), S.one_form([f1, f2])
@@ -106,7 +106,7 @@ def test_wedge_curvature():
 
 
 def test_scalar_has_no_curvature():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     f = S.scalar(sp.Function("f")(*S.coords))
     assert curvature(f).is_zero()                             # Hessian is symmetric
 
@@ -123,7 +123,7 @@ def test_bianchi_in_3d():
 
 
 def test_product_rule():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     th, ph = S.coords
     a, b = S.indices(2)
     A = S.map([[th, ph], [th * ph, 1]], indices=(a, b))
@@ -135,24 +135,24 @@ def test_product_rule():
 
 # ---------------------------------------------------------------- flat space and spacetime
 def test_spherical_coordinates_are_flat():
-    E = tf.geometry.euclidean(3, coords="spherical")
+    E = tf.Manifold.euclidean(3, coords="spherical")
     assert E.riemann().is_zero()
     assert not np.all(E.levi_civita().data == 0)              # the grid bends, the space doesn't
 
 
 def test_hyperbolic_plane():
-    H = tf.geometry.hyperbolic_plane()
+    H = tf.Manifold.hyperbolic_plane()
     assert is_zero(H.gaussian_curvature() + 1)
 
 
 def test_schwarzschild_is_vacuum():
-    BH = tf.geometry.schwarzschild()
+    BH = tf.Manifold.schwarzschild()
     assert BH.ricci().is_zero()
     assert BH.einstein().is_zero()
 
 
 def test_connection_is_s_symmetric():
-    S = tf.geometry.sphere(r=1)                               # Γ^S = Γ: no torsion
+    S = tf.Manifold.sphere(r=1)                               # Γ^S = Γ: no torsion
     G = S.levi_civita().data
     assert all(is_zero(G[a, b, c] - G[a, c, b]) for a in range(2) for b in range(2) for c in range(2))
 
@@ -180,7 +180,7 @@ def test_gamma_and_riemann_match_index_formulas():
 
 # ---------------------------------------------------------------- algebra and types
 def test_alt_sym_rules():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     th, ph = S.coords
     a, b = S.indices(2)
     X = S.tensor(a.form, b.form, data=[[th, ph], [1, th * ph]])
@@ -190,21 +190,21 @@ def test_alt_sym_rules():
 
 
 def test_wedge_single_factor_is_one_term():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     R = S.riemann()
     v = S.vector([1, 0])
     assert wedge(R, v).equals(contract(R, v))                 # R∧v = Rv
 
 
 def test_ricci_by_names():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     R = S.riemann()
     Ric = R.tr("ρ", "μ")                                     # (σ↓ | ν): same numbers as S.ricci()
     assert all(is_zero(e) for e in (Ric.data - S.ricci().data).flat)
 
 
 def test_type_errors():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     v, w = S.vector([1, 0]), S.covector([1, 0])
     for bad in (lambda: v + w,
                 lambda: contract(S.g, S.g, "μ", "μ")):        # down with down
@@ -216,7 +216,7 @@ def test_type_errors():
 
 
 def test_metric_checks():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     for bad in (lambda: S.metric(S.ginv),                       # two up slots: that's g⁻¹
                 lambda: S.metric([[1, 0], [0, 0]]),             # determinant 0
                 lambda: S.metric([[1, 1], [0, 1]])):            # not symmetric
@@ -227,7 +227,7 @@ def test_metric_checks():
         raise AssertionError("expected an error")
     S.metric(S.g.simplify())                                    # a tensor with two down slots is fine
     assert is_zero(S.gaussian_curvature() - 1)
-    assert tf.geometry.schwarzschild().signature == "-+++"
+    assert tf.Manifold.schwarzschild().signature == "-+++"
 
 
 def test_bare_manifold_has_no_metric():
@@ -243,7 +243,7 @@ def test_bare_manifold_has_no_metric():
 
 
 def test_names():
-    S = tf.geometry.sphere()
+    S = tf.Manifold.sphere()
     R = S.riemann()
     assert [i.name for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
     assert nabla(R).names == ["ρ", "σ", "λ", "μ", "ν"]              # new slot: first free Greek name
@@ -253,7 +253,7 @@ def test_names():
 
 
 def test_scalar_multiplication():
-    S = tf.geometry.sphere()
+    S = tf.Manifold.sphere()
     th = S.coords[0]
     v, f = S.vector([1, 0]), S.scalar(sp.sin(th))
     assert (f * v).equals(v * sp.sin(th)) and (v * f).equals(sp.sin(th) * v)
@@ -266,7 +266,7 @@ def test_scalar_multiplication():
 
 
 def test_labels():
-    S = tf.geometry.sphere()
+    S = tf.Manifold.sphere()
     R = S.riemann()
     B = R._new(label="B")
     f = S.scalar(sp.sin(S.coords[0]))
@@ -280,7 +280,7 @@ def test_labels():
 
 
 def test_contract_default_and_otimes():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     R, v, u = S.riemann(), S.vector([1, 0]), S.vector([0, 1])
     w, alpha = S.covector([1, 0]), S.one_form([1, 0])
     assert contract(R, v).equals(contract(R, v, "σ", "μ"))       # default: R's column with v's row
@@ -300,7 +300,7 @@ def test_contract_default_and_otimes():
 
 
 def test_raise_lower_undo():
-    S = tf.geometry.sphere(r=1)
+    S = tf.Manifold.sphere(r=1)
     th = S.coords[0]
     v, w = S.vector([th, 1]), S.covector([1, th])
     assert v.lower().slots[0].type == w.slots[0].type          # lowering a vector gives a covector
@@ -325,7 +325,7 @@ def test_raise_lower_undo():
     assert df.as_value().as_form().types == df.types
 
 def test_manifold_hands_out_copies():
-    S = tf.geometry.sphere()
+    S = tf.Manifold.sphere()
     R = S.riemann()
     R.label = "B"
     assert S.riemann().label == "R"                           # the stored R is untouched
@@ -336,17 +336,17 @@ def test_manifold_hands_out_copies():
 
 
 def test_operator_labels():
-    S = tf.geometry.sphere()
+    S = tf.Manifold.sphere()
     v = S.vector([1, 0])
     assert [X.label for X in (tf.d(v), wedge_d(v), nabla(v), wedge_nabla(v),
                               curvature(v), wedge_curvature(v))] == ["dv", "d∧v", "∇v", "∇∧v", "∇∧∇v", "∇∧∇∧v"]
 
 
 def test_euclidean_options():
-    assert tf.geometry.euclidean().dim == 3 and tf.geometry.euclidean(4).dim == 4
-    assert tf.geometry.euclidean(coords="polar").dim == 2                    # n follows the coordinates
-    assert tf.geometry.euclidean(3, "Spherical").ricci_scalar() == 0     # any capitalisation
-    for bad in (lambda: tf.geometry.euclidean(3, "polar"), lambda: tf.geometry.euclidean(3, "spherial")):
+    assert tf.Manifold.euclidean().dim == 3 and tf.Manifold.euclidean(4).dim == 4
+    assert tf.Manifold.euclidean(coords="polar").dim == 2                    # n follows the coordinates
+    assert tf.Manifold.euclidean(3, "Spherical").ricci_scalar() == 0     # any capitalisation
+    for bad in (lambda: tf.Manifold.euclidean(3, "polar"), lambda: tf.Manifold.euclidean(3, "spherial")):
         try:
             bad()
         except ValueError:
@@ -356,11 +356,11 @@ def test_euclidean_options():
 
 def test_flrw_scale_factor():
     t = sp.Symbol("t", real=True)
-    a1 = tf.geometry.flrw(a=t ** 2).ricci_scalar()               # the preset's t
-    a2 = tf.geometry.flrw(a=lambda T: T ** 2).ricci_scalar()     # a function of t
+    a1 = tf.Manifold.flrw(a=t ** 2).ricci_scalar()               # the preset's t
+    a2 = tf.Manifold.flrw(a=lambda T: T ** 2).ricci_scalar()     # a function of t
     assert a1 != 0 and is_zero(a1 - a2)
     try:
-        tf.geometry.flrw(a=sp.Symbol("t") ** 2)                       # a different t: refused
+        tf.Manifold.flrw(a=sp.Symbol("t") ** 2)                       # a different t: refused
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
@@ -371,7 +371,7 @@ def test_static_spherical_vacuum_gives_schwarzschild():
     t = sp.Symbol("t", real=True)
     r = sp.Symbol("r", positive=True)
     th, ph = sp.symbols("theta phi", real=True)
-    M = tf.geometry.templates.static_spherical(Manifold([t, r, th, ph]))
+    M = tf.templates.static_spherical(Manifold([t, r, th, ph]))
     G = M.einstein().data
     A, B = sp.Function("A")(r), sp.Function("B")(r)
     Bsol = sp.solve(G[1, 1], B)                              # G_rr = 0 is algebraic in B
@@ -382,7 +382,7 @@ def test_static_spherical_vacuum_gives_schwarzschild():
     assert is_zero(Aeq.subs(A, trial).doit())                # A = 1 − 2m/r solves it
     assert is_zero(sp.simplify(Bsol.subs(A, trial).doit() - 1 / trial))   # and B = 1/A
     try:
-        tf.geometry.templates.static_spherical(Manifold([t, th, r, ph]))  # wrong order: refused
+        tf.templates.static_spherical(Manifold([t, th, r, ph]))  # wrong order: refused
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
@@ -409,6 +409,18 @@ def test_interior():
         except TypeError:
             continue
         raise AssertionError("expected a TypeError")
+
+
+def test_minkowski_options():
+    assert tf.Manifold.minkowski().signature == "-+++" and tf.Manifold.minkowski().dim == 4
+    S = tf.Manifold.minkowski(coords="spherical")                  # −dt² + dr² + r²dΩ²
+    assert S.dim == 4 and S.riemann().is_zero() and not S.levi_civita().is_zero()
+    assert tf.Manifold.minkowski(3, "polar").signature == "-++"
+    try:
+        tf.Manifold.minkowski(5, "spherical")
+    except ValueError:
+        return
+    raise AssertionError("expected a ValueError")
 
 
 if __name__ == "__main__":
