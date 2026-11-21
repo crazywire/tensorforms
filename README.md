@@ -45,8 +45,8 @@ Ready-made manifolds come as class methods, e.g. `Manifold.sphere()` or
 
 | | flat, any coordinates | specific geometries |
 |---|---|---|
-| space (Riemannian, + + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
-| spacetime (Lorentzian, − + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
+| Riemannian (+ + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
+| Lorentzian (− + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
 
 Metric templates with unknown functions, for solving, are in `tf.templates`.
 
