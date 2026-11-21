@@ -39,16 +39,17 @@ def _check_pair(sa, sb):
         raise TypeError(f"can't pair {sa.name} and {sb.name}: both {sa.variance}; raise or lower one first")
 
 
-def _values_first(slots, a_forms):
-    """Order: value slots, then A's form slots, then B's form slots."""
+def _values_first(slots, n_a):
+    """Order: value slots, then A's form slots, then B's form slots.
+    The first n_a slots came from A (told apart by position, not by name)."""
     vals = [k for k, s in enumerate(slots) if not s.is_form]
-    fa = [k for k, s in enumerate(slots) if s.is_form and s.name in a_forms]
-    fb = [k for k, s in enumerate(slots) if s.is_form and s.name not in a_forms]
+    fa = [k for k, s in enumerate(slots) if s.is_form and k < n_a]
+    fb = [k for k, s in enumerate(slots) if s.is_form and k >= n_a]
     return vals + fa + fb
 
 
-def _joined(A, B, data, slots, label):
-    order = _values_first(slots, set(A.form_slots))
+def _joined(A, data, slots, n_a, label):
+    order = _values_first(slots, n_a)
     return Tensor(A.manifold, np.transpose(data, order), [slots[k] for k in order], label)
 
 
@@ -81,7 +82,7 @@ def contract(A, B, a=None, b=None):
     data = np.tensordot(A.data, B.data, axes=([i], [j]))
     keep_a = [s for k, s in enumerate(A.slots) if k != i]
     keep_b = _rename_clashes([s.name for s in keep_a], [s for k, s in enumerate(B.slots) if k != j])
-    return _joined(A, B, data, keep_a + keep_b, join(wrap(A.label), "", wrap(B.label)))
+    return _joined(A, data, keep_a + keep_b, len(keep_a), join(wrap(A.label), "", wrap(B.label)))
 
 
 def interior(X, V):
@@ -101,7 +102,7 @@ def otimes(A, B):
     """Tensor product A ⊗ B: pair nothing, keep every slot.
     Result: value slots first, then A's form slots, then B's."""
     keep_b = _rename_clashes(A.names, B.slots)
-    return _joined(A, B, np.multiply.outer(A.data, B.data), A.slots + keep_b,
+    return _joined(A, np.multiply.outer(A.data, B.data), A.slots + keep_b, len(A.slots),
                    join(wrap(A.label), "⊗", wrap(B.label)))
 
 

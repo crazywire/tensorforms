@@ -437,3 +437,15 @@ if __name__ == "__main__":
             print(f"FAIL  {name}: {type(e).__name__}: {e}")
     print(f"\n{len(tests) - failed}/{len(tests)} passed")
     sys.exit(1 if failed else 0)
+
+
+def test_contract_keeps_form_order_when_names_clash():
+    # A's paired slot is a form slot named ν; B also has a form slot named ν.
+    # B's form slots must stay in B's order whatever they are called.
+    S = tf.Manifold.sphere()
+    mu, nu, la = S.indices(3)
+    A = S.tensor(mu.up, nu.form, data=[[1, 2], [3, 4]])
+    B = S.tensor(la.up, mu.form, nu.form, data=[[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+    clash = contract(A, B, 1, 0)
+    fresh = contract(A, B.rename({"μ": "α", "ν": "β"}), 1, 0)
+    assert (clash.data == fresh.data).all()
