@@ -50,7 +50,19 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.lower(slot)`, `X.raise_(slot)` | g or g⁻¹ on a value slot; exact inverses |
 | `X.as_form()`, `X.as_value()` | change the role: covector ↔ 1-form, same numbers |
 
-So X^US is `X.U().S()`. A result's label says how it was made: R^US, −A, Alt(R), tr(R), …
+**Swaps.** Slot order matters, and is changed with named swaps of neighbouring positions,
+counted from 0 across all slots:
+
+| swap | exchanges positions | code |
+|---|---|---|
+| T | 0 and 1 | `X.T()` |
+| S | 1 and 2 | `X.S()` |
+| U | 2 and 3 | `X.U()` |
+| V | 3 and 4 | `X.V()` |
+
+X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ | μ ν) with S applied is
+(ρ↑ μ σ↓ ν): the second and third slots trade places. A result's label says how it was made:
+R^US, −A, Alt(R), tr(R), …
 
 ### Example: Ricci from Riemann by a trace
 
