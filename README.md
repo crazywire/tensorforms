@@ -1,94 +1,130 @@
 # tensorforms
 
-The calculus of tensor-valued forms, organized around four operators.
+The calculus of tensor-valued forms in Python, built on sympy. Every tensor has
+**value slots** (what it is) and **form slots** (the steps it takes), separated by a bar:
+R(ρ↑ σ↓ | μ ν). Everything is computed from a few operators and the formulas proved for them.
+
+## The operators
 
 |            | every slot              | wedged (form slots antisymmetrized) |
 |------------|-------------------------|-------------------------------------|
 | plain      | `d`                     | `wedge_d` = d∧                      |
-| once       | `nabla`  = d + Γ        | `wedge_nabla` = d∧ + Γ∧             |
+| once       | `nabla` = d + Γ         | `wedge_nabla` = d∧ + Γ∧             |
 | twice      | `curvature` = R         | `wedge_curvature` = R∧              |
 
-Γ and R come from the manifold's metric (no torsion). Corrections: + from the left for up slots,
-− from the right for down slots. With no metric, ∇ and ∇∧ act as d and d∧, and the curvatures are zero.
+* Γ and R come from the manifold's metric (no torsion).
+* Corrections: + from the left on up slots, − from the right on down slots.
+* `nabla` and `curvature` correct every slot. The wedged ones correct only value slots:
+  the form-slot corrections cancel because Γ is symmetric in its lower slots.
+* New form slots go first after the bar.
+* With no metric, ∇ and ∇∧ act as d and d∧, and the curvatures are zero.
+* Results are labelled by the operation: ∇v, ∇∧w, ∇∧∇v, …
 
-Each operator is computed with the formula we proved, assuming no torsion (Γ always
-comes from the metric). The two wedged operators correct only value slots, because the
-form-slot corrections cancel. The two curvatures use R directly (computed once per
-connection) and never differentiate what they act on. The tests check every formula
-against its definition (∇ twice, antisymmetrized; ∇∧ twice).
+The geometry is built with the same operations:
 
-## Layout
+Γ = ½ g⁻¹(dg + dg^S − dg^ST)
 
-```
-tensorforms/
-  manifold/    Manifold (coordinates), its tangent Space, optional metric, connection, curvature
-  tensor/      tensor.py: Tensor (one tensor: tr, raise/lower, Alt/Sym, swaps)
-               products.py: contract, otimes, wedge, odot    labels.py: result labels
-  operators/   d, wedge_d, nabla, wedge_nabla, curvature, wedge_curvature
-  geometry/    euclidean, surfaces, spacetimes, metric templates
-  symbolic/    simplification helpers
-tests/         every result derived by hand, checked
-examples/      tour.py
-```
+R = d∧Γ + Γ∧Γ
+
+Ric = tr(R^S)
+
+R_s = tr(Ric^μ_ν)
+
+G = Ric − ½ R_s g
 
 ## Quick start
 
 ```python
 import sympy as sp
 import tensorforms as tf
-from tensorforms import Manifold, nabla, wedge_nabla, curvature, contract
+from tensorforms import Manifold, nabla, wedge_d, wedge, curvature, contract
 
-th, ph = sp.symbols("theta phi", positive=True)
-M = Manifold([th, ph])                         # 1. a bare manifold: coordinates only
+th, ph = sp.symbols("theta phi", real=True)
+M = Manifold([th, ph], name="S2")              # 1. a bare manifold: coordinates only
 
-a, b, c, d = M.indices(4)                      # 2. indices (μ, ν, λ, κ), then tensors
-w = M.one_form([sp.cos(th), 0])                #    a 1-form (one form slot)
-v = M.vector([1, 0])                           #    shortcut for M.tensor(a.up, ...)
+w = M.one_form([sp.cos(th), 0])                # 2. tensors: a 1-form (| μ)
+v = M.vector([1, 0])                           #    a vector (μ↑ |)
+wedge_d(w)                                     #    d∧w needs no metric
 
-wedge_nabla(w)                                 # d∧w: works with no metric
+M.metric([[1, 0], [0, sp.sin(th)**2]])         # 3. make, check and attach the metric
+G = M.connection()                             #    Γ(ρ↑ σ↓ | μ)
+R = M.curvature()                              #    R(ρ↑ σ↓ | μ ν)
+(wedge_d(G) + wedge(G, G)).equals(R)           #    R = d∧Γ + Γ∧Γ, written as on paper
+M.ricci(), M.scalar_curvature(), M.einstein()
 
-M.metric([[1, 0], [0, sp.sin(th)**2]])                 # 3. make, check and attach a metric
-R = M.curvature()                              # R(ρ↑ σ↓ | μ ν)
-M.ricci(), M.scalar_curvature(), M.gaussian_curvature()
-
-nabla(v), curvature(v)                         # 4. the operators
-R.tr("ρ", "μ")                                 # 5. pairing is explicit: by name ("rho" works too) or number
+nabla(v), curvature(v)                         # 4. the operators: ∇v, ∇∧∇v = Rv
+contract(R, v)                                 # 5. products: R's column with v's row
+R.tr("ρ", "μ")                                 #    a trace, by name ("rho" works) or number
 
 S  = tf.geometry.sphere()                      # 6. presets (radius symbolic: K = 1/r²)
-BH = tf.geometry.schwarzschild()
+BH = tf.geometry.schwarzschild()               #    BH.ricci().is_zero() → True
 ```
 
-## Conventions
+## Concepts
 
-* **Slots** have a name, a space, `up`/`down`, and a role: `value` or `form`.
-  Declare them with index objects: `a.up`, `a.down`, `a.form`. Form slots are always down.
-* **Types**: each slot has a `type` (space, up/down, role); a tensor's `types` is the list. Adding needs matching types;
-  pairing needs the same space and opposite up/down.
-* **d** puts its new slot first among the form slots ("first after the bar").
-* **Names**: Greek for tangent-space slots (μ ν λ κ ρ σ τ …, with θ φ π last),
-  Latin for other spaces. Spelled-out Greek is accepted
-  anywhere a name is: `"mu"` means μ. New slots from d and ∇ get the first free name.
-* **Slots can also be given by number** (0, 1, …). Numbers shift when d adds a slot, so prefer names.
-* **Covectors and 1-forms**: `M.covector` is a row (μ↓ |), a down value slot; it pairs with
-  vectors by default, and `v.lower()` gives one. `R.lower("ρ")` / `Ric.raise_("σ")` work on any
-  value slot and undo each other exactly (they use the manifold's metric); form slots are never
-  raised or lowered. `M.one_form`
-  is (| μ), a form slot, for d∧ and wedge. `w.as_form()` turns a covector into a 1-form and
-  `α.as_value()` turns it back (so `contract(d(f).as_value(), v)` is the directional derivative).
-* **Products**: `contract(A, B)` is your AB: A's column (last value slot, down) with B's row
-  (first value slot, up). `contract(A, B, a, b)` pairs the slots you name, `X.tr(a, b)` pairs
-  two slots inside X, and `otimes(A, B)` is the tensor product (pairs nothing).
-  Nothing is chosen silently: when the default pair doesn't exist, contract refuses.
-* **Alt / Sym** act on any named slots (default: all form slots).
-  `wedge(A, B) = k!/(p! q!) · Alt(AB)`, `odot(A, B) = k!/(p! q!) · Sym(AB)`.
-* **Γ** (`M.connection()`) is stored as a plain tensor (ρ↑ σ↓ | μ), so you can write
-  `wedge_d(G) + wedge(G, G)` for R = d∧Γ + Γ∧Γ. It is not tensorial
-  (it changes differently under a change of coordinates), so ∇Γ has no meaning; the code
-  doesn't stop you writing it.
-* A bare `Manifold` has no metric; `M.metric(data)` gives it one, `M.metric()` an unknown
-  one (`signature="-+++"` for Lorentzian; for unknown functions the signature is only declared).
-  `M.metric(...)` makes, checks (shape, symmetric, invertible) and attaches it in one step;
-  calling it again replaces it. The metric is a plain tensor (μ↓ ν↓ |); `M.signature` gives "-+++".
+**Manifold and spaces.** A `Manifold` has coordinates and owns its tangent space. It has no
+metric until `M.metric(...)` makes, checks (shape, symmetric, invertible) and attaches one;
+calling it again replaces it. `M.metric(signature="-+++")` makes an unknown metric of functions
+(its signature is only declared). Γ, R, Ric, R_s and G are computed once and stored; you get copies.
+
+**Slots and indices.** A slot has a name, a space, up or down, and a role (value or form).
+Form slots are always down. Declare slots with indices: `mu, nu = M.indices(2)`, then
+`mu.up`, `mu.down`, `mu.form`. Names are Greek for the tangent space (μ ν λ κ ρ σ …, θ φ π last)
+and Latin for other spaces; `"mu"` means μ anywhere a name is. A slot can also be given by number
+(0, 1, …), but numbers shift when d adds a slot, so names are safer in your own work.
+
+**Types.** Each slot has a `type` (space, up/down, role); a tensor's `types` is the list.
+Adding needs matching types and goes slot by slot; pairing needs the same space and one up, one down.
+
+**One tensor** (methods): `+`, `−`, × a number or a scalar tensor; `simplify`, `equals`;
+swaps `T S U V` (positions 0–1, 1–2, 2–3, 3–4), `swap`, `reorder`, `rename`;
+`alt` / `sym` (default: all form slots); `tr(a, b)`; `lower(slot)` / `raise_(slot)` with the
+manifold's metric (any value slot; exact inverses; form slots are never raised or lowered);
+`as_form` / `as_value` to change a slot's role (same numbers).
+
+**Products of two tensors.**
+
+* `contract(A, B)` is your AB: A's column (last value slot, down) with B's row (first value slot, up).
+  If that pair doesn't exist, it refuses: nothing is chosen silently.
+* `contract(A, B, a, b)` pairs the slots you name.
+* `otimes(A, B)` is the tensor product: pairs nothing.
+* `wedge(A, B)` = k!/(p! q!) · Alt(AB), `odot(A, B)` = k!/(p! q!) · Sym(AB).
+* Results put value slots first, then A's form slots, then B's.
+
+**Vectors, covectors, 1-forms.** `M.vector` is (μ↑ |). `M.covector` is a row (μ↓ |): it pairs
+with vectors by default, and `v.lower()` gives one. `M.one_form` is (| μ): for d∧ and wedge.
+`w.as_form()` and `α.as_value()` convert between the two, so `contract(d(f).as_value(), v)` is
+the directional derivative.
+
+**Labels.** A result's label is the operation that made it: A+B, 3A, −A, R^US, Rv, A⊗B, A∧B,
+Alt(A), tr(R), ∇v. Display only.
+
+**Γ is not tensorial.** It is stored as a plain tensor so you can multiply, wedge and d it, but it
+changes differently under a change of coordinates, so ∇Γ has no meaning. The code doesn't stop you.
+
+## Presets (`tf.geometry`)
+
+| | |
+|---|---|
+| `euclidean(n, coords)` | flat space; coords "cartesian" (default), "polar", "spherical", "cylindrical" |
+| `sphere`, `cylinder`, `torus`, `hyperbolic_plane` | surfaces with K > 0, 0, both signs, < 0 |
+| `minkowski`, `schwarzschild`, `flrw`, `de_sitter` | spacetimes, −+++, units G = c = 1 |
+| `templates.diagonal`, `conformally_flat`, `static_spherical` | metrics with unknown functions, for solving |
+
+Parameters (radius, mass, a(t), H) stay symbolic unless you give values.
+
+## Layout
+
+```
+tensorforms/
+  manifold/    manifold.py, space.py, metric.py, connection.py (Γ), curvature.py (R, Ric, R_s, G)
+  tensor/      tensor.py (one tensor), products.py (two tensors), slot.py, labels.py
+  operators/   d, wedge_d, nabla, wedge_nabla, curvature, wedge_curvature
+  geometry/    presets and templates
+  symbolic/    simplification helpers
+tests/         test_core.py
+examples/      tour.py
+```
 
 ## Tests
 
@@ -96,13 +132,18 @@ BH = tf.geometry.schwarzschild()
 python -m pytest tests        # or: python tests/test_core.py
 ```
 
-Checks: sphere Γ, R, Ricci and K = 1 (and K = 1/r² with symbolic radius); ∇g = 0;
-the curvature operator equals R on every slot; ∇∧w = d∧w (curl needs no Γ); ∇∧∇∧w = 0;
-the Bianchi identity ∇∧R = 0 in a lumpy 3D space; the product rule; flat space in
-spherical coordinates has R = 0 but Γ ≠ 0; hyperbolic plane K = −1; Schwarzschild is
-vacuum (Ric = 0, G = 0); Γ is S-symmetric; each operator equals its definition; Alt/Sym projection rules; R∧v = Rv; type errors.
+The tests check results derived by hand (sphere Γ, R, Ricci, K; hyperbolic plane K = −1;
+flat space in curved coordinates has R = 0 but Γ ≠ 0; Schwarzschild is vacuum), each operator
+against its definition, Γ and R against the index formulas, ∇g = 0, the Bianchi identity
+∇∧R = 0, the product rule, solving G = 0 for a static spherical metric (Schwarzschild),
+Alt/Sym rules, products, raising and lowering, names, labels and error cases.
+
+## Speed
+
+Almost all the time goes into sympy's simplification. Schwarzschild takes about a second;
+heavy metrics such as Kerr take many minutes (as in other sympy-based packages).
 
 ## Not yet included
 
-Embeddings (E = dP), several spaces in one tensor beyond declaring them, named-axis data,
+Embeddings (E = dP), several spaces in one tensor beyond declaring them, the interior product,
 declared symmetries on types, the abstract (component-free) level, connections with torsion.
