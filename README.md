@@ -28,8 +28,6 @@ A bar separates them, value slots first:
 | curvature R | (ρ↑ σ↓ \| μ ν) |
 | metric g | (μ↓ ν↓ \|) |
 
-Products, swaps (T, S, U, V) and the wedge are explained in [Tensors](docs/tensors.md).
-
 ## The six operators
 
 | operator | function | description |
