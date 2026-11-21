@@ -99,33 +99,35 @@ differently under a change of coordinates), so ∇Γ has no meaning.
 Class methods on Manifold that return a manifold with its metric attached, e.g.
 `Manifold.sphere()`. Parameters stay symbolic unless you give values.
 
-| | flat, any coordinates | specific geometries |
+| | flat | curved |
 |---|---|---|
-| Riemannian (+ + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
+| Riemannian (+ + +) | `euclidean(n, coords)`, `cylinder` | `sphere`, `torus`, `hyperbolic_plane` |
 | Lorentzian (− + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
 
 ### Flat
 
-| call | coordinates |
+R = 0 everywhere.
+
+| call | metric / coordinates |
 |---|---|
 | `Manifold.euclidean(n=None, coords="cartesian")` | x, y, z (or x1 … xn); `"polar"` (r, φ), `"spherical"` (r, θ, φ), `"cylindrical"` (r, φ, z) |
 | `Manifold.minkowski(n=None, coords="cartesian")` | t, then the same spatial coordinates: −dt² plus flat space |
+| `Manifold.cylinder(r=None)` | r² dφ² + dz² (a plane rolled up: flat, though it looks curved from outside) |
 
-R = 0 always, but Γ ≠ 0 in curved coordinates. n follows the coordinates (Cartesian default:
+Γ ≠ 0 in curved coordinates even though R = 0. n follows the coordinates (Cartesian default:
 3 for Euclidean, 4 for Minkowski).
 
-### Surfaces
+### Curved
+
+Riemannian surfaces, with their Gaussian curvature K:
 
 | call | metric | K |
 |---|---|---|
 | `Manifold.sphere(r=None)` | r² dθ² + r² sin²θ dφ² | 1/r² |
-| `Manifold.cylinder(r=None)` | r² dφ² + dz² | 0 |
 | `Manifold.torus(R=None, r=None)` | r² dθ² + (R + r cos θ)² dφ² | > 0 outside, < 0 inside |
 | `Manifold.hyperbolic_plane()` | (dx² + dy²)/y² | −1 |
 
-### Spacetimes
-
-Signature −+++, units G = c = 1 (a mass m is a length).
+Lorentzian spacetimes, signature −+++, units G = c = 1 (a mass m is a length):
 
 | call | metric |
 |---|---|

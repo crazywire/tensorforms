@@ -43,9 +43,9 @@ A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then i
 Ready-made manifolds come as class methods, e.g. `Manifold.sphere()` or
 `Manifold.minkowski(4, "spherical")`:
 
-| | flat, any coordinates | specific geometries |
+| | flat | curved |
 |---|---|---|
-| Riemannian (+ + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
+| Riemannian (+ + +) | `euclidean(n, coords)`, `cylinder` | `sphere`, `torus`, `hyperbolic_plane` |
 | Lorentzian (− + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
 
 Metric templates with unknown functions, for solving, are in `tf.templates`.
