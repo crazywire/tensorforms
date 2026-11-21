@@ -13,6 +13,21 @@ R = d∧Γ + Γ∧Γ
 
 are written in the code the same way they are written on paper.
 
+## The notation
+
+Each slot of a tensor is **up or down** (↑ / ↓: like a matrix's row and column index) and
+either a **value** slot (what the tensor is) or a **form** slot (a direction it acts on, like dx).
+A bar separates them, value slots first:
+
+| object | slots |
+|---|---|
+| vector | (μ↑ \|) |
+| covector | (μ↓ \|) |
+| 1-form | (\| μ) |
+| connection Γ | (ρ↑ σ↓ \| μ) |
+| curvature R | (ρ↑ σ↓ \| μ ν) |
+| metric g | (μ↓ ν↓ \|) |
+
 ## The six operators
 
 | operator | function | description |

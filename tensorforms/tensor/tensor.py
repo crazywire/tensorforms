@@ -178,10 +178,22 @@ class Tensor:
         X.label = swapped(self.label, letter)
         return X
 
-    def T(self): return self._letter_swap(0, "T")
-    def S(self): return self._letter_swap(1, "S")
-    def U(self): return self._letter_swap(2, "U")
-    def V(self): return self._letter_swap(3, "V")
+    # T, S, U, V: short for swap_positions of neighbouring slots
+    def T(self):
+        """Short for swap_positions(0, 1)."""
+        return self._letter_swap(0, "T")
+
+    def S(self):
+        """Short for swap_positions(1, 2)."""
+        return self._letter_swap(1, "S")
+
+    def U(self):
+        """Short for swap_positions(2, 3)."""
+        return self._letter_swap(2, "U")
+
+    def V(self):
+        """Short for swap_positions(3, 4)."""
+        return self._letter_swap(3, "V")
 
     def rename(self, mapping):
         mapping = {self.names[self.position(k)]: _name(v) for k, v in mapping.items()}
