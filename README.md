@@ -38,6 +38,16 @@ A bar separates them, value slots first:
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
+## The geometry of a metric
+
+| tensor | method | description |
+|---|---|---|
+| g | `M.g` | metric (μ↓ ν↓ \|) |
+| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
+| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
+| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
+| R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
+| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
 
 ## Example: how curved is a sphere?
 

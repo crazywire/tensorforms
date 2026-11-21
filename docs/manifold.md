@@ -52,24 +52,15 @@ metric of functions g_ij(x), for solving.
 
 Everything follows from g (no torsion):
 
-Γ = ½ g⁻¹(dg + dg^S − dg^ST)
-
-R = d∧Γ + Γ∧Γ
-
-Ric = tr(R^S)
-
-R_s = tr(g⁻¹ Ric)
-
-G = Ric − ½ R_s g
-
-| call | gives |
-|---|---|
-| `M.levi_civita()` | Γ (ρ↑ σ↓ \| μ) |
-| `M.riemann()` | R (ρ↑ σ↓ \| μ ν) |
-| `M.ricci()` | Ric (μ↓ ν↓ \|) |
-| `M.ricci_scalar()` | R_s |
-| `M.einstein()` | G (μ↓ ν↓ \|) |
-| `M.gaussian_curvature()` | K = R_s / 2 (2D only) |
+| tensor | method | description |
+|---|---|---|
+| g | `M.g` | metric (μ↓ ν↓ \|) |
+| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
+| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
+| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
+| R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
+| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
+| K = R_s / 2 | `M.gaussian_curvature()` | Gaussian curvature (2D only) |
 
 ### Example: the curvature of a sphere of radius r, step by step
 
