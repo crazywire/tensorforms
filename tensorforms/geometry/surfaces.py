@@ -11,7 +11,7 @@ def _radius(value, name):
 def sphere(r=None):
     """Round sphere. r=None keeps the radius symbolic (K = 1/r²)."""
     r = _radius(r, "r")
-    th, ph = sp.symbols("theta phi", positive=True)
+    th, ph = sp.symbols("theta phi", real=True)
     M = Manifold([th, ph], name="S2")
     M.metric(sp.diag(r ** 2, r ** 2 * sp.sin(th) ** 2), signature="++")
     return M
@@ -20,7 +20,7 @@ def sphere(r=None):
 def cylinder(r=None):
     """Flat but wraps around: coordinates (φ, z)."""
     r = _radius(r, "r")
-    ph = sp.Symbol("phi", positive=True)
+    ph = sp.Symbol("phi", real=True)
     z = sp.Symbol("z", real=True)
     M = Manifold([ph, z], name="Cyl")
     M.metric(sp.diag(r ** 2, 1), signature="++")
@@ -32,7 +32,7 @@ def torus(R=None, r=None):
     R, r = _radius(R, "R"), _radius(r, "r")
     th, ph = sp.symbols("theta phi", real=True)
     M = Manifold([th, ph], name="T2")
-    M.metric(sp.diag(r ** 2, (R + r * sp.cos(th)) ** 2))
+    M.metric(sp.diag(r ** 2, (R + r * sp.cos(th)) ** 2), signature="++")
     return M
 
 
