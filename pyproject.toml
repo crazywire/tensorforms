@@ -1,7 +1,7 @@
 [project]
 name = "tensorforms"
 version = "0.1.0"
-description = "Calculus of tensor-valued forms with four operators"
+description = "Calculus of tensor-valued forms with six operators"
 requires-python = ">=3.9"
 dependencies = ["sympy>=1.12", "numpy>=1.24"]
 
