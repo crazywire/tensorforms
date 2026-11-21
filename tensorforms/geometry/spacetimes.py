@@ -1,4 +1,5 @@
-"""4D Lorentzian geometries, signature (−,+,+,+)."""
+"""4D Lorentzian geometries, signature (−,+,+,+), in units with G = c = 1
+(so a mass m is a length, GM/c²). r is positive; t, θ, φ and the Cartesian coordinates are real."""
 import sympy as sp
 
 from ..manifold.manifold import Manifold
@@ -12,10 +13,11 @@ def minkowski():
 
 
 def schwarzschild(m=None):
-    """Outside a round, non-rotating mass m (or black hole). Vacuum: Ric = 0."""
+    """Outside a round, non-rotating mass m (or black hole). Vacuum: Ric = 0.
+    The signature −+++ holds outside the horizon, r > 2m; inside, t and r swap roles."""
     m = sp.Symbol("m", positive=True) if m is None else sp.sympify(m)
-    t = sp.Symbol("t", real=True)
-    r, th, ph = sp.symbols("r theta phi", positive=True)
+    t, th, ph = sp.symbols("t theta phi", real=True)
+    r = sp.Symbol("r", positive=True)
     f = 1 - 2 * m / r
     M = Manifold([t, r, th, ph], name="Schwarzschild")
     M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
@@ -23,11 +25,26 @@ def schwarzschild(m=None):
 
 
 def flrw(a=None, k=0):
-    """Expanding universe. a(t) is the scale factor (unknown function by default); k = 0, +1, −1."""
-    t = sp.Symbol("t", real=True)
-    r, th, ph = sp.symbols("r theta phi", positive=True)
-    a = sp.Function("a")(t) if a is None else a
-    M = Manifold([t, r, th, ph], name="FLRW")
+    """Expanding universe. a(t) is the scale factor; k = 0, +1, −1.
+    a: None (an unknown function a(t)), a function of t (e.g. lambda t: t**Rational(2, 3)),
+    or an expression in the preset's t, which is sp.Symbol("t", real=True).
+    For k = +1 the signature −+++ holds for r < 1."""
+    t, th, ph = sp.symbols("t theta phi", real=True)
+    r = sp.Symbol("r", positive=True)
+    coords = [t, r, th, ph]
+    if a is None:
+        a = sp.Function("a")(t)
+    elif callable(a):
+        a = sp.sympify(a(t))
+    else:
+        a = sp.sympify(a)
+        names = {c.name: c for c in coords}
+        wrong = [s for s in a.free_symbols if s.name in names and s != names[s.name]]
+        if wrong:
+            raise ValueError(f"a uses a symbol named {wrong[0].name!r} that is not the manifold's coordinate "
+                             f"(declared with different assumptions). Use sp.Symbol(\"t\", real=True), "
+                             f"or pass a function: flrw(a=lambda t: ...)")
+    M = Manifold(coords, name="FLRW")
     g = sp.diag(-1, a ** 2 / (1 - k * r ** 2), a ** 2 * r ** 2, a ** 2 * r ** 2 * sp.sin(th) ** 2)
     M.metric(g, signature="-+++")
     return M

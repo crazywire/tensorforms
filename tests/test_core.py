@@ -354,6 +354,18 @@ def test_euclidean_options():
         raise AssertionError("expected a ValueError")
 
 
+def test_flrw_scale_factor():
+    t = sp.Symbol("t", real=True)
+    a1 = tf.geometry.flrw(a=t ** 2).scalar_curvature()               # the preset's t
+    a2 = tf.geometry.flrw(a=lambda T: T ** 2).scalar_curvature()     # a function of t
+    assert a1 != 0 and is_zero(a1 - a2)
+    try:
+        tf.geometry.flrw(a=sp.Symbol("t") ** 2)                       # a different t: refused
+    except ValueError:
+        return
+    raise AssertionError("expected a ValueError")
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]
