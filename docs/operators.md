@@ -1,23 +1,30 @@
 # Operators
 
-|            | every slot              | wedged (form slots antisymmetrized) |
-|------------|-------------------------|-------------------------------------|
-| plain      | `d`                     | `wedge_d` = d∧                      |
-| once       | `nabla` = d + Γ         | `wedge_nabla` = d∧ + Γ∧             |
-| twice      | `curvature` = R         | `wedge_curvature` = R∧              |
+There are six. Each takes one tensor and returns a new one, labelled by the operator
+(dX, ∇X, …). New form slots go first after the bar. Γ and R come from the manifold.
 
-Each takes one tensor and returns a new one, labelled by the operator (dX, ∇X, …).
-New form slots go first after the bar. Γ and R come from the manifold; with no metric, ∇ and
-∇∧ act as d and d∧, and the curvatures are zero.
+1. **d — partial derivative** (`d`). Adds one form slot holding the derivatives of every
+   component. Needs only the coordinates.
 
-* **d** adds one form slot: the derivatives of every component.
-* **d∧** makes X antisymmetric in its form slots, takes d, then antisymmetrizes the new slot
-  with the old ones, times p + 1. On a 1-form this is the curl.
-* **∇ = d + Γ** corrects every slot: +Γ from the left on up slots, −Γ from the right on down slots.
-* **∇∧ = d∧ + Γ∧** corrects value slots only. The corrections on form slots cancel, because Γ
-  is symmetric in its two lower slots (no torsion).
-* **∇∧∇ = R** acts with R on every slot; nothing is differentiated.
-* **∇∧∇∧ = R∧** acts with R on value slots, times C(p+2; 2, p).
+2. **d∧ — exterior derivative** (`wedge_d`). Makes X antisymmetric in its form slots, takes d,
+   then antisymmetrizes the new slot with the old ones, times p + 1 (p = X's form slots).
+   On a function it is the gradient; on a 1-form, the curl.
+
+3. **∇ — covariant derivative** (`nabla`). ∇ = d + Γ, with Γ correcting every slot: +Γ from the
+   left on up slots, −Γ from the right on down slots.
+
+4. **∇∧ — exterior covariant derivative** (`wedge_nabla`). ∇∧ = d∧ + Γ∧, with Γ correcting value
+   slots only. The corrections on form slots cancel, because Γ is symmetric in its two lower
+   slots (no torsion).
+
+5. **∇∧∇ — curvature operator** (`curvature`). ∇ twice with the two new slots antisymmetrized,
+   i.e. the commutator of covariant derivatives. It equals R acting on every slot; nothing is
+   differentiated.
+
+6. **∇∧∇∧ — exterior covariant derivative twice** (`wedge_curvature`). It equals R acting on
+   value slots (R∧), times C(p+2; 2, p).
+
+With no metric, ∇ and ∇∧ act as d and d∧, and the two curvature operators are zero.
 
 ```python
 import sympy as sp

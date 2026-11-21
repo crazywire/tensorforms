@@ -45,7 +45,7 @@ tf.geometry.schwarzschild().ricci().is_zero() # vacuum  → True
 |---|---|
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G |
 | [Tensors](docs/tensors.md) | the notation (slots, arrows, the bar), one tensor, products |
-| [Operators](docs/operators.md) | d, d∧, ∇, ∇∧, ∇∧∇, ∇∧∇∧ and their product rules |
+| [Operators](docs/operators.md) | the six operators (partial, exterior, covariant and exterior covariant derivatives, and the two curvature operators) and their product rules |
 | [Geometry](docs/geometry.md) | flat space, surfaces, spacetimes, templates |
 
 ## Install and test
