@@ -38,7 +38,9 @@ A bar separates them, value slots first:
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
-## The geometry of a metric
+## Manifold: metric, connection and curvature
+
+A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then it provides:
 
 | tensor | method | description |
 |---|---|---|
