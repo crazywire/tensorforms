@@ -5,13 +5,6 @@ import sympy as sp
 from ..manifold import Manifold
 
 
-def minkowski():
-    t, x, y, z = sp.symbols("t x y z", real=True)
-    M = Manifold([t, x, y, z], name="Minkowski")
-    M.metric(sp.diag(-1, 1, 1, 1), signature="-+++")
-    return M
-
-
 def schwarzschild(m=None):
     """Outside a round, non-rotating mass m (or black hole). Vacuum: Ric = 0.
     The signature −+++ holds outside the horizon, r > 2m; inside, t and r swap roles."""

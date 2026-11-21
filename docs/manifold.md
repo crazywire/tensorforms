@@ -99,13 +99,20 @@ differently under a change of coordinates), so ∇Γ has no meaning.
 Class methods on Manifold that return a manifold with its metric attached, e.g.
 `Manifold.sphere()`. Parameters stay symbolic unless you give values.
 
-### Flat space
+| | flat, any coordinates | specific geometries |
+|---|---|---|
+| Riemannian (+ + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
+| Lorentzian (− + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
+
+### Flat
 
 | call | coordinates |
 |---|---|
 | `Manifold.euclidean(n=None, coords="cartesian")` | x, y, z (or x1 … xn); `"polar"` (r, φ), `"spherical"` (r, θ, φ), `"cylindrical"` (r, φ, z) |
+| `Manifold.minkowski(n=None, coords="cartesian")` | t, then the same spatial coordinates: −dt² plus flat space |
 
-R = 0 always, but Γ ≠ 0 in curved coordinates. n follows the coordinates (Cartesian default 3).
+R = 0 always, but Γ ≠ 0 in curved coordinates. n follows the coordinates (Cartesian default:
+3 for Euclidean, 4 for Minkowski).
 
 ### Surfaces
 
@@ -122,7 +129,6 @@ Signature −+++, units G = c = 1 (a mass m is a length).
 
 | call | metric |
 |---|---|
-| `Manifold.minkowski()` | −dt² + dx² + dy² + dz² |
 | `Manifold.schwarzschild(m=None)` | −f dt² + dr²/f + r² dΩ², f = 1 − 2m/r (outside the horizon, r > 2m) |
 | `Manifold.flrw(a=None, k=0)` | −dt² + a(t)² [dr²/(1 − kr²) + r² dΩ²] |
 | `Manifold.de_sitter(H=None)` | −dt² + e^{2Ht}(dx² + dy² + dz²) |

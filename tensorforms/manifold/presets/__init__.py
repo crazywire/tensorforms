@@ -1,7 +1,7 @@
 """Ready-made manifolds, reached as Manifold.<name>(...)."""
-from .euclidean import euclidean
+from .flat import euclidean, minkowski
 from .surfaces import sphere, cylinder, torus, hyperbolic_plane
-from .spacetimes import minkowski, schwarzschild, flrw, de_sitter
+from .spacetimes import schwarzschild, flrw, de_sitter
 
 __all__ = ["euclidean", "sphere", "cylinder", "torus", "hyperbolic_plane",
            "minkowski", "schwarzschild", "flrw", "de_sitter"]

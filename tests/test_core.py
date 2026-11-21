@@ -411,6 +411,18 @@ def test_interior():
         raise AssertionError("expected a TypeError")
 
 
+def test_minkowski_options():
+    assert tf.Manifold.minkowski().signature == "-+++" and tf.Manifold.minkowski().dim == 4
+    S = tf.Manifold.minkowski(coords="spherical")                  # −dt² + dr² + r²dΩ²
+    assert S.dim == 4 and S.riemann().is_zero() and not S.levi_civita().is_zero()
+    assert tf.Manifold.minkowski(3, "polar").signature == "-++"
+    try:
+        tf.Manifold.minkowski(5, "spherical")
+    except ValueError:
+        return
+    raise AssertionError("expected a ValueError")
+
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]

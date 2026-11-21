@@ -40,8 +40,14 @@ A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then i
 | R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
 | G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
 
-Ready-made manifolds come as class methods: `Manifold.euclidean()`, `Manifold.sphere()`,
-`cylinder`, `torus`, `hyperbolic_plane`, `minkowski`, `schwarzschild`, `flrw`, `de_sitter`.
+Ready-made manifolds come as class methods, e.g. `Manifold.sphere()` or
+`Manifold.minkowski(4, "spherical")`:
+
+| | flat, any coordinates | specific geometries |
+|---|---|---|
+| Riemannian (+ + +) | `euclidean(n, coords)` | `sphere`, `cylinder`, `torus`, `hyperbolic_plane` |
+| Lorentzian (− + + +) | `minkowski(n, coords)` | `schwarzschild`, `flrw`, `de_sitter` |
+
 Metric templates with unknown functions, for solving, are in `tf.templates`.
 
 ## Tensors

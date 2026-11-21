@@ -61,10 +61,10 @@ class Manifold:
         return hyperbolic_plane()
 
     @classmethod
-    def minkowski(cls):
-        """Flat spacetime, −dt² + dx² + dy² + dz²."""
+    def minkowski(cls, n=None, coords="cartesian"):
+        """Flat spacetime: −dt² plus flat space in the given coordinates (default 4D Cartesian)."""
         from .presets import minkowski
-        return minkowski()
+        return minkowski(n, coords)
 
     @classmethod
     def schwarzschild(cls, m=None):
