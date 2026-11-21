@@ -449,3 +449,10 @@ def test_contract_keeps_form_order_when_names_clash():
     clash = contract(A, B, 1, 0)
     fresh = contract(A, B.rename({"μ": "α", "ν": "β"}), 1, 0)
     assert (clash.data == fresh.data).all()
+
+
+def test_slot_lists_are_positions():
+    S = tf.Manifold.sphere()
+    R = S.riemann()                              # R(ρ↑ σ↓ | μ ν)
+    assert R.value_slots == [0, 1] and R.form_slots == [2, 3]
+    assert R.names == ["ρ", "σ", "μ", "ν"]       # the labels

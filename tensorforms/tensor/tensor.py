@@ -70,11 +70,13 @@ class Tensor:
 
     @property
     def form_slots(self):
-        return [s.name for s in self.slots if s.is_form]
+        """Positions of the form slots."""
+        return [k for k, s in enumerate(self.slots) if s.is_form]
 
     @property
     def value_slots(self):
-        return [s.name for s in self.slots if not s.is_form]
+        """Positions of the value slots."""
+        return [k for k, s in enumerate(self.slots) if not s.is_form]
 
     def position(self, x):
         """A slot by name ("μ", "mu", an Index or Slot) or by number (0, 1, …)."""
@@ -196,18 +198,20 @@ class Tensor:
         return self._letter_swap(3, "V")
 
     def rename(self, mapping):
-        mapping = {self.names[self.position(k)]: _name(v) for k, v in mapping.items()}
-        return self._new(slots=[s.renamed(mapping.get(s.name, s.name)) for s in self.slots], label=self.label)
+        """New labels: {slot (name or number): new name}."""
+        mapping = {self.position(k): _name(v) for k, v in mapping.items()}
+        return self._new(slots=[s.renamed(mapping[k]) if k in mapping else s for k, s in enumerate(self.slots)],
+                         label=self.label)
 
-    def _relabel(self, names, new_role, eligible, need):
-        if names:
-            targets = {self.names[self.position(n)] for n in names}
-            bad = [s for s in self.slots if s.name in targets and not eligible(s)]
+    def _relabel(self, which, new_role, eligible, need):
+        if which:
+            targets = {self.position(x) for x in which}
+            bad = [self.slots[k] for k in sorted(targets) if not eligible(self.slots[k])]
             if bad:
                 raise TypeError(f"needs {need}; got {bad}")
         else:
-            targets = {s.name for s in self.slots if eligible(s)}
-        return self._new(slots=[s.with_role(new_role) if s.name in targets else s for s in self.slots],
+            targets = {k for k, s in enumerate(self.slots) if eligible(s)}
+        return self._new(slots=[s.with_role(new_role) if k in targets else s for k, s in enumerate(self.slots)],
                          label=self.label)
 
     def as_form(self, *names):
@@ -232,9 +236,9 @@ class Tensor:
     # ---------- raising and lowering (needs the manifold's metric) ----------
     def _move_index(self, slot, want_up, verb):
         if slot is None:
-            options = [s.name for s in self.slots if not s.is_form and s.is_up == want_up]
+            options = [k for k, s in enumerate(self.slots) if not s.is_form and s.is_up == want_up]
             if len(options) != 1:
-                raise TypeError(f"{verb}: say which slot (candidates: {options})")
+                raise TypeError(f"{verb}: say which slot (candidates: {[self.names[k] for k in options]})")
             slot = options[0]
         i = self.position(slot)
         s = self.slots[i]
@@ -262,7 +266,7 @@ class Tensor:
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
-        pos = [self.position(n) for n in (names or self.form_slots)]
+        pos = [self.position(n) for n in names] if names else self.form_slots
         types = {self.slots[p].type for p in pos}
         if len(types) > 1:
             raise TypeError("Alt/Sym need slots of the same type (space and up/down)")
