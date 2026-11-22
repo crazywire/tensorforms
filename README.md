@@ -39,6 +39,7 @@ A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then i
 | Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
 | R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
 | G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
+| ε = √\|det g\| dx¹ ∧ … ∧ dxⁿ | `M.volume_form()` | volume form (\| μ ν …): length, area, volume, … |
 
 Ready-made manifolds come as class methods, e.g. `Manifold.sphere()` or
 `Manifold.minkowski(4, "spherical")`:
@@ -63,6 +64,7 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | X^T, X^S, X^U, X^V | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap neighbouring slots |
 | Alt X, Sym X | `X.alt()`, `X.sym()` | antisymmetric and symmetric parts |
 | | `X.lower(a)`, `X.raise_(a)` | lower or raise a value slot with g |
+| ⋆X | `X.star()` | Hodge star: k form slots become n − k (direction ↔ plane ↔ volume …) |
 
 ## Operators
 
@@ -127,4 +129,4 @@ Schwarzschild's curvature takes about 0.3 s, Kerr's about 30 s.
 
 ## Not yet included
 
-Connections with torsion, the interior product, embeddings, several spaces in one tensor.
+Connections with torsion, embeddings, several spaces in one tensor.
