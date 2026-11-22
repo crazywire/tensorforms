@@ -122,7 +122,6 @@ Runnable scripts in `examples/` (run from the project folder, e.g. `python examp
 
 | | |
 |---|---|
-| [tour.py](examples/tour.py) | a short tour: manifold, tensors, metric, operators, products, presets |
 | [friedmann.py](examples/friedmann.py) | an expanding universe with a perfect fluid: G = 8πT gives the Friedmann equations |
 | [charged_black_hole.py](examples/charged_black_hole.py) | Reissner–Nordström: F = d∧A, Maxwell (d∧F = 0, d∧⋆F = 0) and G = 8πT |
 
