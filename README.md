@@ -116,6 +116,15 @@ took the traces.
 | [Tensors](docs/tensors.md) | the notation (slots, arrows, the bar), one tensor, products |
 | [Operators](docs/operators.md) | the six operators and their product rules |
 
+## Examples
+
+Runnable scripts in `examples/` (run from the project folder, e.g. `python examples/friedmann.py`):
+
+| | |
+|---|---|
+| [friedmann.py](examples/friedmann.py) | an expanding universe with a perfect fluid: G = 8πT gives the Friedmann equations |
+| [charged_black_hole.py](examples/charged_black_hole.py) | Reissner–Nordström: F = d∧A, Maxwell (d∧F = 0, d∧⋆F = 0) and G = 8πT |
+
 ## Install and test
 
 Needs Python ≥ 3.9, sympy and numpy.
