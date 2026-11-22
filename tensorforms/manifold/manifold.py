@@ -14,6 +14,7 @@ from .connection import levi_civita
 from .curvature import einstein, ricci, riemann, ricci_scalar
 from .metric import build_metric, inverse_metric
 from .space import TANGENT_NAMES, Space
+from .volume import volume_form
 
 
 class Manifold:
@@ -151,6 +152,10 @@ class Manifold:
     def levi_civita(self):
         """Γ (ρ↑ σ↓ | μ), from the metric."""
         return self._cached("Γ", lambda: levi_civita(self.g, self.ginv))
+
+    def volume_form(self):
+        """ε ( | μ ν …) = √|det g| dx¹ ∧ … ∧ dxⁿ: n-dimensional volume, from the metric."""
+        return self._cached("ε", lambda: volume_form(self))
 
     def has_metric(self):
         return self._g is not None

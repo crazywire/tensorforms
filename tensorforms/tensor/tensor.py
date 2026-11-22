@@ -264,6 +264,27 @@ class Tensor:
         """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
         return self._move_index(slot, False, "raise_")
 
+    # ---------- Hodge star (needs the manifold's metric) ----------
+    def star(self):
+        """⋆X: the k form slots become n − k, with the same amount (direction ↔ plane ↔ volume …).
+        Raise the form slots, fill them into the volume form ε in order, divide by k!.
+        Value slots are carried along. Uses the metric and the coordinate order (orientation)."""
+        from .products import otimes                 # here, to avoid a circular import
+        M = self.manifold
+        if not M.has_metric():
+            raise TypeError("star needs a metric: the volume form and raising both use it")
+        forms = self.form_slots
+        k = len(forms)
+        X = self.as_value(*forms) if k else self
+        for p in forms:
+            X = X.raise_(p)
+        T = otimes(X, M.volume_form())                # X's value slots, then ε's n form slots
+        nv = len(X.slots)
+        for j, p in enumerate(forms):                 # the j-th raised slot fills ε's next slot
+            T = T.tr(p - j, nv - j)
+        T = T * sp.Rational(1, math.factorial(k)) if k > 1 else T
+        return T._new(label=f"⋆{wrap(self.label)}" if self.label else None)
+
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, names, signed):
         pos = [self.position(n) for n in names] if names else self.form_slots

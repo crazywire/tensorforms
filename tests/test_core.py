@@ -456,3 +456,46 @@ def test_slot_lists_are_positions():
     R = S.riemann()                              # R(ρ↑ σ↓ | μ ν)
     assert R.value_slots == [0, 1] and R.form_slots == [2, 3]
     assert R.names == ["ρ", "σ", "μ", "ν"]       # the labels
+
+
+def test_volume_form():
+    P = tf.Manifold.euclidean(coords="polar")
+    r, _ = P.coords
+    eps = P.volume_form()
+    assert eps.form_slots == [0, 1] and sp.simplify(eps.data[0, 1] - r) == 0 and eps.data[1, 0] == -eps.data[0, 1]
+    S = tf.Manifold.sphere()
+    th, _ = S.coords
+    rr = sp.Symbol("r", positive=True)
+    assert sp.simplify(S.volume_form().data[0, 1] - rr**2 * sp.Abs(sp.sin(th))) == 0
+
+
+def test_star_signs_and_curl():
+    E = tf.Manifold.euclidean()
+    x, y, z = E.coords
+    alpha = E.one_form([-y, x, 0])
+    assert wedge_d(alpha).star().data.tolist() == [0, 0, 2]          # curl of the rotation
+    assert alpha.star().star().equals(alpha)                           # 3D Riemannian: ⋆⋆ = 1
+    assert E.scalar(1).star().equals(E.volume_form())                  # ⋆1 = ε
+    Mk = tf.Manifold.minkowski()
+    t, X, Y, Z = Mk.coords
+    F = wedge_d(Mk.one_form([t * X, Y, 0, X * Z]))
+    assert F.star().star().equals(-F)                                  # 4D Lorentzian 2-form: ⋆⋆ = −1
+
+
+def test_star_divergence_matches_trace():
+    def div_star(v):
+        return wedge_d(v.lower().as_form().star()).star().data.item()
+
+    def div_trace(v):
+        return nabla(v).tr(0, 1).data.item()
+
+    P = tf.Manifold.euclidean(coords="polar")
+    r, ph = P.coords
+    v = P.vector([r**2 * sp.cos(ph), sp.sin(ph) / r])
+    assert sp.simplify(div_star(v) - div_trace(v)) == 0               # symbolic: no |…| here
+    S = tf.Manifold.sphere()                                           # √det g has |sin θ|: sample points
+    th, p = S.coords
+    rr = sp.Symbol("r", positive=True)
+    v = S.vector([sp.sin(th) * p, sp.cos(th) ** 2])
+    for pt in ({th: 1, p: 2, rr: 3}, {th: sp.Rational(1, 3), p: -1, rr: sp.Rational(1, 2)}):
+        assert abs(sp.N((div_star(v) - div_trace(v)).subs(pt))) < 1e-12

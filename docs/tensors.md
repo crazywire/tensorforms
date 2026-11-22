@@ -50,6 +50,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.tr(a, b)` | pair two slots and sum |
 | `X.lower(slot)`, `X.raise_(slot)` | g or g⁻¹ on a value slot; exact inverses |
 | `X.as_form()`, `X.as_value()` | change the role: covector ↔ 1-form, same numbers |
+| `X.star()` | Hodge star: k form slots become n − k, same amount (uses the metric) |
 
 **Swaps.** Slot order matters. T, S, U and V are short for swapping neighbouring slots,
 counted from 0 across all slots:
@@ -87,6 +88,53 @@ tr(R^S)(σ↓ | ν)
 The trace leaves one value slot and one form slot; the numbers are the Ricci tensor.
 
 Raising and lowering never act on form slots; use `as_value()` first.
+
+### The Hodge star
+
+⋆ pairs each set of directions with the directions left over, keeping the amount. In 3D:
+
+number ↔ volume
+
+direction ↔ plane
+
+It raises X's k form slots and fills them, in order, into the volume form ε (n form slots),
+then divides by k! (each plane is stored k! times). What is left are n − k form slots. Value
+slots are carried along. For a 1-form α:
+
+⋆α = ι(ε, α raised)
+
+### Example: curl and divergence with ⋆
+
+d∧ does the work (circulation per plane, outflow per box); ⋆ turns the result into the shape you
+want.
+
+curl v = ⋆ d∧ v♭
+
+div v = ⋆ d∧ ⋆ v♭
+
+where v♭ is v as a 1-form (`v.lower().as_form()`).
+
+```python
+import tensorforms as tf
+from tensorforms import wedge_d, nabla
+E = tf.Manifold.euclidean()
+x, y, z = E.coords
+
+rotation = E.vector([-y, x, 0]).lower().as_form()
+print(wedge_d(rotation).star().data.tolist())
+
+outward = E.vector([x, y, z])
+flat = outward.lower().as_form()
+print(wedge_d(flat.star()).star().data.item(), nabla(outward).tr(0, 1).data.item())
+```
+
+```text
+[0, 0, 2]
+3 3
+```
+
+The rotation spins 2 per unit area in the xy plane, so its curl points along z. The outward flow
+has divergence 3, the same as tr(∇v).
 
 ## Products
 
