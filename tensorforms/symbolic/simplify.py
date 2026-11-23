@@ -3,13 +3,12 @@
 `clean` first tries a direct recipe: write sin and cos as variables s, c, cancel the
 fraction exactly, and use s² = 1 − c². That is fast and gives a true zero as exactly 0
 (e.g. sin(2θ)·tan(θ) + cos(2θ) − 1 → 0). If the recipe can't apply, it falls back to
-sympy's general simplify. `is_zero` also falls back to numeric spot checks.
-"""
-import random
+sympy's general simplify. Every step rewrites an expression into an equal one; nothing is guessed.
 
+`is_zero` answers True (shown to be 0), False (shown not to be 0) or None (can't tell).
+"""
 import numpy as np
 import sympy as sp
-from sympy.core.function import AppliedUndef
 
 
 def _trig_rational(e):
@@ -56,30 +55,21 @@ def clean(e):
     (or fails), sympy's general simplify."""
     e = sp.sympify(e)
     if e.is_number:
-        return sp.nsimplify(e) if e.is_Float else e
+        return e                              # numbers stay as given (a decimal is not turned into a fraction)
     try:
         return _trig_rational(e)
     except (sp.PolynomialError, sp.GeneratorsNeeded, TypeError, ValueError):
         return _general(e)
 
 
-def is_zero(e, spot_checks=4):
-    """True if the expression is identically zero."""
-    c = clean(e)
+def is_zero(e):
+    """Exact, three answers: True if the expression simplifies to 0; False if it is shown
+    not to be 0 (a nonzero number, or sympy can prove it from the symbols' assumptions);
+    None if neither can be shown. Never decided by numerical sampling."""
+    c = sp.sympify(clean(e))
     if c == 0:
         return True
-    c = sp.sympify(c)
-    if c.atoms(AppliedUndef):
-        return False                       # unknown functions: can't spot check
-    syms = sorted(c.free_symbols, key=str)
-    if not syms:
-        return False
-    for _ in range(spot_checks):
-        vals = {s: sp.Float(random.uniform(0.3, 1.2)) for s in syms}
-        v = complex(c.subs(vals).evalf())
-        if abs(v) > 1e-9:
-            return False
-    return True
+    return False if c.is_zero is False else None
 
 
 clean_array = np.vectorize(clean, otypes=[object])

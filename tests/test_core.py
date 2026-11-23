@@ -81,7 +81,7 @@ def test_curvature_operator_matches_its_definition():
     S, v, w = _sphere_fields()                                # R on every slot == ∇ twice, antisymmetrized
     assert curvature(v).equals(curvature_by_commutator(v))
     assert curvature(w).equals(curvature_by_commutator(w))
-    assert not curvature(w).is_zero()                        # −Rᵀw, not zero
+    assert curvature(w).is_zero() is False                   # −Rᵀw, shown not zero
 
 
 def test_curl_needs_no_connection():
@@ -414,7 +414,7 @@ def test_interior():
 def test_minkowski_options():
     assert tf.Manifold.minkowski().signature == "-+++" and tf.Manifold.minkowski().dim == 4
     S = tf.Manifold.minkowski(coords="spherical")                  # −dt² + dr² + r²dΩ²
-    assert S.dim == 4 and S.riemann().is_zero() and not S.levi_civita().is_zero()
+    assert S.dim == 4 and S.riemann().is_zero() and S.levi_civita().is_zero() is False
     assert tf.Manifold.minkowski(3, "polar").signature == "-++"
     try:
         tf.Manifold.minkowski(5, "spherical")
@@ -552,3 +552,18 @@ def test_value_for_every_tensor():
     assert sp.simplify(S.ricci_scalar().value - 2 / rr**2) == 0      # scalar: its expression
     assert S.vector([1, 0]).value == sp.Array([1, 0])                  # vector: a 1D Array
     assert S.g.value.shape == (2, 2)                                   # g: a 2D Array
+
+
+def test_is_zero_is_exact():
+    # three answers, never a numerical guess
+    x = sp.Symbol("x", positive=True)
+    f = sp.Function("f")(x)
+    assert is_zero(sp.sin(x) ** 2 + sp.cos(x) ** 2 - 1) is True     # shown to be 0
+    assert is_zero(sp.Integer(3)) is False                            # shown not to be 0
+    assert is_zero(x) is False                                        # x > 0 by assumption
+    assert is_zero(f) is None                                         # an unknown function: can't tell
+    assert is_zero(sp.Rational(1, 10) ** 12 * x) is False             # tiny is not zero
+    S = tf.Manifold.sphere()
+    assert S.vector([0, 0]).is_zero() is True
+    assert S.vector([1, 0]).is_zero() is False
+    assert S.vector([f, 0]).is_zero() is None

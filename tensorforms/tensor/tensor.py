@@ -197,9 +197,15 @@ class Tensor:
         return self._new(clean_array(self.data), label=self.label)
 
     def is_zero(self):
-        return all(_is_zero(e) for e in self.data.flat)
+        """True if every component is shown to be 0; False if one is shown not to be;
+        None if that can't be decided exactly."""
+        answers = [_is_zero(e) for e in self.data.flat]
+        if all(a is True for a in answers):
+            return True
+        return False if any(a is False for a in answers) else None
 
     def equals(self, other):
+        """Same three answers as is_zero, for X − Y."""
         return (self - other).is_zero()
 
     # ---------- moving slots ----------

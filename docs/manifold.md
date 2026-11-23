@@ -37,8 +37,8 @@ v = M.vector([1, 0])
 
 ## The metric
 
-`M.metric(data)` makes the metric, checks it (right size, symmetric, invertible) and attaches
-it. Calling it again replaces it. With no data, `M.metric(signature="-+++")` makes an unknown
+`M.metric(data)` makes the metric, checks it (right size; shown symmetric; refused if shown to have
+determinant 0) and attaches it. Calling it again replaces it. With no data, `M.metric(signature="-+++")` makes an unknown
 metric of functions g_ij(x), for solving.
 
 

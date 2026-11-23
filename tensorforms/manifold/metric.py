@@ -57,9 +57,9 @@ def build_metric(M, data=None, signature=None):
         if g.shape != (n, n):
             raise ValueError(f"metric must be {n}×{n} on this manifold, got {g.shape}")
         for a, b in itertools.combinations(range(n), 2):
-            if not is_zero(g[a, b] - g[b, a]):
-                raise ValueError("a metric must be symmetric")
-        if is_zero(g.det()):
+            if is_zero(g[a, b] - g[b, a]) is not True:       # refused unless shown symmetric
+                raise ValueError(f"a metric must be symmetric; g[{a},{b}] − g[{b},{a}] is not shown to be 0")
+        if is_zero(g.det()) is True:                         # refused when shown singular
             raise ValueError("a metric must be invertible, but this one has determinant 0")
         found = _infer_signature(g)
         if signature and found and signature != found:
