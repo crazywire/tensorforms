@@ -93,8 +93,8 @@ S = Manifold([th, ph], name="S2")
 S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 print(S.ricci().data)
-print(S.ricci_scalar())
-print(S.gaussian_curvature())
+print(S.ricci_scalar()[()])        # a scalar tensor; [()] gives its value
+print(S.gaussian_curvature()[()])
 ```
 
 ```text

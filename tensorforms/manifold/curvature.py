@@ -1,7 +1,6 @@
 """Curvature: R from Γ, then its traces Ricci, scalar curvature and the Einstein tensor."""
 import sympy as sp
 
-from ..symbolic.simplify import clean
 from ..tensor.products import wedge
 
 
@@ -25,8 +24,11 @@ def ricci(R):
 
 
 def ricci_scalar(Ric):
-    """R_s = tr(g⁻¹ Ric): raising Ric's first slot is multiplying by g⁻¹; then take the trace."""
-    return clean(Ric.raise_(0).tr(0, 1).data.item())
+    """R_s = tr(g⁻¹ Ric): raising Ric's first slot is multiplying by g⁻¹; then take the trace.
+    A scalar tensor (no slots)."""
+    Rs = Ric.raise_(0).tr(0, 1).simplify()
+    Rs.label = "R_s"
+    return Rs
 
 
 def einstein(Ric, Rs, g):

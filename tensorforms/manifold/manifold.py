@@ -179,9 +179,15 @@ class Manifold:
         return self._cached("Rs", lambda: ricci_scalar(self.ricci()))
 
     def gaussian_curvature(self):
+        """K = R_s / 2, a scalar tensor (2D surfaces only)."""
         if self.dim != 2:
             raise ValueError("Gaussian curvature is for 2D surfaces")
-        return sp.simplify(self.ricci_scalar() / 2)
+
+        def K():
+            k = (self.ricci_scalar() / 2).simplify()
+            k.label = "K"
+            return k
+        return self._cached("K", K)
 
     def einstein(self):
         return self._cached("G", lambda: einstein(self.ricci(), self.ricci_scalar(), self.g))

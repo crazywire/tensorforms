@@ -345,7 +345,7 @@ def test_operator_labels():
 def test_euclidean_options():
     assert tf.Manifold.euclidean().dim == 3 and tf.Manifold.euclidean(4).dim == 4
     assert tf.Manifold.euclidean(coords="polar").dim == 2                    # n follows the coordinates
-    assert tf.Manifold.euclidean(3, "Spherical").ricci_scalar() == 0     # any capitalisation
+    assert tf.Manifold.euclidean(3, "Spherical").ricci_scalar().is_zero()   # any capitalisation
     for bad in (lambda: tf.Manifold.euclidean(3, "polar"), lambda: tf.Manifold.euclidean(3, "spherial")):
         try:
             bad()

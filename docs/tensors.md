@@ -126,7 +126,7 @@ print(wedge_d(rotation).star().data.tolist())
 
 outward = E.vector([x, y, z])
 flat = outward.lower().as_form()
-print(wedge_d(flat.star()).star().data.item(), nabla(outward).tr(0, 1).data.item())
+print(wedge_d(flat.star()).star()[()], nabla(outward).tr(0, 1)[()])
 ```
 
 ```text
@@ -166,7 +166,7 @@ The length² of a vector v is the row (lowered v) times the column v.
 ```python
 e_phi = S.vector([0, 1])
 length2 = contract(e_phi.lower(), e_phi)
-print(length2.data.item())
+print(length2[()])
 ```
 
 ```text
@@ -203,7 +203,7 @@ direction e_θ into its derivative df gives the rate of change along e_θ:
 from tensorforms import d, interior
 f = S.scalar(sp.cos(th))              # height on the sphere
 v = S.vector([1, 0])                  # e_θ: moving south
-print(interior(d(f), v).data.item())
+print(interior(d(f), v)[()])
 ```
 
 ```text
