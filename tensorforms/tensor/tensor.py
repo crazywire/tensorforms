@@ -41,6 +41,10 @@ def _as_scalar(c):
 
 
 class Tensor:
+    # sympy defers mixed operations to objects with a higher _op_priority (its expressions have 10),
+    # so θ * X and θ + s stay tensor arithmetic instead of sympy taking over.
+    _op_priority = 20.0
+
     def __init__(self, manifold, data, slots, label=None):
         self.manifold = manifold
         self.data = np.asarray(data, dtype=object)
@@ -169,6 +173,20 @@ class Tensor:
             raise ZeroDivisionError("division of a tensor by zero")
         label = f"{wrap(self.label)}/{c_label or wrap(sp.pretty(c, use_unicode=True))}" if self.label else None
         return self._new(self.data / c, label=label)
+
+    def __rtruediv__(self, c):
+        """A number divided by a scalar is a scalar (2 / s); dividing by a tensor with slots is refused."""
+        if self.slots:
+            raise TypeError("can't divide by a tensor with slots (an inverse is a different operation)")
+        n = _as_expr(c)
+        if n is None:
+            raise TypeError(f"can only divide a number or expression by a scalar, not {type(c).__name__}")
+        return Tensor(self.manifold, n, [], label=sp.pretty(n, use_unicode=True)) / self
+
+    def _sympy_(self):
+        """What sympy sees when it is handed a tensor: a scalar's expression, otherwise a sympy Array
+        of the components (one axis per slot). So sp.simplify(s), sp.diff(s, θ), sp.solve(s, r) work."""
+        return self.data.item() if not self.slots else sp.Array(self.data.tolist())
 
     def simplify(self):
         return self._new(clean_array(self.data), label=self.label)

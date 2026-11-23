@@ -528,3 +528,19 @@ def test_adding_numbers():
             assert False, "a nonzero number only adds to a scalar"
         except TypeError:
             pass
+
+
+def test_sympy_accepts_tensors():
+    S = tf.Manifold.sphere()
+    th, _ = S.coords
+    v = S.vector([1, 2])
+    s = contract(v.lower(), v)                                  # a scalar
+    assert sp.simplify(sp.diff(s, th) - sp.diff(s.data.item(), th)) == 0   # sympy takes it directly
+    assert sp.sympify(v) == sp.Array([1, 2])                    # one axis per slot
+    for mixed in (th * s, th + s, th - s, sp.sin(th) * v, 2 / s, 0 / s):
+        assert isinstance(mixed, tf.Tensor)                     # tensor arithmetic, whichever side
+    try:
+        2 / v
+        assert False, "dividing by a tensor with slots is refused"
+    except TypeError:
+        pass
