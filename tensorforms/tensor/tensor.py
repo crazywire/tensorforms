@@ -108,7 +108,7 @@ class Tensor:
     def _as_scalar(c):
         """c as an exact sympy expression, with its label: a number, an expression or a scalar tensor."""
         not_scalar = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
-                  "(for products of tensors: contract, otimes, wedge)")
+                      "(for products of tensors: contract, otimes, wedge)")
         c_label = None
         if isinstance(c, Tensor):
             if c.slots:
