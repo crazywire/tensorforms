@@ -1,17 +1,16 @@
 """Simplification, done entirely with sympy's own tools.
 
-`clean` (for display) uses sympy's trig algorithm `fu`, then sympy's `simplify` on its result,
+`simplify_expr` (for display) uses sympy's trig algorithm `fu`, then sympy's `simplify` on its result,
 keeping the shorter: fu gives readable trig, simplify finishes hyperbolic and exponential parts,
 in any mix. `is_zero` (exact) also rewrites everything
 as exponentials and cancels: for expressions built from sin, cos, sinh, cosh, exp, … that
 decides zero exactly. Every step rewrites an expression into an equal one; nothing is guessed.
 """
-import numpy as np
 import sympy as sp
 from sympy.simplify.fu import fu
 
 
-def clean(e):
+def simplify_expr(e):
     """Simplify one expression for display, with sympy: fu (readable trig), then simplify
     on its result (hyperbolic and exponential parts, in any mix), keeping the shorter; both
     are equal, and a tie keeps fu's form. Numbers stay as given (a decimal is not turned into
@@ -34,12 +33,10 @@ def is_zero(e):
     False  sympy proves it is not 0 (a nonzero number, or from the symbols' assumptions);
     None   sympy can't tell.
     Never decided by numerical sampling."""
-    c = sp.sympify(clean(e))
+    c = sp.sympify(simplify_expr(e))
     if c == 0:
         return True
     if sp.cancel(sp.powsimp(sp.expand(c.rewrite(sp.exp)))) == 0:
         return True                                      # exact: as exponentials it cancels to 0
     return c.is_zero
 
-
-clean_array = np.vectorize(clean, otypes=[object])

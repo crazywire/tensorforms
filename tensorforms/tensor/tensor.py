@@ -11,7 +11,7 @@ import numpy as np
 import sympy as sp
 from sympy.combinatorics import Permutation
 
-from ..symbolic.simplify import clean_array, is_zero as _is_zero
+from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
 from .labels import join, negated, scaled, slot_label, swapped, wrap
 from .slot import Slot
 
@@ -194,7 +194,8 @@ class Tensor:
         return self.value
 
     def simplify(self):
-        return self._new(clean_array(self.data), label=self.label)
+        """Every component simplified (sympy: fu, then simplify; exact rewrites only)."""
+        return self._new(np.vectorize(simplify_expr, otypes=[object])(self.data), label=self.label)
 
     def is_zero(self):
         """True if every component is shown to be 0; False if one is shown not to be;
