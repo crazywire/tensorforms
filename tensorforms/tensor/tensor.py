@@ -105,34 +105,35 @@ class Tensor:
         return self._new(-self.data, label=negated(self.label))
 
     @staticmethod
-    def _coefficient(c, verb):
+    def _coefficient(c):
         """c as an exact sympy expression, with its label: a number, an expression or a scalar tensor."""
+        refuse = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
+                  "(for products of tensors: contract, otimes, wedge)")
         c_label = None
         if isinstance(c, Tensor):
             if c.slots:
-                raise TypeError("use contract, otimes or wedge to multiply tensors" if verb == "multiply"
-                                else "can't divide by a tensor with slots (an inverse is a different operation)")
+                raise TypeError(refuse)
             c_label, c = c.label, c.data.item()
         try:
             c = sp.sympify(c, strict=True)                   # 2 → Integer(2): exact, never a float
         except sp.SympifyError:
             c = None
         if not isinstance(c, sp.Expr):
-            raise TypeError(f"can only {verb} a tensor by a number, an expression or a scalar tensor")
+            raise TypeError(refuse)
         return c, c_label
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
         if not self.slots and isinstance(c, Tensor):         # scalar × tensor
             return c * self
-        c, c_label = self._coefficient(c, "multiply")
+        c, c_label = self._coefficient(c)
         return self._new(self.data * c, label=scaled(c, c_label, self.label))
 
     __rmul__ = __mul__
 
     def __truediv__(self, c):
         """Divide by a number, a sympy expression, or a scalar tensor: exact (X / 2 is ½X, never 0.5X)."""
-        c, c_label = self._coefficient(c, "divide")
+        c, c_label = self._coefficient(c)
         if c == 0:
             raise ZeroDivisionError("division of a tensor by zero")
         label = f"{wrap(self.label)}/{c_label or wrap(sp.pretty(c, use_unicode=True))}" if self.label else None
