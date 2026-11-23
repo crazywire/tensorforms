@@ -590,3 +590,6 @@ def test_zeros_of_every_family():
     assert all(is_zero(z) is True for z in zeros)
     S = tf.Manifold.sphere()
     assert S.scalar(sp.cosh(x)**2 - sp.sinh(x)**2).simplify().value == 1   # hyperbolic leftovers simplify too
+    th2 = sp.Symbol("theta", real=True)                                  # mixed families simplify together
+    mix = sp.sin(th2)**2*sp.cosh(x)**2 + sp.cos(th2)**2*sp.cosh(x)**2 - sp.sinh(x)**2
+    assert S.scalar(mix).simplify().value == 1

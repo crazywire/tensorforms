@@ -1,7 +1,8 @@
 """Simplification, done entirely with sympy's own tools.
 
-`clean` (for display) uses sympy's trig algorithm `fu`, then sympy's `simplify` for any
-hyperbolic or exponential functions left over. `is_zero` (exact) also rewrites everything
+`clean` (for display) uses sympy's trig algorithm `fu`, then sympy's `simplify` on its result,
+keeping the shorter: fu gives readable trig, simplify finishes hyperbolic and exponential parts,
+in any mix. `is_zero` (exact) also rewrites everything
 as exponentials and cancels: for expressions built from sin, cos, sinh, cosh, exp, … that
 decides zero exactly. Every step rewrites an expression into an equal one; nothing is guessed.
 """
@@ -9,13 +10,12 @@ import numpy as np
 import sympy as sp
 from sympy.simplify.fu import fu
 
-_HYPERBOLIC = (sp.sinh, sp.cosh, sp.tanh, sp.coth, sp.sech, sp.csch, sp.exp)
-
 
 def clean(e):
-    """Simplify one expression for display, with sympy: fu for trig, then simplify for
-    hyperbolic or exponential leftovers (keeping the shorter, both being equal).
-    Numbers stay as given (a decimal is not turned into a fraction)."""
+    """Simplify one expression for display, with sympy: fu (readable trig), then simplify
+    on its result (hyperbolic and exponential parts, in any mix), keeping the shorter; both
+    are equal, and a tie keeps fu's form. Numbers stay as given (a decimal is not turned into
+    a fraction)."""
     e = sp.sympify(e)
     if e.is_number:
         return e
@@ -23,9 +23,9 @@ def clean(e):
         r = fu(e)
     except Exception:                                    # fu can't handle it: sympy's general simplify
         return sp.simplify(e)
-    if r != 0 and r.has(*_HYPERBOLIC):
-        r = min([r, sp.simplify(r)], key=sp.count_ops)
-    return r
+    if r == 0:
+        return r
+    return min([r, sp.simplify(r)], key=sp.count_ops)
 
 
 def is_zero(e):
