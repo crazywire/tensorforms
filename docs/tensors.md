@@ -54,6 +54,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.lower(slot)`, `X.raise_(slot)` | g or g⁻¹ on a value slot; exact inverses |
 | `X.as_form()`, `X.as_value()` | change the role: covector ↔ 1-form, same numbers |
 | `X.star()` | Hodge star: k form slots become n − k, same amount (uses the metric) |
+| `X.inverse(out, inp)` | the inverse, reading X as a map from value slot inp to out: the matrix inverse (other slots ride along), roles swap, arrows flip; default with two value slots: `X.inverse()` |
 
 **Swaps.** Slot order matters. T, S, U and V are short for swapping neighbouring slots,
 counted from 0 across all slots:

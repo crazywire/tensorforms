@@ -572,3 +572,26 @@ def test_is_zero_is_exact():
     assert S.vector([0, 0]).is_zero() is True
     assert S.vector([1, 0]).is_zero() is False
     assert S.vector([f, 0]).is_zero() is None
+
+
+def test_inverse():
+    S = tf.Manifold.sphere()
+    th, _ = S.coords
+    assert S.g.inverse().equals(S.ginv)                         # g⁻¹ is g's tensor inverse
+    A = S.map([[1, sp.sin(th)], [0, 2]])
+    assert contract(A, A.inverse()).equals(S.map([[1, 0], [0, 1]]))
+    assert [s.is_up for s in S.g.inverse().slots] == [True, True]  # arrows flip
+    mu, nu, la = S.indices(3)
+    F = S.tensor(mu.up, nu.down, la.form, data=[[[1, 0], [2, 1]], [[0, th], [1, 3]]])
+    Fi = F.inverse()                                            # one inverse per step: λ rides along
+    for k in range(2):
+        assert sp.simplify(sp.Matrix(F.data[:, :, k]) * sp.Matrix(Fi.data[:, :, k])) == sp.eye(2)
+    for bad in (lambda: S.map([[1, 1], [1, 1]]).inverse(),      # determinant 0
+                lambda: S.vector([1, 0]).inverse(),             # one value slot: say which two
+                lambda: F.inverse(0, 2),                        # a form slot
+                lambda: tf.Manifold(list(sp.symbols("x y", real=True))).metric([[1, 1], [1, 1]])):
+        try:
+            bad()
+            assert False, "should refuse"
+        except (TypeError, ValueError):
+            pass
