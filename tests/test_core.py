@@ -22,7 +22,7 @@ def curvature_by_commutator(X):
     """∇∧∇ by definition: ∇ twice, minus the order swapped."""
     pos = _first_form_position(X)
     Y = nabla(nabla(X))
-    return Y - Y.swap_positions(pos, pos + 1)
+    return Y - Y.swap(pos, pos + 1)
 
 
 def wedge_nabla_by_definition(X):
