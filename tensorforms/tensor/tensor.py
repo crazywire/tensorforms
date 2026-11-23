@@ -31,8 +31,9 @@ class Tensor:
         if len(set(names)) != len(names):
             raise ValueError(f"slot names must be unique within a tensor: {names}")
 
-    def _new(self, data=None, slots=None, label=None):
-        """A tensor on the same manifold; data and slots default to this tensor's."""
+    def _new(self, data=None, slots=None, *, label):
+        """A tensor on the same manifold; data and slots default to this tensor's.
+        The label must be given (label=self.label to keep it, label=None for none)."""
         return Tensor(self.manifold,
                       self.data if data is None else data,
                       self.slots if slots is None else slots,
@@ -133,7 +134,7 @@ class Tensor:
 
     # ---------- moving slots ----------
     def _transposed(self, order):
-        return self._new(np.transpose(self.data, order), [self.slots[i] for i in order], self.label)
+        return self._new(np.transpose(self.data, order), [self.slots[i] for i in order], label=self.label)
 
     def reorder(self, *names):
         order = [self.position(n) for n in names]
@@ -228,7 +229,7 @@ class Tensor:
         metric = M.g if want_up else M.ginv
         data = np.moveaxis(np.tensordot(metric.data, self.data, axes=([1], [i])), 0, i)
         flipped = Slot(s.name, s.space, "down" if want_up else "up", "value")
-        return self._new(data, self.slots[:i] + [flipped] + self.slots[i + 1:], self.label)
+        return self._new(data, self.slots[:i] + [flipped] + self.slots[i + 1:], label=self.label)
 
     def lower(self, slot=None):
         """g on one up value slot: ↑ → ↓. Same physics; raise_ undoes it exactly.
