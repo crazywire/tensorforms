@@ -81,7 +81,8 @@ def test_curvature_operator_matches_its_definition():
     S, v, w = _sphere_fields()                                # R on every slot == ∇ twice, antisymmetrized
     assert curvature(v).equals(curvature_by_commutator(v))
     assert curvature(w).equals(curvature_by_commutator(w))
-    assert curvature(w).is_zero() is False                   # −Rᵀw, shown not zero
+    assert curvature(w).is_zero() is None                    # w has unknown v1, v2: can't tell
+    assert curvature(S.one_form([1, 0])).is_zero() is False  # a concrete w: −Rᵀw shown not zero
 
 
 def test_curl_needs_no_connection():
@@ -562,6 +563,8 @@ def test_is_zero_is_exact():
     assert is_zero(sp.Integer(3)) is False                            # shown not to be 0
     assert is_zero(x) is False                                        # x > 0 by assumption
     assert is_zero(f) is None                                         # an unknown function: can't tell
+    th = sp.Symbol("theta", real=True)
+    assert is_zero(sp.sin(th)) is False                               # nonzero at θ = 1/3: an exact witness
     assert is_zero(sp.Rational(1, 10) ** 12 * x) is False             # tiny is not zero
     S = tf.Manifold.sphere()
     assert S.vector([0, 0]).is_zero() is True

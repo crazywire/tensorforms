@@ -45,7 +45,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X + Y`, `X - Y`, `-X` | slot by slot (types must match); a number counts as a scalar, and 0 as the zero tensor of any type |
 | `c * X`, `X / c` | c a number, an expression, or a scalar tensor; exact (`X / 2` is ½X, never 0.5X) |
 | `X.simplify()` | simplify every component (exact rewrites only) |
-| `X.is_zero()`, `X.equals(Y)` | True (shown), False (shown not), or None (can't tell); exact, never sampled |
+| `X.is_zero()`, `X.equals(Y)` | zero everywhere? True (simplifies to 0), False (nonzero at an exact point), None (can't tell); never sampled |
 | `sp.diff(s, θ)`, `sp.solve(s, r)`, … | sympy accepts tensors directly: a scalar as its expression, others as a sympy Array (one axis per slot) |
 | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap positions 0–1, 1–2, 2–3, 3–4 |
 | `X.swap(a, b)`, `X.reorder(*names)`, `X.rename({…})` | move or rename slots |

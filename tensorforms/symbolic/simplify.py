@@ -62,14 +62,30 @@ def clean(e):
         return _general(e)
 
 
+# Exact points to try as witnesses: fractions, never decimals.
+_WITNESSES = [sp.Rational(1, 3), sp.Rational(2, 7), sp.Rational(5, 11)]
+
+
 def is_zero(e):
-    """Exact, three answers: True if the expression simplifies to 0; False if it is shown
-    not to be 0 (a nonzero number, or sympy can prove it from the symbols' assumptions);
-    None if neither can be shown. Never decided by numerical sampling."""
+    """Is the expression zero everywhere? Exact, three answers:
+    True   it simplifies to exactly 0;
+    False  it is shown not to be: one exact point (fractions, not decimals) where its value
+           is a nonzero number is a proof;
+    None   neither can be shown (e.g. it contains unknown functions such as a(t)).
+    Never decided by numerical sampling or a tolerance."""
     c = sp.sympify(clean(e))
     if c == 0:
         return True
-    return False if c.is_zero is False else None
+    if c.is_zero is False:
+        return False
+    syms = sorted(c.free_symbols, key=str)
+    for k in range(len(_WITNESSES)):
+        point = {s: (k + 1 if s.is_integer else _WITNESSES[(k + i) % len(_WITNESSES)])
+                 for i, s in enumerate(syms)}
+        v = c.xreplace(point)
+        if v.is_number and v.is_finite and v.is_zero is False:
+            return False                         # a witness: nonzero at an exact point
+    return None
 
 
 clean_array = np.vectorize(clean, otypes=[object])
