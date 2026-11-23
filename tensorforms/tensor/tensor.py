@@ -287,40 +287,29 @@ class Tensor:
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.slots) if k not in (i, j)], label)
 
     # ---------- raising and lowering (needs the manifold's metric) ----------
-    def _raise_or_lower(self, slot, verb):
-        """Flip one value slot with the metric. verb "lower": up → down with g;
-        verb "raise_": down → up with g⁻¹."""
-        if verb not in ("lower", "raise_"):
-            raise ValueError(f"verb must be 'lower' or 'raise_', not {verb!r}")
-        from_up = verb == "lower"                            # lowering acts on an up slot
-        if slot is None:
-            options = [k for k, s in enumerate(self.slots) if not s.is_form and s.is_up == from_up]
+    def _flip(self, slot, to, metric):
+        """Make one value slot point `to` (up or down), multiplying by `metric` along it."""
+        if slot is None:                                   # the only slot that can be flipped
+            options = [k for k, s in enumerate(self.slots) if not s.is_form and s.variance != to]
             if len(options) != 1:
-                raise TypeError(f"{verb}: say which slot (candidates: {[self.names[k] for k in options]})")
+                raise TypeError(f"say which slot (candidates: {[self.names[k] for k in options]})")
             slot = options[0]
         i = self.position(slot)
         s = self.slots[i]
-        if s.is_form:
-            raise TypeError(f"{verb}: {s.name} is a form slot; form slots are never raised or lowered "
-                            "(use as_value() first)")
-        if s.is_up != from_up:
-            raise TypeError(f"{verb}: {s.name} is already {'down' if from_up else 'up'}")
-        M = self.manifold
-        if s.space is not M.tangent:
-            raise TypeError(f"{verb}: {s.name} is not in the tangent space")
-        metric = M.g if from_up else M.ginv
+        if s.is_form or s.variance == to:
+            raise TypeError(f"can't make {s.name} {to}: it is a form slot or already {to}")
         data = np.moveaxis(np.tensordot(metric.data, self.data, axes=([1], [i])), 0, i)
-        flipped = Slot(s.name, s.space, "down" if from_up else "up", "value")
+        flipped = Slot(s.name, s.space, to, "value")
         return self._new(data, self.slots[:i] + [flipped] + self.slots[i + 1:], label=self.label)
 
     def lower(self, slot=None):
         """g on one up value slot: ↑ → ↓. Same physics; raise_ undoes it exactly.
         v.lower() for a vector; R.lower("ρ") for a named slot."""
-        return self._raise_or_lower(slot, "lower")
+        return self._flip(slot, "down", self.manifold.g)
 
     def raise_(self, slot=None):
         """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
-        return self._raise_or_lower(slot, "raise_")
+        return self._flip(slot, "up", self.manifold.ginv)
 
     # ---------- inverse ----------
     def inverse(self):
