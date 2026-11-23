@@ -16,7 +16,7 @@ from .labels import join, negated, scaled, slot_label, swapped, wrap
 from .slot import Slot
 
 
-def _number(x):
+def _as_expr(x):
     """x as an exact sympy expression (2 → Integer(2), never a float), or None if it isn't one."""
     try:
         x = sp.sympify(x, strict=True)
@@ -34,7 +34,7 @@ def _as_scalar(c):
         if c.slots:
             raise TypeError(not_scalar)
         c_label, c = c.label, c.data.item()
-    c = _number(c)
+    c = _as_expr(c)
     if c is None:
         raise TypeError(not_scalar)
     return c, c_label
@@ -121,7 +121,7 @@ class Tensor:
         type check decides; 0 is the zero tensor of any type, returned as None (nothing to add)."""
         if isinstance(other, Tensor):
             return other
-        c = _number(other)
+        c = _as_expr(other)
         if c is None:
             raise TypeError(f"can only add tensors and numbers, not {type(other).__name__}")
         if c == 0:
