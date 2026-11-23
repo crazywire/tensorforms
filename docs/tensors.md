@@ -3,22 +3,22 @@
 ## The notation
 
 A tensor is a list of **slots**. Each slot is up (↑) or down (↓), and is either a **value**
-slot (part of what the tensor is) or a **form** slot (a step it takes). A bar separates them,
-value slots first:
+slot (part of what the tensor is) or a **form** slot (a step it takes). A value slot carries ↑ or
+↓; a form slot carries no arrow:
 
 | object | slots | reads as |
 |---|---|---|
-| vector | (μ↑ \|) | a column |
-| covector | (μ↓ \|) | a row |
-| matrix | (μ↑ ν↓ \|) | row index ↑, column index ↓ |
-| 1-form | (\| μ) | takes one step |
-| Γ | (ρ↑ σ↓ \| μ) | a matrix-valued 1-form |
-| R | (ρ↑ σ↓ \| μ ν) | a matrix-valued 2-form |
-| g | (μ↓ ν↓ \|) | |
+| vector | (μ↑) | a column |
+| covector | (μ↓) | a row |
+| matrix | (μ↑ ν↓) | row index ↑, column index ↓ |
+| 1-form | (μ) | takes one step |
+| Γ | (ρ↑ σ↓ μ) | a matrix-valued 1-form |
+| R | (ρ↑ σ↓ μ ν) | a matrix-valued 2-form |
+| g | (μ↓ ν↓) | |
 
-Form slots are always down. The letters are labels; the arrows and the bar carry the meaning.
-Names are Greek (μ ν λ κ ρ σ …), and `"mu"` works for μ. A slot can also be given by number
-(0, 1, …).
+Form slots are always down, so they need no arrow. The letters are labels; the arrows carry the
+meaning. Labels can be anything you choose; the ones the package hands out are Greek
+(μ ν λ κ ρ σ …), and `"mu"` works for μ. A slot can also be given by number (0, 1, …).
 
 A slot's **type** is (space, up/down, role). Adding needs matching types; pairing needs one
 up and one down.
@@ -64,7 +64,7 @@ counted from 0 across all slots:
 
 Any other swap: `X.swap(a, b)` (by name or position) or `X.reorder(...)`.
 
-X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ | μ ν) with S applied is
+X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ μ ν) with S applied is
 (ρ↑ μ σ↓ ν): the second and third slots trade places. A result's label says how it was made:
 R^US, −A, Alt(R), tr(R), …
 
@@ -73,14 +73,14 @@ R^US, −A, Alt(R), tr(R), …
 Ric = tr(R^S): swap R's second and third slots, then pair the first two.
 
 ```python
-R = S.riemann()                 # R(ρ↑ σ↓ | μ ν)
+R = S.riemann()                 # R(ρ↑ σ↓ μ ν)
 Ric = R.S().tr(0, 1)
 print(Ric)
 print(Ric.simplify().data)
 ```
 
 ```text
-tr(R^S)(σ↓ | ν)
+tr(R^S)(σ↓ ν)
 [[1 0]
  [0 sin(theta)**2]]
 ```
@@ -142,7 +142,7 @@ has divergence 3, the same as tr(∇v).
 as in matrix multiplication. Everything else is carried along: value slots first, then A's
 form slots, then B's.
 
-Rv: (ρ↑ σ↓ | μ ν)(κ↑ |) → (ρ↑ | μ ν)
+Rv: (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν)
 
 If the meeting slots are both up or both down, AB isn't defined (like column × column).
 
@@ -186,7 +186,7 @@ print(Rv.simplify().data[:, 0, 1])     # the θφ part
 ```
 
 ```text
-Rv(ρ↑ | μ ν)
+Rv(ρ↑ μ ν)
 [0 -1]
 ```
 

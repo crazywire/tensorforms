@@ -18,8 +18,8 @@ t = U.coords[0]
 rho = sp.Function("rho")(t)                     # energy density
 p = sp.Function("p")(t)                         # pressure
 
-u = U.vector([1, 0, 0, 0]).lower()              # the fluid is at rest: u = e_t, lowered (μ↓ |)
-T = (rho + p) * otimes(u, u) + p * U.g          # perfect fluid (μ↓ ν↓ |)
+u = U.vector([1, 0, 0, 0]).lower()              # the fluid is at rest: u = e_t, lowered (μ↓)
+T = (rho + p) * otimes(u, u) + p * U.g          # perfect fluid (μ↓ ν↓)
 
 E = (U.einstein() - 8 * sp.pi * T).simplify()   # Einstein's equation: E = 0
 

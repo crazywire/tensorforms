@@ -1,6 +1,6 @@
 """The connection Γ, built from the metric (so no torsion: Γ is S-symmetric).
 
-Γ is stored as a plain tensor (ρ↑ σ↓ | μ) so you can multiply, wedge and d it,
+Γ is stored as a plain tensor (ρ↑ σ↓ μ) so you can multiply, wedge and d it,
 e.g. R = d∧Γ + Γ∧Γ. It is not tensorial (it doesn't change like a tensor under a
 change of coordinates), so ∇Γ has no meaning; nothing stops you writing it.
 """

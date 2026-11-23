@@ -199,7 +199,7 @@ def test_wedge_single_factor_is_one_term():
 def test_ricci_by_names():
     S = tf.Manifold.sphere(r=1)
     R = S.riemann()
-    Ric = R.tr("ρ", "μ")                                     # (σ↓ | ν): same numbers as S.ricci()
+    Ric = R.tr("ρ", "μ")                                     # (σ↓ ν): same numbers as S.ricci()
     assert all(is_zero(e) for e in (Ric.data - S.ricci().data).flat)
 
 
@@ -320,7 +320,7 @@ def test_raise_lower_undo():
     F = wedge_nabla(v.lower().as_form())                       # bridge to a 1-form, then d∧
     assert F.form_slots and not F.value_slots
     f = S.scalar(th ** 2)
-    df = tf.d(f)                                                # a 1-form (| μ)
+    df = tf.d(f)                                                # a 1-form (μ)
     assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
     assert df.as_value().as_form().types == df.types
 
@@ -453,7 +453,7 @@ def test_contract_keeps_form_order_when_names_clash():
 
 def test_slot_lists_are_positions():
     S = tf.Manifold.sphere()
-    R = S.riemann()                              # R(ρ↑ σ↓ | μ ν)
+    R = S.riemann()                              # R(ρ↑ σ↓ μ ν)
     assert R.value_slots == [0, 1] and R.form_slots == [2, 3]
     assert R.names == ["ρ", "σ", "μ", "ν"]       # the labels
 

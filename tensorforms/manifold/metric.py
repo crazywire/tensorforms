@@ -1,4 +1,4 @@
-"""Building the metric: a plain tensor (μ↓ ν↓ |) that the manifold uses.
+"""Building the metric: a plain tensor (μ↓ ν↓) that the manifold uses.
 
 M.metric(...) calls build_metric to make and check it, then attaches it.
 """

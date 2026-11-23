@@ -28,12 +28,12 @@ f = 1 - 2 * m / r + q ** 2 / r ** 2
 M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
 
 A = M.one_form([-q / r, 0, 0, 0])               # electric potential q/r
-F = wedge_d(A)                                  # field strength (| μ ν)
+F = wedge_d(A)                                  # field strength (μ ν)
 print("E_r = F_rt:", F.data[1, 0])
 print("d∧F = 0: ", wedge_d(F).is_zero())
 print("d∧⋆F = 0:", wedge_d(F.star()).simplify().is_zero())
 
-Fv = F.as_value()                                            # (μ↓ ν↓ |)
+Fv = F.as_value()                                            # (μ↓ ν↓)
 FF = contract(Fv, Fv.raise_(1), 1, 1)                        # F_μλ F_ν^λ
 F2 = contract(Fv.raise_(0).raise_(1), Fv, 0, 0).tr(0, 1)     # F^αβ F_αβ
 T = (FF - sp.Rational(1, 4) * F2 * M.g) * (1 / (4 * sp.pi))

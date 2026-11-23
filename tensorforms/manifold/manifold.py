@@ -107,12 +107,12 @@ class Manifold:
         return Tensor(self, data, [a.up], label="v")
 
     def covector(self, data, index=None):
-        """A row (μ↓ |): a down value slot. Pairs with vectors by default; lower(v) gives one."""
+        """A row (μ↓): a down value slot. Pairs with vectors by default; lower(v) gives one."""
         a = index or self.index()
         return Tensor(self, data, [a.down], label="w")
 
     def one_form(self, data, index=None):
-        """A 1-form (| μ): one form slot. For d∧ and wedge; d of a function gives one."""
+        """A 1-form (μ): one form slot. For d∧ and wedge; d of a function gives one."""
         a = index or self.index()
         return Tensor(self, data, [a.form], label="α")
 
@@ -150,11 +150,11 @@ class Manifold:
 
     # ---------- connection and curvature ----------
     def levi_civita(self):
-        """Γ (ρ↑ σ↓ | μ), from the metric."""
+        """Γ (ρ↑ σ↓ μ), from the metric."""
         return self._cached("Γ", lambda: levi_civita(self.g, self.ginv))
 
     def volume_form(self):
-        """ε ( | μ ν …) = √|det g| dx¹ ∧ … ∧ dxⁿ: n-dimensional volume, from the metric."""
+        """ε (μ ν …) = √|det g| dx¹ ∧ … ∧ dxⁿ: n-dimensional volume, from the metric."""
         return self._cached("ε", lambda: volume_form(self))
 
     def has_metric(self):
@@ -169,7 +169,7 @@ class Manifold:
         return copy.copy(X)
 
     def riemann(self):
-        """The Riemann curvature R (ρ↑ σ↓ | μ ν)."""
+        """The Riemann curvature R (ρ↑ σ↓ μ ν)."""
         return self._cached("R", lambda: riemann(self.levi_civita()))
 
     def ricci(self):

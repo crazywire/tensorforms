@@ -72,12 +72,8 @@ class Tensor:
         return self.slots[self.position(x)]
 
     def declaration(self):
-        flags = [s.is_form for s in self.slots]
-        if flags == sorted(flags):                            # value slots, then form slots
-            vals = " ".join(repr(s) for s in self.slots if not s.is_form)
-            forms = " ".join(repr(s) for s in self.slots if s.is_form)
-            return f"({vals} | {forms})".replace("( ", "(").replace(" )", ")")
-        return "(" + " ".join(repr(s) + ("ᶠ" if s.is_form else "") for s in self.slots) + ")"
+        """The slots in order: value slots carry ↑ or ↓, form slots carry no arrow."""
+        return "(" + " ".join(repr(s) for s in self.slots) + ")"
 
     def describe(self):
         head = f"{self.label or 'Tensor'} on {self.manifold.name}"
@@ -194,11 +190,11 @@ class Tensor:
                          label=self.label)
 
     def as_form(self, *names):
-        """Down value slots → form slots (default: all). Covector (μ↓ |) → 1-form (| μ). Same numbers."""
+        """Down value slots → form slots (default: all). Covector (μ↓) → 1-form (μ). Same numbers."""
         return self._relabel(names, "form", lambda s: not s.is_up and not s.is_form, "down value slots")
 
     def as_value(self, *names):
-        """Form slots → down value slots (default: all). 1-form (| μ) → covector (μ↓ |). Same numbers."""
+        """Form slots → down value slots (default: all). 1-form (μ) → covector (μ↓). Same numbers."""
         return self._relabel(names, "value", lambda s: s.is_form, "form slots")
 
     # ---------- trace ----------
