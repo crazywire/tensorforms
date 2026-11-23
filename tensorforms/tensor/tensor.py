@@ -16,6 +16,30 @@ from .labels import join, negated, scaled, slot_label, swapped, wrap
 from .slot import Slot
 
 
+def _number(x):
+    """x as an exact sympy expression (2 → Integer(2), never a float), or None if it isn't one."""
+    try:
+        x = sp.sympify(x, strict=True)
+    except sp.SympifyError:
+        return None
+    return x if isinstance(x, sp.Expr) else None
+
+
+def _as_scalar(c):
+    """c as an exact scalar, with its label: a number, an expression or a scalar tensor."""
+    not_scalar = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
+                  "(for products of tensors: contract, otimes, wedge)")
+    c_label = None
+    if isinstance(c, Tensor):
+        if c.slots:
+            raise TypeError(not_scalar)
+        c_label, c = c.label, c.data.item()
+    c = _number(c)
+    if c is None:
+        raise TypeError(not_scalar)
+    return c, c_label
+
+
 class Tensor:
     def __init__(self, manifold, data, slots, label=None):
         self.manifold = manifold
@@ -97,11 +121,8 @@ class Tensor:
         type check decides; 0 is the zero tensor of any type, returned as None (nothing to add)."""
         if isinstance(other, Tensor):
             return other
-        try:
-            c = sp.sympify(other, strict=True)
-        except sp.SympifyError:
-            c = None
-        if not isinstance(c, sp.Expr):
+        c = _number(other)
+        if c is None:
             raise TypeError(f"can only add tensors and numbers, not {type(other).__name__}")
         if c == 0:
             return None
@@ -132,36 +153,18 @@ class Tensor:
     def __neg__(self):
         return self._new(-self.data, label=negated(self.label))
 
-    @staticmethod
-    def _as_scalar(c):
-        """c as an exact sympy expression, with its label: a number, an expression or a scalar tensor."""
-        not_scalar = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
-                      "(for products of tensors: contract, otimes, wedge)")
-        c_label = None
-        if isinstance(c, Tensor):
-            if c.slots:
-                raise TypeError(not_scalar)
-            c_label, c = c.label, c.data.item()
-        try:
-            c = sp.sympify(c, strict=True)                   # 2 → Integer(2): exact, never a float
-        except sp.SympifyError:
-            c = None
-        if not isinstance(c, sp.Expr):
-            raise TypeError(not_scalar)
-        return c, c_label
-
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
         if not self.slots and isinstance(c, Tensor):         # scalar × tensor
             return c * self
-        c, c_label = self._as_scalar(c)
+        c, c_label = _as_scalar(c)
         return self._new(self.data * c, label=scaled(c, c_label, self.label))
 
     __rmul__ = __mul__
 
     def __truediv__(self, c):
         """Divide by a number, a sympy expression, or a scalar tensor: exact (X / 2 is ½X, never 0.5X)."""
-        c, c_label = self._as_scalar(c)
+        c, c_label = _as_scalar(c)
         if c == 0:
             raise ZeroDivisionError("division of a tensor by zero")
         label = f"{wrap(self.label)}/{c_label or wrap(sp.pretty(c, use_unicode=True))}" if self.label else None
