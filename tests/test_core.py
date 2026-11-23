@@ -544,3 +544,11 @@ def test_sympy_accepts_tensors():
         assert False, "dividing by a tensor with slots is refused"
     except TypeError:
         pass
+
+
+def test_scalar_prints_its_value():
+    S = tf.Manifold.sphere()
+    s = S.scalar(sp.Integer(3))
+    assert repr(s) == "Tensor() = 3"
+    s.label = "s"
+    assert repr(s) == "s = 3"
