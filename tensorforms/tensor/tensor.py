@@ -107,19 +107,19 @@ class Tensor:
     @staticmethod
     def _as_scalar(c):
         """c as an exact sympy expression, with its label: a number, an expression or a scalar tensor."""
-        refuse = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
+        not_scalar = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
                   "(for products of tensors: contract, otimes, wedge)")
         c_label = None
         if isinstance(c, Tensor):
             if c.slots:
-                raise TypeError(refuse)
+                raise TypeError(not_scalar)
             c_label, c = c.label, c.data.item()
         try:
             c = sp.sympify(c, strict=True)                   # 2 → Integer(2): exact, never a float
         except sp.SympifyError:
             c = None
         if not isinstance(c, sp.Expr):
-            raise TypeError(refuse)
+            raise TypeError(not_scalar)
         return c, c_label
 
     def __mul__(self, c):
