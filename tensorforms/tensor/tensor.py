@@ -287,9 +287,11 @@ class Tensor:
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.slots) if k not in (i, j)], label)
 
     # ---------- raising and lowering (needs the manifold's metric) ----------
-    def _move_index(self, slot, want_up, verb):
+    def _raise_or_lower(self, slot, from_up, verb):
+        """Flip one value slot with the metric: from up to down with g (from_up=True, lower),
+        or from down to up with g⁻¹ (from_up=False, raise_)."""
         if slot is None:
-            options = [k for k, s in enumerate(self.slots) if not s.is_form and s.is_up == want_up]
+            options = [k for k, s in enumerate(self.slots) if not s.is_form and s.is_up == from_up]
             if len(options) != 1:
                 raise TypeError(f"{verb}: say which slot (candidates: {[self.names[k] for k in options]})")
             slot = options[0]
@@ -298,24 +300,24 @@ class Tensor:
         if s.is_form:
             raise TypeError(f"{verb}: {s.name} is a form slot; form slots are never raised or lowered "
                             "(use as_value() first)")
-        if s.is_up != want_up:
-            raise TypeError(f"{verb}: {s.name} is already {'down' if want_up else 'up'}")
+        if s.is_up != from_up:
+            raise TypeError(f"{verb}: {s.name} is already {'down' if from_up else 'up'}")
         M = self.manifold
         if s.space is not M.tangent:
             raise TypeError(f"{verb}: {s.name} is not in the tangent space")
-        metric = M.g if want_up else M.ginv
+        metric = M.g if from_up else M.ginv
         data = np.moveaxis(np.tensordot(metric.data, self.data, axes=([1], [i])), 0, i)
-        flipped = Slot(s.name, s.space, "down" if want_up else "up", "value")
+        flipped = Slot(s.name, s.space, "down" if from_up else "up", "value")
         return self._new(data, self.slots[:i] + [flipped] + self.slots[i + 1:], label=self.label)
 
     def lower(self, slot=None):
         """g on one up value slot: ↑ → ↓. Same physics; raise_ undoes it exactly.
         v.lower() for a vector; R.lower("ρ") for a named slot."""
-        return self._move_index(slot, True, "lower")
+        return self._raise_or_lower(slot, True, "lower")
 
     def raise_(self, slot=None):
         """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
-        return self._move_index(slot, False, "raise_")
+        return self._raise_or_lower(slot, False, "raise_")
 
     # ---------- inverse ----------
     def inverse(self):
