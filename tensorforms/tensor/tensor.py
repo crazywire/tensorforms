@@ -317,6 +317,28 @@ class Tensor:
         """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
         return self._move_index(slot, False, "raise_")
 
+    # ---------- inverse ----------
+    def inverse(self):
+        """The inverse of a tensor that is a matrix at each point: exactly two value slots and
+        nothing else (a linear map like A(ρ↑ σ↓), or a bilinear form like g(μ↓ ν↓)).
+        Numbers: the matrix inverse. Slots: the two swap roles and both arrows flip,
+        g(μ↓ ν↓) → g⁻¹(ν↑ μ↑), A(ρ↑ σ↓) → A⁻¹(σ↑ ρ↓).
+        Refused for anything else: inverting is not linear, so it can't be done slot by slot
+        over other (e.g. form) slots without depending on the coordinates. Also refused if the
+        sizes differ or sympy shows the determinant is 0."""
+        if len(self.slots) != 2 or any(s.is_form for s in self.slots):
+            raise TypeError(f"inverse needs exactly two value slots and no others; got {self.declaration()}")
+        so, si = self.slots
+        if so.space.dim != si.space.dim:
+            raise ValueError(f"inverse: slots {so.name} and {si.name} have different sizes "
+                             f"({so.space.dim}, {si.space.dim}): not square")
+        m = sp.Matrix(self.data.tolist())                     # rows: slot 0 (out), columns: slot 1 (in)
+        if _is_zero(m.det()) is True:
+            raise ValueError("inverse: the determinant is 0 (not invertible)")
+        flip = lambda s: Slot(s.name, s.space, "down" if s.is_up else "up", "value")
+        return self._new(np.array(m.inv().tolist(), dtype=object), [flip(si), flip(so)],
+                         label=f"{wrap(self.label)}⁻¹" if self.label else None)
+
     # ---------- Hodge star (needs the manifold's metric) ----------
     def star(self):
         """⋆X: the k form slots become n − k, with the same amount (direction ↔ plane ↔ volume …).

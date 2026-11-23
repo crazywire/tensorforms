@@ -65,6 +65,7 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | Alt X, Sym X | `X.alt()`, `X.sym()` | antisymmetric and symmetric parts |
 | | `X.lower(a)`, `X.raise_(a)` | lower or raise a value slot with g |
 | ⋆X | `X.star()` | Hodge star: k form slots become n − k (direction ↔ plane ↔ volume …) |
+| X⁻¹ | `X.inverse()` | inverse of a tensor with exactly two value slots (g⁻¹ = g's inverse) |
 
 ## Operators
 

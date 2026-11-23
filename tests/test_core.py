@@ -593,3 +593,23 @@ def test_zeros_of_every_family():
     th2 = sp.Symbol("theta", real=True)                                  # mixed families simplify together
     mix = sp.sin(th2)**2*sp.cosh(x)**2 + sp.cos(th2)**2*sp.cosh(x)**2 - sp.sinh(x)**2
     assert S.scalar(mix).simplify().value == 1
+
+
+def test_inverse():
+    S = tf.Manifold.sphere()
+    th, _ = S.coords
+    assert S.g.inverse().equals(S.ginv)                         # g⁻¹ is g's tensor inverse
+    assert [s.is_up for s in S.g.inverse().slots] == [True, True]  # arrows flip
+    A = S.map([[1, sp.sin(th)], [0, 2]])
+    assert contract(A, A.inverse()).equals(S.map([[1, 0], [0, 1]]))
+    mu, nu, la = S.indices(3)
+    F = S.tensor(mu.up, nu.down, la.form, data=[[[1, 0], [2, 1]], [[0, th], [1, 3]]])
+    for bad in (lambda: S.map([[1, 1], [1, 1]]).inverse(),      # determinant 0
+                lambda: S.vector([1, 0]).inverse(),             # one slot
+                lambda: F.inverse(),                            # a form slot: not linear, so refused
+                lambda: S.riemann().inverse()):
+        try:
+            bad()
+            assert False, "should refuse"
+        except (TypeError, ValueError):
+            pass
