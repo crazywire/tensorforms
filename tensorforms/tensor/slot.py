@@ -4,19 +4,9 @@ A slot has a name, a space (owned by the manifold), up or down, and a role: "val
 Form slots are always down: they take a step.
 """
 
+from .labels import slot_label
+
 ARROW = {"up": "↑", "down": "↓"}
-
-# Spelled-out Greek is accepted wherever a name is: "mu" means μ.
-GREEK = {"alpha": "α", "beta": "β", "gamma": "γ", "delta": "δ", "epsilon": "ε", "zeta": "ζ",
-         "eta": "η", "theta": "θ", "iota": "ι", "kappa": "κ", "lambda": "λ", "lamda": "λ",
-         "mu": "μ", "nu": "ν", "xi": "ξ", "omicron": "ο", "pi": "π", "rho": "ρ", "sigma": "σ",
-         "tau": "τ", "upsilon": "υ", "phi": "φ", "chi": "χ", "psi": "ψ", "omega": "ω"}
-
-
-def clean_name(name):
-    """A slot name as stored: spelled-out Greek becomes the letter."""
-    name = str(name)
-    return GREEK.get(name, name)
 
 
 class Slot:
@@ -27,7 +17,7 @@ class Slot:
             raise ValueError("role must be 'value' or 'form'")
         if role == "form" and variance != "down":
             raise ValueError("form slots are always down")
-        self.name, self.space, self.variance, self.role = clean_name(name), space, variance, role
+        self.name, self.space, self.variance, self.role = slot_label(name), space, variance, role
 
     @property
     def type(self):
@@ -59,7 +49,7 @@ class Index:
     """A slot name tied to a space. Choose up, down or form when you use it."""
 
     def __init__(self, name, space):
-        self.name, self.space = clean_name(name), space
+        self.name, self.space = slot_label(name), space
 
     @property
     def up(self):
