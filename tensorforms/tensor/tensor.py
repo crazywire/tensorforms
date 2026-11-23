@@ -9,38 +9,17 @@ import math
 
 import numpy as np
 import sympy as sp
+from sympy.combinatorics import Permutation
 
 from ..symbolic.simplify import clean_array, is_zero as _is_zero
-from .labels import join, negated, scaled, swapped, wrap
-from .slot import Slot, clean_name
-
-
-def _name(x):
-    return x.name if hasattr(x, "name") else clean_name(x)
-
-
-def _perm_sign(perm):
-    sign, seen = 1, [False] * len(perm)
-    for i in range(len(perm)):
-        if not seen[i]:
-            j, n = i, 0
-            while not seen[j]:
-                seen[j], j, n = True, perm[j], n + 1
-            if n % 2 == 0:
-                sign = -sign
-    return sign
-
-
-def _as_object_array(data):
-    if isinstance(data, np.ndarray):
-        return data.astype(object)
-    return np.array(data, dtype=object)
+from .labels import join, negated, scaled, slot_label, swapped, wrap
+from .slot import Slot
 
 
 class Tensor:
     def __init__(self, manifold, data, slots, label=None):
         self.manifold = manifold
-        self.data = _as_object_array(data)
+        self.data = np.asarray(data, dtype=object)
         self.slots = list(slots)
         self.label = label
         if self.data.ndim != len(self.slots):
@@ -84,7 +63,7 @@ class Tensor:
             if not 0 <= x < len(self.slots):
                 raise IndexError(f"no slot number {x}; this tensor has {len(self.slots)} slots")
             return x
-        n = _name(x)
+        n = slot_label(x)
         if n not in self.names:
             raise KeyError(f"no slot named {n}; slots are {self.names}")
         return self.names.index(n)
@@ -199,7 +178,7 @@ class Tensor:
 
     def rename(self, mapping):
         """New labels: {slot (name or number): new name}."""
-        mapping = {self.position(k): _name(v) for k, v in mapping.items()}
+        mapping = {self.position(k): slot_label(v) for k, v in mapping.items()}
         return self._new(slots=[s.renamed(mapping[k]) if k in mapping else s for k, s in enumerate(self.slots)],
                          label=self.label)
 
@@ -300,7 +279,7 @@ class Tensor:
             for src, dst in zip(perm, range(k)):
                 axes[pos[dst]] = pos[src]
             term = np.transpose(self.data, axes)
-            out = out + (_perm_sign(perm) if signed else 1) * term
+            out = out + (Permutation(perm).signature() if signed else 1) * term
         label = f"{'Alt' if signed else 'Sym'}({self.label})" if self.label else None   # brackets already
         return self._new(out * sp.Rational(1, math.factorial(k)), label=label)
 
