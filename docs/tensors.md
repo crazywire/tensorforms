@@ -41,7 +41,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.data`, `X[i, j]` | the components |
 | `X.names`, `X.types` | the slots' labels and types |
 | `X.value_slots`, `X.form_slots` | positions of the value slots and of the form slots |
-| `X + Y`, `X - Y`, `-X` | slot by slot (types must match) |
+| `X + Y`, `X - Y`, `-X` | slot by slot (types must match); a number counts as a scalar, and 0 as the zero tensor of any type |
 | `c * X`, `X / c` | c a number, an expression, or a scalar tensor; exact (`X / 2` is ½X, never 0.5X) |
 | `X.simplify()`, `X.equals(Y)`, `X.is_zero()` | simplify, compare |
 | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap positions 0–1, 1–2, 2–3, 3–4 |

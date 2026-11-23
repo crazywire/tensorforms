@@ -512,3 +512,19 @@ def test_division_is_exact():
             assert False, "should refuse"
         except (TypeError, ZeroDivisionError):
             pass
+
+
+def test_adding_numbers():
+    S = tf.Manifold.sphere()
+    v = S.vector([1, 2])
+    s = contract(v.lower(), v)                                  # a scalar
+    assert (v + 0).equals(v) and (0 + v).equals(v) and (v - 0).equals(v) and (0 - v).equals(-v)
+    assert sum([v, v, v]).equals(3 * v)                         # sum starts from 0
+    assert sp.simplify((s + 1).data.item() - (s.data.item() + 1)) == 0
+    assert sp.simplify((1 - s).data.item() - (1 - s.data.item())) == 0
+    for bad in (lambda: v + 1, lambda: 1 + v, lambda: v - sp.Symbol("x")):
+        try:
+            bad()
+            assert False, "a nonzero number only adds to a scalar"
+        except TypeError:
+            pass
