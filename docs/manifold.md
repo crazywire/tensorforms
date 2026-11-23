@@ -61,7 +61,7 @@ Everything follows from g (no torsion):
 | R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
 | G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓) |
 | ε = √\|det g\| dx¹ ∧ … ∧ dxⁿ | `M.volume_form()` | volume form (μ ν …): length, area, volume, … |
-| K = R_s / 2 | `M.gaussian_curvature()` | Gaussian curvature (2D only) |
+| K = R_s / 2 | `M.gaussian_curvature()` | Gaussian curvature (2D only), a scalar |
 
 ### Example: the curvature of a sphere of radius r, step by step
 
@@ -74,7 +74,7 @@ G = S.levi_civita()
 print(G.data[0])        # Γ^θ: how θ-components change
 print(G.data[1])        # Γ^φ: how φ-components change
 print(S.ricci().data)
-print(S.ricci_scalar(), S.gaussian_curvature())
+print(S.ricci_scalar().value, S.gaussian_curvature().value)   # scalar tensors; .value gives the expression
 ```
 
 ```text

@@ -73,6 +73,12 @@ class Tensor:
         return [s.name for s in self.slots]
 
     @property
+    def value(self):
+        """The components in sympy form: a scalar's expression, otherwise a sympy Array
+        (one axis per slot). This is also what sympy sees when it is handed a tensor."""
+        return self.data.item() if not self.slots else sp.Array(self.data.tolist())
+
+    @property
     def types(self):
         return [s.type for s in self.slots]
 
@@ -184,9 +190,8 @@ class Tensor:
         return Tensor(self.manifold, n, [], label=sp.pretty(n, use_unicode=True)) / self
 
     def _sympy_(self):
-        """What sympy sees when it is handed a tensor: a scalar's expression, otherwise a sympy Array
-        of the components (one axis per slot). So sp.simplify(s), sp.diff(s, θ), sp.solve(s, r) work."""
-        return self.data.item() if not self.slots else sp.Array(self.data.tolist())
+        """What sympy sees when it is handed a tensor: its value. So sp.simplify(s), sp.diff(s, θ) work."""
+        return self.value
 
     def simplify(self):
         return self._new(clean_array(self.data), label=self.label)
