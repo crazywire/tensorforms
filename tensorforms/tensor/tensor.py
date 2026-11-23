@@ -213,41 +213,40 @@ class Tensor:
     def _transposed(self, order):
         return self._new(np.transpose(self.data, order), [self.slots[i] for i in order], label=self.label)
 
-    def reorder(self, *names):
-        order = [self.position(n) for n in names]
+    def reorder(self, *slots):
+        """Put every slot in the given order (labels or positions)."""
+        order = [self.position(s) for s in slots]
         if sorted(order) != list(range(len(self.slots))):
             raise ValueError("reorder needs every slot exactly once")
         return self._transposed(order)
 
     def swap(self, a, b):
-        return self.swap_positions(self.position(a), self.position(b))
-
-    def swap_positions(self, i, j):
+        """Exchange two slots, given by label or position."""
+        i, j = self.position(a), self.position(b)
         order = list(range(len(self.slots)))
         order[i], order[j] = order[j], order[i]
         return self._transposed(order)
 
-    # positional swaps from the notation: T, S, U, V
+    # T, S, U, V: the notation's swaps of neighbouring slots
     def _letter_swap(self, i, letter):
-        X = self.swap_positions(i, i + 1)
+        X = self.swap(i, i + 1)
         X.label = swapped(self.label, letter)
         return X
 
-    # T, S, U, V: short for swap_positions of neighbouring slots
     def T(self):
-        """Short for swap_positions(0, 1)."""
+        """Short for swap(0, 1)."""
         return self._letter_swap(0, "T")
 
     def S(self):
-        """Short for swap_positions(1, 2)."""
+        """Short for swap(1, 2)."""
         return self._letter_swap(1, "S")
 
     def U(self):
-        """Short for swap_positions(2, 3)."""
+        """Short for swap(2, 3)."""
         return self._letter_swap(2, "U")
 
     def V(self):
-        """Short for swap_positions(3, 4)."""
+        """Short for swap(3, 4)."""
         return self._letter_swap(3, "V")
 
     def rename(self, mapping):

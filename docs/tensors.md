@@ -48,7 +48,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.is_zero()`, `X.equals(Y)` | sympy's answer: True (simplifies to 0), False (sympy proves nonzero), None (can't tell); never sampled |
 | `sp.diff(s, θ)`, `sp.solve(s, r)`, … | sympy accepts tensors directly: a scalar as its expression, others as a sympy Array (one axis per slot) |
 | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap positions 0–1, 1–2, 2–3, 3–4 |
-| `X.swap(a, b)`, `X.reorder(*names)`, `X.rename({…})` | move or rename slots |
+| `X.swap(a, b)`, `X.reorder(*slots)`, `X.rename({…})` | move or rename slots (by label or position) |
 | `X.alt()`, `X.sym()` | antisymmetric / symmetric part (default: form slots) |
 | `X.tr(a, b)` | pair two slots and sum |
 | `X.lower(slot)`, `X.raise_(slot)` | g or g⁻¹ on a value slot; exact inverses |
@@ -61,12 +61,12 @@ counted from 0 across all slots:
 
 | swap | short for | code |
 |---|---|---|
-| T | swap positions 0 and 1 | `X.T()` = `X.swap_positions(0, 1)` |
-| S | swap positions 1 and 2 | `X.S()` = `X.swap_positions(1, 2)` |
-| U | swap positions 2 and 3 | `X.U()` = `X.swap_positions(2, 3)` |
-| V | swap positions 3 and 4 | `X.V()` = `X.swap_positions(3, 4)` |
+| T | swap positions 0 and 1 | `X.T()` = `X.swap(0, 1)` |
+| S | swap positions 1 and 2 | `X.S()` = `X.swap(1, 2)` |
+| U | swap positions 2 and 3 | `X.U()` = `X.swap(2, 3)` |
+| V | swap positions 3 and 4 | `X.V()` = `X.swap(3, 4)` |
 
-Any other swap: `X.swap(a, b)` (by name or position) or `X.reorder(...)`.
+Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`.
 
 X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ μ ν) with S applied is
 (ρ↑ μ σ↓ ν): the second and third slots trade places. A result's label says how it was made:
