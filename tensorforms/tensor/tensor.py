@@ -287,9 +287,12 @@ class Tensor:
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.slots) if k not in (i, j)], label)
 
     # ---------- raising and lowering (needs the manifold's metric) ----------
-    def _raise_or_lower(self, slot, from_up, verb):
-        """Flip one value slot with the metric: from up to down with g (from_up=True, lower),
-        or from down to up with g⁻¹ (from_up=False, raise_)."""
+    def _raise_or_lower(self, slot, verb):
+        """Flip one value slot with the metric. verb "lower": up → down with g;
+        verb "raise_": down → up with g⁻¹."""
+        if verb not in ("lower", "raise_"):
+            raise ValueError(f"verb must be 'lower' or 'raise_', not {verb!r}")
+        from_up = verb == "lower"                            # lowering acts on an up slot
         if slot is None:
             options = [k for k, s in enumerate(self.slots) if not s.is_form and s.is_up == from_up]
             if len(options) != 1:
@@ -313,11 +316,11 @@ class Tensor:
     def lower(self, slot=None):
         """g on one up value slot: ↑ → ↓. Same physics; raise_ undoes it exactly.
         v.lower() for a vector; R.lower("ρ") for a named slot."""
-        return self._raise_or_lower(slot, True, "lower")
+        return self._raise_or_lower(slot, "lower")
 
     def raise_(self, slot=None):
         """g⁻¹ on one down value slot: ↓ → ↑. Same physics; lower undoes it exactly."""
-        return self._raise_or_lower(slot, False, "raise_")
+        return self._raise_or_lower(slot, "raise_")
 
     # ---------- inverse ----------
     def inverse(self):
