@@ -44,7 +44,7 @@ print(nabla(e_theta).simplify().data)
 [[0 0]
  [0 0]]
 [[0 0]
- [0 cos(theta)/sin(theta)]]
+ [0 1/tan(theta)]]
 ```
 
 Moving in the φ direction, e_θ picks up a part cot θ · e_φ. Moving in θ, it doesn't change.
