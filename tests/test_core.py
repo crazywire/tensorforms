@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import tensorforms as tf
 from tensorforms import (Manifold, contract, curvature, interior, nabla, otimes,
                          wedge, wedge_curvature, wedge_d, wedge_nabla)
-from tensorforms.symbolic import is_zero
+from tensorforms.symbolic.simplify import is_zero          # internal: for single components
 
 
 # ---- the definitions, used only to check the formulas the package uses ----

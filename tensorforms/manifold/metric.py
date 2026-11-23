@@ -7,7 +7,6 @@ import itertools
 import numpy as np
 import sympy as sp
 
-from ..symbolic.simplify import is_zero
 from ..tensor.tensor import Tensor
 
 
@@ -56,16 +55,16 @@ def build_metric(M, data=None, signature=None):
         g = sp.Matrix(data)
         if g.shape != (n, n):
             raise ValueError(f"metric must be {n}×{n} on this manifold, got {g.shape}")
-        for a, b in itertools.combinations(range(n), 2):
-            if is_zero(g[a, b] - g[b, a]) is not True:       # refused unless shown symmetric
-                raise ValueError(f"a metric must be symmetric; g[{a},{b}] − g[{b},{a}] is not shown to be 0")
-        if is_zero(g.det()) is True:                         # refused when shown singular
+    G = Tensor(M, np.array(g.tolist(), dtype=object), [i.down, j.down], label="g")
+    if data is not None:                                     # checks on given data, with the tensor itself
+        if G.equals(G.T()) is not True:                      # refused unless shown symmetric
+            raise ValueError("a metric must be symmetric (g = gᵀ is not shown)")
+        if M.scalar(g.det()).is_zero() is True:              # refused when shown singular
             raise ValueError("a metric must be invertible, but this one has determinant 0")
         found = _infer_signature(g)
         if signature and found and signature != found:
             raise ValueError(f"signature {signature!r} doesn't match the data ({found!r})")
         signature = signature or found
-    G = Tensor(M, np.array(g.tolist(), dtype=object), [i.down, j.down], label="g")
     return G, signature
 
 
