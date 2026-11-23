@@ -37,8 +37,8 @@ v = M.vector([1, 0])
 
 ## The metric
 
-`M.metric(data)` makes the metric, checks it (right size, symmetric, invertible) and attaches
-it. Calling it again replaces it. With no data, `M.metric(signature="-+++")` makes an unknown
+`M.metric(data)` makes the metric, checks it (right size; shown symmetric; refused if shown to have
+determinant 0) and attaches it. Calling it again replaces it. With no data, `M.metric(signature="-+++")` makes an unknown
 metric of functions g_ij(x), for solving.
 
 
@@ -79,9 +79,9 @@ print(S.ricci_scalar().value, S.gaussian_curvature().value)   # scalar tensors; 
 
 ```text
 [[0 0]
- [0 -sin(theta)*cos(theta)]]
-[[0 cos(theta)/sin(theta)]
- [cos(theta)/sin(theta) 0]]
+ [0 -sin(2*theta)/2]]
+[[0 1/tan(theta)]
+ [1/tan(theta) 0]]
 [[1 0]
  [0 sin(theta)**2]]
 2/r**2 r**(-2)

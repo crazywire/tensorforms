@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import tensorforms as tf
 from tensorforms import (Manifold, contract, curvature, interior, nabla, otimes,
                          wedge, wedge_curvature, wedge_d, wedge_nabla)
-from tensorforms.symbolic import is_zero
+from tensorforms.symbolic.simplify import is_zero          # internal: for single components
 
 
 # ---- the definitions, used only to check the formulas the package uses ----
@@ -81,7 +81,10 @@ def test_curvature_operator_matches_its_definition():
     S, v, w = _sphere_fields()                                # R on every slot == ∇ twice, antisymmetrized
     assert curvature(v).equals(curvature_by_commutator(v))
     assert curvature(w).equals(curvature_by_commutator(w))
-    assert not curvature(w).is_zero()                        # −Rᵀw, not zero
+    assert curvature(w).is_zero() is None                    # w has unknown v1, v2: can't tell
+    th, _ = S.coords                                         # a concrete w = dθ: compare with the known −Rᵀw
+    C = curvature(S.one_form([1, 0])).simplify()
+    assert C[0, 1, 1] == -sp.sin(th) ** 2 and C[1, 0, 1] == sp.sin(th) ** 2
 
 
 def test_curl_needs_no_connection():
@@ -414,7 +417,7 @@ def test_interior():
 def test_minkowski_options():
     assert tf.Manifold.minkowski().signature == "-+++" and tf.Manifold.minkowski().dim == 4
     S = tf.Manifold.minkowski(coords="spherical")                  # −dt² + dr² + r²dΩ²
-    assert S.dim == 4 and S.riemann().is_zero() and not S.levi_civita().is_zero()
+    assert S.dim == 4 and S.riemann().is_zero() and S.levi_civita().is_zero() is False
     assert tf.Manifold.minkowski(3, "polar").signature == "-++"
     try:
         tf.Manifold.minkowski(5, "spherical")
@@ -552,3 +555,41 @@ def test_value_for_every_tensor():
     assert sp.simplify(S.ricci_scalar().value - 2 / rr**2) == 0      # scalar: its expression
     assert S.vector([1, 0]).value == sp.Array([1, 0])                  # vector: a 1D Array
     assert S.g.value.shape == (2, 2)                                   # g: a 2D Array
+
+
+def test_is_zero_is_exact():
+    # sympy's three answers, never a numerical guess
+    x = sp.Symbol("x", positive=True)
+    f = sp.Function("f")(x)
+    assert is_zero(sp.sin(x) ** 2 + sp.cos(x) ** 2 - 1) is True     # shown to be 0
+    assert is_zero(sp.Integer(3)) is False                            # shown not to be 0
+    assert is_zero(x) is False                                        # x > 0 by assumption
+    assert is_zero(f) is None                                         # an unknown function: can't tell
+    th = sp.Symbol("theta", real=True)
+    assert is_zero(sp.sin(th)) is None                                # zero at θ = 0, so sympy won't say nonzero
+    assert is_zero(sp.Rational(1, 10) ** 12 * x) is False             # tiny is not zero
+    S = tf.Manifold.sphere()
+    assert S.vector([0, 0]).is_zero() is True
+    assert S.vector([1, 0]).is_zero() is False
+    assert S.vector([f, 0]).is_zero() is None
+
+
+def test_zeros_of_every_family():
+    # circular, hyperbolic, exponential, inverse trig: all exactly 0, all found
+    x, t, th = sp.Symbol("x", real=True), sp.Symbol("t", real=True), sp.Symbol("theta", real=True)
+    zeros = [sp.tan(x)**2 + 1 - sp.sec(x)**2,
+             sp.cosh(x)**2 - sp.sinh(x)**2 - 1,
+             sp.tanh(x) - sp.sinh(x) / sp.cosh(x),
+             sp.sinh(2*x) - 2*sp.sinh(x)*sp.cosh(x),
+             sp.cosh(x) - (sp.exp(x) + sp.exp(-x)) / 2,
+             sp.exp(2*t)*sp.exp(-t) - sp.exp(t),
+             sp.sin(sp.asin(x)) - x,
+             sp.sin(2*th)*sp.tan(th) + sp.cos(2*th) - 1,
+             sp.cot(th)*sp.sin(2*th) - 2*sp.cos(th)**2,
+             (sp.sin(th)**4 - sp.cos(th)**4) / (sp.sin(th)**2 - sp.cos(th)**2) - 1]
+    assert all(is_zero(z) is True for z in zeros)
+    S = tf.Manifold.sphere()
+    assert S.scalar(sp.cosh(x)**2 - sp.sinh(x)**2).simplify().value == 1   # hyperbolic leftovers simplify too
+    th2 = sp.Symbol("theta", real=True)                                  # mixed families simplify together
+    mix = sp.sin(th2)**2*sp.cosh(x)**2 + sp.cos(th2)**2*sp.cosh(x)**2 - sp.sinh(x)**2
+    assert S.scalar(mix).simplify().value == 1
