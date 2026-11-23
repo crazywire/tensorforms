@@ -92,14 +92,42 @@ class Tensor:
             raise TypeError(f"can only add matching types: {self.declaration()} vs "
                             f"{getattr(other, 'declaration', lambda: other)()}")
 
+    def _operand(self, other):
+        """The other side of + or −, as a tensor. A number means a scalar (no slots), so the
+        type check decides; 0 is the zero tensor of any type, returned as None (nothing to add)."""
+        if isinstance(other, Tensor):
+            return other
+        try:
+            c = sp.sympify(other, strict=True)
+        except sp.SympifyError:
+            c = None
+        if not isinstance(c, sp.Expr):
+            raise TypeError(f"can only add tensors and numbers, not {type(other).__name__}")
+        if c == 0:
+            return None
+        return Tensor(self.manifold, c, [], label=sp.pretty(c, use_unicode=True))
+
     def __add__(self, other):
+        other = self._operand(other)
+        if other is None:                                     # X + 0 is X
+            return self._new(label=self.label)
         self._check_same_type(other)
+        # brackets only where needed: A+(−B); A+B+C needs none
         return self._new(self.data + other.data, label=join(self.label, "+", wrap(other.label)
                                                               if other.label and other.label[0] == "−" else other.label))
 
+    __radd__ = __add__                                        # 0 + X, 1 + s
+
     def __sub__(self, other):
+        other = self._operand(other)
+        if other is None:                                     # X − 0 is X
+            return self._new(label=self.label)
         self._check_same_type(other)
         return self._new(self.data - other.data, label=join(self.label, "−", wrap(other.label)))
+
+    def __rsub__(self, other):                                # 0 − X is −X; 1 − s
+        other = self._operand(other)
+        return -self if other is None else other - self
 
     def __neg__(self):
         return self._new(-self.data, label=negated(self.label))
