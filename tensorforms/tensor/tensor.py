@@ -311,37 +311,26 @@ class Tensor:
         return self._move_index(slot, False, "raise_")
 
     # ---------- inverse ----------
-    def inverse(self, out=None, inp=None):
-        """The inverse, reading the tensor as a map from slot inp to slot out (both value slots).
-        Numbers: the matrix inverse, for each value of the other slots, which ride along.
-        Slots: out and inp swap roles and both arrows flip: g(μ↓ ν↓) → g⁻¹(μ↑ ν↑), A(ρ↑ σ↓) → (ρ↑ σ↓).
-        Default with exactly two value slots: out = the first, inp = the second (row ← column).
-        Refused: a form slot, slots of different sizes, or a matrix shown to have determinant 0."""
-        if out is None and inp is None:
-            if len(self.value_slots) != 2:
-                raise TypeError("inverse: say which two value slots (out, inp); "
-                                f"this tensor has {len(self.value_slots)} value slots")
-            out, inp = self.value_slots
-        o, i = self.position(out), self.position(inp)
-        so, si = self.slots[o], self.slots[i]
-        if o == i or so.is_form or si.is_form:
-            raise TypeError("inverse needs two different value slots (form slots can't be inverted)")
+    def inverse(self):
+        """The inverse of a tensor that is a matrix at each point: exactly two value slots and
+        nothing else (a linear map like A(ρ↑ σ↓), or a bilinear form like g(μ↓ ν↓)).
+        Numbers: the matrix inverse. Slots: the two swap roles and both arrows flip,
+        g(μ↓ ν↓) → g⁻¹(ν↑ μ↑), A(ρ↑ σ↓) → A⁻¹(σ↑ ρ↓).
+        Refused for anything else: inverting is not linear, so it can't be done slot by slot
+        over other (e.g. form) slots without depending on the coordinates. Also refused if the
+        sizes differ or sympy shows the determinant is 0."""
+        if len(self.slots) != 2 or any(s.is_form for s in self.slots):
+            raise TypeError(f"inverse needs exactly two value slots and no others; got {self.declaration()}")
+        so, si = self.slots
         if so.space.dim != si.space.dim:
             raise ValueError(f"inverse: slots {so.name} and {si.name} have different sizes "
                              f"({so.space.dim}, {si.space.dim}): not square")
-        rest = [k for k in range(len(self.slots)) if k not in (o, i)]
-        A = np.moveaxis(self.data, [o, i], [-2, -1])          # a stack of matrices: rows out, columns inp
-        B = np.empty(A.shape, dtype=object)
-        for idx in np.ndindex(A.shape[:-2]):
-            m = sp.Matrix(A[idx])
-            if _is_zero(m.det()) is True:
-                raise ValueError("inverse: the matrix has determinant 0 (not invertible)")
-            B[idx] = np.array(m.inv().tolist(), dtype=object)  # rows: old inp, columns: old out
-        data = np.moveaxis(B, [-2, -1], [o, i])
+        m = sp.Matrix(self.data.tolist())                     # rows: slot 0 (out), columns: slot 1 (in)
+        if _is_zero(m.det()) is True:
+            raise ValueError("inverse: the determinant is 0 (not invertible)")
         flip = lambda s: Slot(s.name, s.space, "down" if s.is_up else "up", "value")
-        slots = list(self.slots)
-        slots[o], slots[i] = flip(si), flip(so)               # roles swap, arrows flip
-        return self._new(data, slots, label=f"{wrap(self.label)}⁻¹" if self.label else None)
+        return self._new(np.array(m.inv().tolist(), dtype=object), [flip(si), flip(so)],
+                         label=f"{wrap(self.label)}⁻¹" if self.label else None)
 
     # ---------- Hodge star (needs the manifold's metric) ----------
     def star(self):
