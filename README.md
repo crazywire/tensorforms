@@ -16,16 +16,16 @@ on the tensors.
 
 Each slot of a tensor is **up or down** (↑ / ↓: like a matrix's row and column index) and
 either a **value** slot (what the tensor is) or a **form** slot (a direction it acts on, like dx).
-A bar separates them, value slots first:
+A value slot carries ↑ or ↓; a form slot carries no arrow (form slots are always down):
 
 | object | slots |
 |---|---|
-| vector | (μ↑ \|) |
-| covector | (μ↓ \|) |
-| 1-form | (\| μ) |
-| connection Γ | (ρ↑ σ↓ \| μ) |
-| curvature R | (ρ↑ σ↓ \| μ ν) |
-| metric g | (μ↓ ν↓ \|) |
+| vector | (μ↑) |
+| covector | (μ↓) |
+| 1-form | (μ) |
+| connection Γ | (ρ↑ σ↓ μ) |
+| curvature R | (ρ↑ σ↓ μ ν) |
+| metric g | (μ↓ ν↓) |
 
 ## Manifold
 
@@ -33,13 +33,13 @@ A manifold M is made from coordinates; `M.metric(...)` gives it a metric. Then i
 
 | tensor | method | description |
 |---|---|---|
-| g | `M.g` | metric (μ↓ ν↓ \|) |
-| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
-| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
-| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
+| g | `M.g` | metric (μ↓ ν↓) |
+| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ μ) |
+| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ μ ν) |
+| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓) |
 | R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
-| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
-| ε = √\|det g\| dx¹ ∧ … ∧ dxⁿ | `M.volume_form()` | volume form (\| μ ν …): length, area, volume, … |
+| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓) |
+| ε = √\|det g\| dx¹ ∧ … ∧ dxⁿ | `M.volume_form()` | volume form (μ ν …): length, area, volume, … |
 
 Ready-made manifolds come as class methods, e.g. `Manifold.sphere()` or
 `Manifold.minkowski(4, "spherical")`:
@@ -113,7 +113,7 @@ took the traces.
 | | |
 |---|---|
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G, ready-made manifolds |
-| [Tensors](docs/tensors.md) | the notation (slots, arrows, the bar), one tensor, products |
+| [Tensors](docs/tensors.md) | the notation (slots and arrows), one tensor, products |
 | [Operators](docs/operators.md) | the six operators and their product rules |
 
 ## Examples

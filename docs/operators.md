@@ -11,8 +11,8 @@
 
 
 Each takes one tensor and returns a new one, labelled by the operator (dX, ∇X, …).
-New form slots go first after the bar. Γ and R come from the manifold; with no metric, ∇ and
-∇∧ act as d and d∧, and the two curvature operators are zero.
+New form slots go first among the form slots. Γ and R come from the manifold; with no metric,
+∇ and ∇∧ act as d and d∧, and the two curvature operators are zero.
 
 Details:
 
@@ -77,9 +77,9 @@ A and B are any two tensors. **AB** is their product as defined in [tensors.md](
 A's column (last value slot, ↓) paired with B's row (first value slot, ↑), everything else
 carried along. **p** and **q** are the numbers of form slots of A and B.
 
-**∇ (every slot).** Each term keeps all slots, but the new slot from ∇ must end up first after
-the bar, so terms where it lands later are moved back with swaps. For example, with
-R (ρ↑ σ↓ | μ ν) and a vector v:
+**∇ (every slot).** Each term keeps all slots, but the new slot from ∇ must end up first among
+the form slots, so terms where it lands later are moved back with swaps. For example, with
+R (ρ↑ σ↓ μ ν) and a vector v:
 
 ∇(Rv) = (∇R)v + (R∇v)^US
 

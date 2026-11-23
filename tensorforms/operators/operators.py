@@ -9,7 +9,7 @@
 Corrections: + from the left on up slots, − from the right on down slots.
 nabla and curvature correct every slot. The wedged ones correct only value slots:
 the form-slot corrections cancel because Γ is S-symmetric.
-New form slots always go first among the form slots ("first after the bar").
+New form slots always go first among the form slots.
 On a manifold with no metric: nabla is d, wedge_nabla is d∧, and both curvatures are zero.
 Results are labelled by the operation: dX, d∧X, ∇X, ∇∧X, ∇∧∇X, ∇∧∇∧X.
 """
@@ -26,7 +26,7 @@ from ..tensor.tensor import Tensor
 
 # ---------------------------------------------------------------- the operators
 def d(X):
-    """Plain d: one new form slot, first after the bar. Needs only the coordinates."""
+    """Plain d: one new form slot, first among the form slots. Needs only the coordinates."""
     _check_tensor(X)
     pos, slots = _with_new_slots(X, 1)
     return Tensor(X.manifold, _d(X, pos), slots, _label("d", X))
@@ -101,7 +101,7 @@ def _check_tensor(X):
 
 
 def _insert_position(X):
-    """Where new form slots go: first after the bar."""
+    """Where new form slots go: first among the form slots."""
     return next((i for i, s in enumerate(X.slots) if s.is_form), len(X.slots))
 
 
@@ -144,14 +144,14 @@ def _act(C, X, slots, values_only=False):
     """C (Γ or R) acts on each slot of X, as contractions by position (names are only labels):
         up slot s:    +C X   (C's down slot pairs with s; C's up slot takes s's place)
         down slot s:  −X C   (s pairs with C's up slot; C's down slot takes s's place)
-    C's form slots become the new form slots, first after the bar.
+    C's form slots become the new form slots, first among the form slots.
     values_only: skip X's form slots (the wedged operators).
-    C must be (↑ ↓ | forms…): a matrix (one up, one down value slot) with form slots, like Γ and R.
+    C must be (↑ ↓ forms…): a matrix (one up, one down value slot) with form slots, like Γ and R.
     Every term is put in the result's order: X's value slots (s replaced in place), the new form
     slots, X's form slots (s replaced in place)."""
     if (len(C.slots) < 2 or not C.slots[0].is_up or C.slots[1].is_up
             or C.slots[0].is_form or C.slots[1].is_form or not all(s.is_form for s in C.slots[2:])):
-        raise TypeError(f"_act needs C shaped (↑ ↓ | forms…) like Γ or R; got {C.declaration()}")
+        raise TypeError(f"_act needs C shaped (↑ ↓ forms…) like Γ or R; got {C.declaration()}")
     vals = [j for j, s in enumerate(X.slots) if not s.is_form]     # positions of X's value slots
     forms = [j for j, s in enumerate(X.slots) if s.is_form]        # positions of X's form slots
     m, p, k = len(vals), len(forms), len(C.slots) - 2               # k: the new form slots

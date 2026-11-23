@@ -86,7 +86,7 @@ def contract(A, B, a=None, b=None):
 
 
 def interior(X, V):
-    """The interior product: X's first form slot (right after the bar) with V's row
+    """The interior product: X's first form slot with V's row
     (its first value slot, up). Like contract(X, V), but using X's first form slot instead of
     its column. Everything else is carried along: value slots first, then X's form slots, then V's."""
     if not X.form_slots:

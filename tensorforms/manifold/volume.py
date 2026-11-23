@@ -3,7 +3,7 @@ import sympy as sp
 
 
 def volume_form(M):
-    """ε ( | μ ν …): n-dimensional volume (length in 1D, area in 2D, …).
+    """ε (μ ν …): n-dimensional volume (length in 1D, area in 2D, …).
     Orientation: the order of the coordinates. |det g| keeps it real in any signature."""
     from ..operators.operators import d          # here, to avoid a circular import
     from ..tensor.products import wedge

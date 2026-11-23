@@ -22,16 +22,16 @@ metric yet; tensors, d and d∧ already work.
 | `M.index(name=None)` | one index |
 | `M.tensor(*slots, data=…, label=None)` | a tensor with the given slots |
 | `M.scalar(value)` | no slots |
-| `M.vector(data)` | (μ↑ \|) |
-| `M.covector(data)` | (μ↓ \|), a row |
-| `M.one_form(data)` | (\| μ) |
-| `M.map(data)` | (μ↑ ν↓ \|), a matrix |
+| `M.vector(data)` | (μ↑) |
+| `M.covector(data)` | (μ↓), a row |
+| `M.one_form(data)` | (μ) |
+| `M.map(data)` | (μ↑ ν↓), a matrix |
 
 An index gives the three kinds of slot: `mu.up`, `mu.down`, `mu.form`.
 
 ```python
 mu, nu = M.indices(2)
-A = M.tensor(mu.up, nu.form, data=[[1, 0], [0, sp.sin(th)]])   # A(μ↑ | ν)
+A = M.tensor(mu.up, nu.form, data=[[1, 0], [0, sp.sin(th)]])   # A(μ↑ ν)
 v = M.vector([1, 0])
 ```
 
@@ -44,8 +44,8 @@ metric of functions g_ij(x), for solving.
 
 | | |
 |---|---|
-| `M.g` | g (μ↓ ν↓ \|) |
-| `M.ginv` | g⁻¹ (μ↑ ν↑ \|) |
+| `M.g` | g (μ↓ ν↓) |
+| `M.ginv` | g⁻¹ (μ↑ ν↑) |
 | `M.signature` | e.g. `"++"`, `"-+++"` |
 
 ## Connection and curvature
@@ -54,13 +54,13 @@ Everything follows from g (no torsion):
 
 | tensor | method | description |
 |---|---|---|
-| g | `M.g` | metric (μ↓ ν↓ \|) |
-| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ \| μ) |
-| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ \| μ ν) |
-| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓ \|) |
+| g | `M.g` | metric (μ↓ ν↓) |
+| Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ μ) |
+| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ μ ν) |
+| Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓) |
 | R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
-| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓ \|) |
-| ε = √\|det g\| dx¹ ∧ … ∧ dxⁿ | `M.volume_form()` | volume form (\| μ ν …): length, area, volume, … |
+| G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓) |
+| ε = √\|det g\| dx¹ ∧ … ∧ dxⁿ | `M.volume_form()` | volume form (μ ν …): length, area, volume, … |
 | K = R_s / 2 | `M.gaussian_curvature()` | Gaussian curvature (2D only) |
 
 ### Example: the curvature of a sphere of radius r, step by step
