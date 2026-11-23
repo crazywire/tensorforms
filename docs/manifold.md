@@ -74,7 +74,7 @@ G = S.levi_civita()
 print(G.data[0])        # Γ^θ: how θ-components change
 print(G.data[1])        # Γ^φ: how φ-components change
 print(S.ricci().data)
-print(S.ricci_scalar()[()], S.gaussian_curvature()[()])   # scalar tensors; [()] gives the value
+print(S.ricci_scalar().value, S.gaussian_curvature().value)   # scalar tensors; .value gives the expression
 ```
 
 ```text

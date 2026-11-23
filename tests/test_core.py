@@ -544,3 +544,11 @@ def test_sympy_accepts_tensors():
         assert False, "dividing by a tensor with slots is refused"
     except TypeError:
         pass
+
+
+def test_value_for_every_tensor():
+    S = tf.Manifold.sphere()
+    rr = sp.Symbol("r", positive=True)
+    assert sp.simplify(S.ricci_scalar().value - 2 / rr**2) == 0      # scalar: its expression
+    assert S.vector([1, 0]).value == sp.Array([1, 0])                  # vector: a 1D Array
+    assert S.g.value.shape == (2, 2)                                   # g: a 2D Array
