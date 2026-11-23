@@ -551,4 +551,4 @@ def test_scalar_prints_its_value():
     s = S.scalar(sp.Integer(3))
     assert repr(s) == "Tensor() = 3"
     s.label = "s"
-    assert repr(s) == "s = 3"
+    assert repr(s) == "s() = 3"

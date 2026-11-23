@@ -109,10 +109,9 @@ class Tensor:
         return "\n".join([head] + ["  " + s.describe() for s in self.slots])
 
     def __repr__(self):
-        """Label and slots, e.g. Γ(ρ↑ σ↓ μ). A scalar shows its value: R_s = 2/r**2."""
-        if not self.slots:
-            return f"{self.label} = {self.data.item()}" if self.label else f"Tensor() = {self.data.item()}"
-        return f"{self.label or 'Tensor'}{self.declaration()}"
+        """Label and slots, e.g. Γ(ρ↑ σ↓ μ). A scalar also shows its value: R_s() = 2/r**2."""
+        head = f"{self.label or 'Tensor'}{self.declaration()}"
+        return f"{head} = {self.data.item()}" if not self.slots else head
 
     def __getitem__(self, key):
         return self.data[key]
