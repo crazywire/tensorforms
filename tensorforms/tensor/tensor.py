@@ -255,7 +255,8 @@ class Tensor:
         return self._new(slots=[s.renamed(mapping[k]) if k in mapping else s for k, s in enumerate(self.slots)],
                          label=self.label)
 
-    def _relabel(self, which, new_role, eligible, need):
+    def _change_role(self, which, new_role, eligible, need):
+        """The chosen slots (default: every eligible one) get the new role; same numbers."""
         if which:
             targets = {self.position(x) for x in which}
             bad = [self.slots[k] for k in sorted(targets) if not eligible(self.slots[k])]
@@ -266,13 +267,13 @@ class Tensor:
         return self._new(slots=[s.with_role(new_role) if k in targets else s for k, s in enumerate(self.slots)],
                          label=self.label)
 
-    def as_form(self, *names):
+    def as_form(self, *slots):
         """Down value slots → form slots (default: all). Covector (μ↓) → 1-form (μ). Same numbers."""
-        return self._relabel(names, "form", lambda s: not s.is_up and not s.is_form, "down value slots")
+        return self._change_role(slots, "form", lambda s: not s.is_up and not s.is_form, "down value slots")
 
-    def as_value(self, *names):
+    def as_value(self, *slots):
         """Form slots → down value slots (default: all). 1-form (μ) → covector (μ↓). Same numbers."""
-        return self._relabel(names, "value", lambda s: s.is_form, "form slots")
+        return self._change_role(slots, "value", lambda s: s.is_form, "form slots")
 
     # ---------- trace ----------
     def tr(self, a, b):
