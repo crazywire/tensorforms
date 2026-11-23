@@ -552,3 +552,25 @@ def test_value_for_every_tensor():
     assert sp.simplify(S.ricci_scalar().value - 2 / rr**2) == 0      # scalar: its expression
     assert S.vector([1, 0]).value == sp.Array([1, 0])                  # vector: a 1D Array
     assert S.g.value.shape == (2, 2)                                   # g: a 2D Array
+
+
+def test_inverse():
+    S = tf.Manifold.sphere()
+    th, _ = S.coords
+    assert S.g.inverse().equals(S.ginv)                         # g⁻¹ is g's tensor inverse
+    A = S.map([[1, sp.sin(th)], [0, 2]])
+    assert contract(A, A.inverse()).equals(S.map([[1, 0], [0, 1]]))
+    assert [s.is_up for s in S.g.inverse().slots] == [True, True]  # arrows flip
+    mu, nu, la = S.indices(3)
+    F = S.tensor(mu.up, nu.down, la.form, data=[[[1, 0], [2, 1]], [[0, th], [1, 3]]])
+    Fi = F.inverse()                                            # one inverse per step: λ rides along
+    for k in range(2):
+        assert sp.simplify(sp.Matrix(F.data[:, :, k]) * sp.Matrix(Fi.data[:, :, k])) == sp.eye(2)
+    for bad in (lambda: S.map([[1, 1], [1, 1]]).inverse(),      # determinant 0
+                lambda: S.vector([1, 0]).inverse(),             # one value slot: say which two
+                lambda: F.inverse(0, 2)):                       # a form slot
+        try:
+            bad()
+            assert False, "should refuse"
+        except (TypeError, ValueError):
+            pass
