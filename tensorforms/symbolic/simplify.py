@@ -5,7 +5,7 @@ fraction exactly, and use s² = 1 − c². That is fast and gives a true zero as
 (e.g. sin(2θ)·tan(θ) + cos(2θ) − 1 → 0). If the recipe can't apply, it falls back to
 sympy's general simplify. Every step rewrites an expression into an equal one; nothing is guessed.
 
-`is_zero` answers True (shown to be 0), False (shown not to be 0) or None (can't tell).
+`is_zero` passes on sympy's answer: True (simplifies to 0), False (sympy proves nonzero) or None.
 """
 import numpy as np
 import sympy as sp
@@ -62,30 +62,16 @@ def clean(e):
         return _general(e)
 
 
-# Exact points to try as witnesses: fractions, never decimals.
-_WITNESSES = [sp.Rational(1, 3), sp.Rational(2, 7), sp.Rational(5, 11)]
-
-
 def is_zero(e):
-    """Is the expression zero everywhere? Exact, three answers:
+    """Is the expression zero? Sympy decides, exactly:
     True   it simplifies to exactly 0;
-    False  it is shown not to be: one exact point (fractions, not decimals) where its value
-           is a nonzero number is a proof;
-    None   neither can be shown (e.g. it contains unknown functions such as a(t)).
-    Never decided by numerical sampling or a tolerance."""
+    False  sympy proves it is not 0 (a nonzero number, or from the symbols' assumptions);
+    None   sympy can't tell.
+    Never decided by numerical sampling."""
     c = sp.sympify(clean(e))
     if c == 0:
         return True
-    if c.is_zero is False:
-        return False
-    syms = sorted(c.free_symbols, key=str)
-    for k in range(len(_WITNESSES)):
-        point = {s: (k + 1 if s.is_integer else _WITNESSES[(k + i) % len(_WITNESSES)])
-                 for i, s in enumerate(syms)}
-        v = c.xreplace(point)
-        if v.is_number and v.is_finite and v.is_zero is False:
-            return False                         # a witness: nonzero at an exact point
-    return None
+    return c.is_zero
 
 
 clean_array = np.vectorize(clean, otypes=[object])
