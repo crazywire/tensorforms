@@ -45,7 +45,7 @@ metric of functions g_ij(x), for solving.
 | | |
 |---|---|
 | `M.g` | g (μ↓ ν↓) |
-| `M.ginv` | g⁻¹ (μ↑ ν↑) |
+| `M.ginv` | g⁻¹ (μ↑ ν↑), g's tensor inverse |
 | `M.signature` | e.g. `"++"`, `"-+++"` |
 
 ## Connection and curvature

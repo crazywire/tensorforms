@@ -607,7 +607,8 @@ def test_inverse():
     for bad in (lambda: S.map([[1, 1], [1, 1]]).inverse(),      # determinant 0
                 lambda: S.vector([1, 0]).inverse(),             # one slot
                 lambda: F.inverse(),                            # a form slot: not linear, so refused
-                lambda: S.riemann().inverse()):
+                lambda: S.riemann().inverse(),
+                lambda: tf.Manifold(list(sp.symbols("x y", real=True))).metric([[1, 1], [1, 1]])):  # singular metric
         try:
             bad()
             assert False, "should refuse"
