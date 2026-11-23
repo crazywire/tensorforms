@@ -19,7 +19,6 @@ import numpy as np
 import sympy as sp
 
 from ..tensor.labels import wrap
-from ..tensor.products import contract
 from ..tensor.slot import Slot
 from ..tensor.tensor import Tensor
 
@@ -141,46 +140,39 @@ def _d(X, pos):
 
 
 def _act(C, X, slots, values_only=False):
-    """C (Γ or R) acts on each slot of X, as contractions by position (names are only labels):
+    """C (Γ or R) acts on each slot of X (numbers with numpy's tensordot, by position):
         up slot s:    +C X   (C's down slot pairs with s; C's up slot takes s's place)
         down slot s:  −X C   (s pairs with C's up slot; C's down slot takes s's place)
     C's form slots become the new form slots, first among the form slots.
     values_only: skip X's form slots (the wedged operators).
     C must be (↑ ↓ forms…): a matrix (one up, one down value slot) with form slots, like Γ and R.
-    Every term is put in the result's order: X's value slots (s replaced in place), the new form
-    slots, X's form slots (s replaced in place)."""
+    The result's order is X's slots, s replaced in place, with C's forms inserted first among
+    X's form slots (that is `slots`)."""
     if (len(C.slots) < 2 or not C.slots[0].is_up or C.slots[1].is_up
             or C.slots[0].is_form or C.slots[1].is_form or not all(s.is_form for s in C.slots[2:])):
         raise TypeError(f"_act needs C shaped (↑ ↓ forms…) like Γ or R; got {C.declaration()}")
-    vals = [j for j, s in enumerate(X.slots) if not s.is_form]     # positions of X's value slots
-    forms = [j for j, s in enumerate(X.slots) if s.is_form]        # positions of X's form slots
-    m, p, k = len(vals), len(forms), len(C.slots) - 2               # k: the new form slots
-    new = list(range(m + p, m + p + k))
+    n, k = len(X.slots), len(C.slots) - 2                   # X's slots; C's form slots (the new ones)
+    pos = _insert_position(X)                               # where the new form slots go
     total = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
     for j, s in enumerate(X.slots):
         if values_only and s.is_form:
             continue
         if s.space is not X.manifold.tangent:
             raise NotImplementedError(f"slot {s.name} is not in {X.manifold.tangent.name}")
+        rest = lambda t: t if t < j else t - 1             # X's slot t among X's other slots
         if s.is_up:
-            # contract(C, X): [C's up, X's other values, C's forms, X's forms]
-            i = vals.index(j)
-            T = contract(C, X, 1, j)
-            order = list(range(1, i + 1)) + [0] + list(range(i + 1, m + k + p))
-            total = total + np.transpose(T.data, order)
-        elif not s.is_form:
-            # contract(X, C): [X's other values, C's down, X's forms, C's forms]
-            i = vals.index(j)
-            T = contract(X, C, j, 0)
-            order = list(range(i)) + [m - 1] + list(range(i, m - 1)) + new + list(range(m, m + p))
-            total = total - np.transpose(T.data, order)
+            # tensordot(C, X): [C's up, C's forms, X's other slots]
+            data, sign = np.tensordot(C.data, X.data, axes=([1], [j])), 1
+            replaced, form = 0, lambda a: 1 + a
+            other = lambda t: 1 + k + rest(t)
         else:
-            # contract(X, C): [X's values, C's down, X's other forms, C's forms]
-            i = forms.index(j)
-            T = contract(X, C, j, 0)
-            order = (list(range(m)) + new
-                     + list(range(m + 1, m + 1 + i)) + [m] + list(range(m + 1 + i, m + p)))
-            total = total - np.transpose(T.data, order)
+            # tensordot(X, C): [X's other slots, C's down, C's forms]
+            data, sign = np.tensordot(X.data, C.data, axes=([j], [0])), -1
+            replaced, form = n - 1, lambda a: n + a
+            other = rest
+        source = [replaced if t == j else other(t) for t in range(n)]
+        order = source[:pos] + [form(a) for a in range(k)] + source[pos:]
+        total = total + sign * np.transpose(data, order)
     return total
 
 
