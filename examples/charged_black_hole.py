@@ -36,6 +36,6 @@ print("d∧⋆F = 0:", wedge_d(F.star()).simplify().is_zero())
 Fv = F.as_value()                                            # (μ↓ ν↓)
 FF = contract(Fv, Fv.raise_(1), 1, 1)                        # F_μλ F_ν^λ
 F2 = contract(Fv.raise_(0).raise_(1), Fv, 0, 0).tr(0, 1)     # F^αβ F_αβ
-T = (FF - sp.Rational(1, 4) * F2 * M.g) * (1 / (4 * sp.pi))
+T = (FF - F2 * M.g / 4) / (4 * sp.pi)
 
 print("G = 8πT: ", (M.einstein() - 8 * sp.pi * T).simplify().is_zero())
