@@ -104,24 +104,40 @@ class Tensor:
     def __neg__(self):
         return self._new(-self.data, label=negated(self.label))
 
+    @staticmethod
+    def _as_scalar(c):
+        """c as an exact sympy expression, with its label: a number, an expression or a scalar tensor."""
+        not_scalar = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
+                      "(for products of tensors: contract, otimes, wedge)")
+        c_label = None
+        if isinstance(c, Tensor):
+            if c.slots:
+                raise TypeError(not_scalar)
+            c_label, c = c.label, c.data.item()
+        try:
+            c = sp.sympify(c, strict=True)                   # 2 → Integer(2): exact, never a float
+        except sp.SympifyError:
+            c = None
+        if not isinstance(c, sp.Expr):
+            raise TypeError(not_scalar)
+        return c, c_label
+
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
         if not self.slots and isinstance(c, Tensor):         # scalar × tensor
             return c * self
-        c_label = None
-        if isinstance(c, Tensor):
-            if c.slots:
-                raise TypeError("use contract, otimes or wedge to multiply tensors")
-            c_label, c = c.label, c.data.item()
-        try:
-            c = sp.sympify(c, strict=True)
-        except sp.SympifyError:
-            c = None
-        if not isinstance(c, sp.Expr):
-            raise TypeError("can only multiply a tensor by a number, an expression or a scalar tensor")
+        c, c_label = self._as_scalar(c)
         return self._new(self.data * c, label=scaled(c, c_label, self.label))
 
     __rmul__ = __mul__
+
+    def __truediv__(self, c):
+        """Divide by a number, a sympy expression, or a scalar tensor: exact (X / 2 is ½X, never 0.5X)."""
+        c, c_label = self._as_scalar(c)
+        if c == 0:
+            raise ZeroDivisionError("division of a tensor by zero")
+        label = f"{wrap(self.label)}/{c_label or wrap(sp.pretty(c, use_unicode=True))}" if self.label else None
+        return self._new(self.data / c, label=label)
 
     def simplify(self):
         return self._new(clean_array(self.data), label=self.label)

@@ -499,3 +499,16 @@ def test_star_divergence_matches_trace():
     v = S.vector([sp.sin(th) * p, sp.cos(th) ** 2])
     for pt in ({th: 1, p: 2, rr: 3}, {th: sp.Rational(1, 3), p: -1, rr: sp.Rational(1, 2)}):
         assert abs(sp.N((div_star(v) - div_trace(v)).subs(pt))) < 1e-12
+
+
+def test_division_is_exact():
+    S = tf.Manifold.sphere()
+    v = S.vector([1, 3])
+    assert (v / 2).data.tolist() == [sp.Rational(1, 2), sp.Rational(3, 2)]
+    assert (v / 2).equals(v * sp.Rational(1, 2))
+    for bad in (lambda: v / 0, lambda: v / v, lambda: 2 / v):
+        try:
+            bad()
+            assert False, "should refuse"
+        except (TypeError, ZeroDivisionError):
+            pass
