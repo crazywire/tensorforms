@@ -1,77 +1,42 @@
-"""Simplification helpers.
+"""Simplification, done entirely with sympy's own tools.
 
-`clean` first tries a direct recipe: write sin and cos as variables s, c, cancel the
-fraction exactly, and use s² = 1 − c². That is fast and gives a true zero as exactly 0
-(e.g. sin(2θ)·tan(θ) + cos(2θ) − 1 → 0). If the recipe can't apply, it falls back to
-sympy's general simplify. Every step rewrites an expression into an equal one; nothing is guessed.
-
-`is_zero` passes on sympy's answer: True (simplifies to 0), False (sympy proves nonzero) or None.
+`simplify_expr` (for display) uses sympy's trig algorithm `fu`, then sympy's `simplify` on its result,
+keeping the shorter: fu gives readable trig, simplify finishes hyperbolic and exponential parts,
+in any mix. `is_zero` (exact) also rewrites everything
+as exponentials and cancels: for expressions built from sin, cos, sinh, cosh, exp, … that
+decides zero exactly. Every step rewrites an expression into an equal one; nothing is guessed.
 """
-import numpy as np
 import sympy as sp
+from sympy.simplify.fu import fu
 
 
-def _trig_rational(e):
-    """The direct recipe for fractions in sin, cos and anything else:
-    write sin x = s_x, cos x = c_x, cancel (an exact standard form), then use s_x² = 1 − c_x².
-    No searching, so it is fast; a true zero always comes out as exactly 0."""
-    e = sp.expand_trig(e)
-    as_sin_cos = {sp.tan: lambda a: sp.sin(a) / sp.cos(a), sp.cot: lambda a: sp.cos(a) / sp.sin(a),
-                  sp.sec: lambda a: 1 / sp.cos(a), sp.csc: lambda a: 1 / sp.sin(a)}
-    e = e.replace(lambda x: type(x) in as_sin_cos, lambda x: as_sin_cos[type(x)](x.args[0]))
-    args = sorted({f.args[0] for f in e.atoms(sp.sin, sp.cos)}, key=str)
-    sub, back, ideal, gens = {}, {}, [], []
-    for i, a in enumerate(args):
-        S, C = sp.Dummy(f"s{i}"), sp.Dummy(f"c{i}")
-        sub[sp.sin(a)], sub[sp.cos(a)] = S, C
-        back[S], back[C] = sp.sin(a), sp.cos(a)
-        ideal.append(S ** 2 + C ** 2 - 1)
-        gens += [S, C]
-    e = sp.cancel(sp.together(e.xreplace(sub)))
-    if not ideal:
-        return sp.factor(e)
-    n, d = sp.fraction(e)
-    results = []
-    for order in (gens, gens[::-1]):            # replace sin² by 1 − cos², or cos² by 1 − sin²
-        rn = sp.reduced(sp.expand(n), ideal, *order)[1]
-        rd = sp.reduced(sp.expand(d), ideal, *order)[1]
-        results.append(sp.factor(sp.cancel(rn / rd)).xreplace(back))
-    return min(results, key=sp.count_ops)
-
-
-def _general(e):
-    """The old method: sympy's general simplify, plus trig expansions; keep the shortest."""
-    s = sp.simplify(e)
-    if s == 0 or not s.has(sp.sin, sp.cos, sp.tan, sp.cot):
-        return s
-    candidates = [s,
-                  sp.simplify(sp.expand_trig(s)),
-                  sp.trigsimp(sp.expand_trig(s))]
-    return min(candidates, key=sp.count_ops)
-
-
-def clean(e):
-    """Simplify one expression: the direct fraction recipe first; if it can't apply
-    (or fails), sympy's general simplify."""
+def simplify_expr(e):
+    """Simplify one expression for display, with sympy: fu (readable trig), then simplify
+    on its result (hyperbolic and exponential parts, in any mix), keeping the shorter; both
+    are equal, and a tie keeps fu's form. Numbers stay as given (a decimal is not turned into
+    a fraction)."""
     e = sp.sympify(e)
     if e.is_number:
-        return e                              # numbers stay as given (a decimal is not turned into a fraction)
+        return e
     try:
-        return _trig_rational(e)
-    except (sp.PolynomialError, sp.GeneratorsNeeded, TypeError, ValueError):
-        return _general(e)
+        r = fu(e)
+    except Exception:                                    # fu can't handle it: sympy's general simplify
+        return sp.simplify(e)
+    if r == 0:
+        return r
+    return min([r, sp.simplify(r)], key=sp.count_ops)
 
 
 def is_zero(e):
     """Is the expression zero? Sympy decides, exactly:
-    True   it simplifies to exactly 0;
+    True   it simplifies to 0, or written as exponentials it cancels to 0;
     False  sympy proves it is not 0 (a nonzero number, or from the symbols' assumptions);
     None   sympy can't tell.
     Never decided by numerical sampling."""
-    c = sp.sympify(clean(e))
+    c = sp.sympify(simplify_expr(e))
     if c == 0:
         return True
+    if sp.cancel(sp.powsimp(sp.expand(c.rewrite(sp.exp)))) == 0:
+        return True                                      # exact: as exponentials it cancels to 0
     return c.is_zero
 
-
-clean_array = np.vectorize(clean, otypes=[object])

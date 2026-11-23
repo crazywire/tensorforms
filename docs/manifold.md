@@ -79,9 +79,9 @@ print(S.ricci_scalar().value, S.gaussian_curvature().value)   # scalar tensors; 
 
 ```text
 [[0 0]
- [0 -sin(theta)*cos(theta)]]
-[[0 cos(theta)/sin(theta)]
- [cos(theta)/sin(theta) 0]]
+ [0 -sin(2*theta)/2]]
+[[0 1/tan(theta)]
+ [1/tan(theta) 0]]
 [[1 0]
  [0 sin(theta)**2]]
 2/r**2 r**(-2)

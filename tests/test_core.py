@@ -574,6 +574,27 @@ def test_is_zero_is_exact():
     assert S.vector([f, 0]).is_zero() is None
 
 
+def test_zeros_of_every_family():
+    # circular, hyperbolic, exponential, inverse trig: all exactly 0, all found
+    x, t, th = sp.Symbol("x", real=True), sp.Symbol("t", real=True), sp.Symbol("theta", real=True)
+    zeros = [sp.tan(x)**2 + 1 - sp.sec(x)**2,
+             sp.cosh(x)**2 - sp.sinh(x)**2 - 1,
+             sp.tanh(x) - sp.sinh(x) / sp.cosh(x),
+             sp.sinh(2*x) - 2*sp.sinh(x)*sp.cosh(x),
+             sp.cosh(x) - (sp.exp(x) + sp.exp(-x)) / 2,
+             sp.exp(2*t)*sp.exp(-t) - sp.exp(t),
+             sp.sin(sp.asin(x)) - x,
+             sp.sin(2*th)*sp.tan(th) + sp.cos(2*th) - 1,
+             sp.cot(th)*sp.sin(2*th) - 2*sp.cos(th)**2,
+             (sp.sin(th)**4 - sp.cos(th)**4) / (sp.sin(th)**2 - sp.cos(th)**2) - 1]
+    assert all(is_zero(z) is True for z in zeros)
+    S = tf.Manifold.sphere()
+    assert S.scalar(sp.cosh(x)**2 - sp.sinh(x)**2).simplify().value == 1   # hyperbolic leftovers simplify too
+    th2 = sp.Symbol("theta", real=True)                                  # mixed families simplify together
+    mix = sp.sin(th2)**2*sp.cosh(x)**2 + sp.cos(th2)**2*sp.cosh(x)**2 - sp.sinh(x)**2
+    assert S.scalar(mix).simplify().value == 1
+
+
 def test_inverse():
     S = tf.Manifold.sphere()
     th, _ = S.coords

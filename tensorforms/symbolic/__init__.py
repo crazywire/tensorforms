@@ -1,3 +1,3 @@
-from .simplify import clean, clean_array
+from .simplify import simplify_expr
 
-__all__ = ["clean", "clean_array"]
+__all__ = ["simplify_expr"]
