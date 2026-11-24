@@ -149,22 +149,23 @@ class Tensor:
             self._refs = weakref.WeakSet([self])
         self._data[key] = value
 
-    # ---------- arithmetic (needs matching types) ----------
-    def _check_same_type(self, other):
+    # ---------- arithmetic (+ and − need matching indices) ----------
+    def _check_matching(self, other):
         if (not isinstance(other, Tensor) or len(self.indices) != len(other.indices)
                 or not all(a.matches(b) for a, b in zip(self.indices, other.indices))):
-            raise TypeError(f"can only add matching types: {self.declaration()} vs "
+            raise TypeError(f"can only add tensors whose indices match: {self.declaration()} vs "
                             f"{getattr(other, 'declaration', lambda: other)()}")
 
     def _operand(self, other):
         """The other side of + or −, as a tensor. A number means a scalar (no indices), so the
-        type check decides; 0 is the zero tensor of any type, returned as None (nothing to add)."""
+        index check decides; something sympy shows is 0 is the zero tensor of any type, returned
+        as None (nothing to add)."""
         if isinstance(other, Tensor):
             return other
         c = _as_expr(other)
         if c is None:
             raise TypeError(f"can only add tensors and numbers, not {type(other).__name__}")
-        if c == 0:
+        if _is_zero(c) is True:
             return None
         return Tensor(self.manifold, c, [], label=None)
 
@@ -172,7 +173,7 @@ class Tensor:
         other = self._operand(other)
         if other is None:                                     # X + 0 is X
             return self._new(label=self.label)
-        self._check_same_type(other)
+        self._check_matching(other)
         return self._new(self._data + other._data, label=None)
 
     __radd__ = __add__                                        # 0 + X, 1 + s
@@ -181,7 +182,7 @@ class Tensor:
         other = self._operand(other)
         if other is None:                                     # X − 0 is X
             return self._new(label=self.label)
-        self._check_same_type(other)
+        self._check_matching(other)
         return self._new(self._data - other._data, label=None)
 
     def __rsub__(self, other):                                # 0 − X is −X; 1 − s
@@ -193,7 +194,7 @@ class Tensor:
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no indices)."""
-        if not self.indices and isinstance(c, Tensor):         # scalar × tensor
+        if not self.indices and isinstance(c, Tensor) and c.indices:   # scalar × tensor
             return c * self
         c = _as_scalar(c)
         return self._new(self._data * c, label=None)
@@ -201,9 +202,10 @@ class Tensor:
     __rmul__ = __mul__
 
     def __truediv__(self, c):
-        """Divide by a number, a sympy expression, or a scalar tensor: exact (X / 2 is ½X, never 0.5X)."""
+        """Divide by a number, a sympy expression, or a scalar tensor: exact (X / 2 is ½X, never 0.5X).
+        Refused if sympy shows the divisor is 0."""
         c = _as_scalar(c)
-        if c == 0:
+        if _is_zero(c) is True:
             raise ZeroDivisionError("division of a tensor by zero")
         return self._new(self._data / c, label=None)
 
