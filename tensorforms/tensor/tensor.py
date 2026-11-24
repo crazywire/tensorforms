@@ -48,7 +48,9 @@ class Tensor:
 
     def __init__(self, manifold, data, slots, label=None):
         self.manifold = manifold
-        self.data = np.asarray(data, dtype=object)
+        self._data = np.asarray(data, dtype=object).view()   # a view: the caller's array is untouched
+        self._data.flags.writeable = False                   # writes go through X[...] = v
+        self._owns = False                                   # True once this tensor has its own copy
         self.slots = list(slots)
         self.label = label
         if self.data.ndim != len(self.slots):
@@ -63,6 +65,7 @@ class Tensor:
     def _new(self, data=None, slots=None, *, label):
         """A tensor on the same manifold; data and slots default to this tensor's.
         The label must be given (label=self.label to keep it, label=None for none)."""
+        self._owns = False                                   # the new tensor may share our numbers
         return Tensor(self.manifold,
                       self.data if data is None else data,
                       self.slots if slots is None else slots,
@@ -118,8 +121,23 @@ class Tensor:
     def __repr__(self):
         return f"{self.label or 'Tensor'}{self.declaration()}"
 
+    @property
+    def data(self):
+        """The components (a numpy array). Read-only: change numbers with X[...] = v."""
+        return self._data
+
     def __getitem__(self, key):
-        return self.data[key]
+        return self._data[key]
+
+    def __setitem__(self, key, value):
+        """Change components: X[0, 1] = 5. Copy on write: tensors made from this one share its
+        numbers, so the first write gives this tensor its own copy; nothing else changes."""
+        if not self._owns:
+            self._data = self._data.copy()
+            self._owns = True
+        self._data.flags.writeable = True
+        self._data[key] = value
+        self._data.flags.writeable = False
 
     # ---------- arithmetic (needs matching types) ----------
     def _check_same_type(self, other):
