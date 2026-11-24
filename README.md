@@ -9,7 +9,7 @@ tensorforms treats a tensor as an object whose indices are typed. Each index liv
 space, is up (contravariant) or down (covariant), and is either a value index or a form index.
 
 With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
-Ric, the Ricci scalar R_s and the Einstein tensor G, using differential operators that act
+Ric, the Ricci scalar R_s and the Einstein tensor G, using derivatives that act
 on the tensors.
 
 ## Notation
@@ -55,11 +55,11 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 
 | operation | function | description |
 |---|---|---|
-| AB | `contract(A, B)` | product: A's column with B's row |
-| | `contract(A, B, a, b)` | pair the indices you name |
-| | `interior(X, V)` | X's first form index with V's row |
-| A ⊗ B | `otimes(A, B)` | tensor product |
-| A∧B, A⊙B | `wedge(A, B)`, `odot(A, B)` | wedge and symmetric products |
+| AB | `A @ B` | product: A's column with B's row |
+| | `A.contract(B, a, b)` | pair the indices you name |
+| | `X.interior(V)` | X's first form index with V's row |
+| A ⊗ B | `A.otimes(B)` | tensor product |
+| A∧B, A⊙B | `A.wedge(B)`, `A.odot(B)` | wedge and symmetric products |
 | tr X | `X.tr(a, b)` | trace over two indices |
 | X^T, X^S, X^U, X^V | `X.T`, `X.S`, `X.U`, `X.V` | swap neighbouring indices |
 | Alt X, Sym X | `X.alt()`, `X.sym()` | antisymmetric and symmetric parts |
@@ -71,13 +71,13 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 
 | operator | function | description |
 |---|---|---|
-| d | `d(X)` | partial derivative |
-| d∧ | `wedge_d(X)` | exterior derivative |
-| ∇ = d + Γ | `nabla(X)` | covariant derivative |
-| ∇∧ = d∧ + Γ∧ | `wedge_nabla(X)` | exterior covariant derivative |
-| ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
-| ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
-| L_v | `lie(v, X)` | Lie derivative along a vector field v (no metric needed) |
+| d | `X.d()` | partial derivative |
+| d∧ | `X.wedge_d()` | exterior derivative |
+| ∇ = d + Γ | `X.nabla()` | covariant derivative |
+| ∇∧ = d∧ + Γ∧ | `X.wedge_nabla()` | exterior covariant derivative |
+| ∇∧∇ = R | `X.curvature()` | commutator of covariant derivatives |
+| ∇∧∇∧ = R∧ | `X.wedge_curvature()` | exterior covariant derivative squared |
+| L_v | `X.lie(v)` | Lie derivative along a vector field v (no metric needed) |
 
 ## Example: how curved is a sphere?
 
@@ -116,7 +116,7 @@ took the traces.
 |---|---|
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G, ready-made manifolds |
 | [Tensors](docs/tensors.md) | the notation (indices and arrows), one tensor, products |
-| [Operators](docs/operators.md) | the six operators and their product rules |
+| [Derivatives](docs/derivatives.md) | the derivatives (d, ∇, curvature, Lie) and their product rules |
 
 ## Examples
 

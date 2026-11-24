@@ -1,5 +1,5 @@
-"""The operators, each written with the formula we proved (no torsion). Plus lie(v, X), the Lie
-derivative along a vector field (needs no metric).
+"""The derivatives, each written with the formula we proved (no torsion). Plus X.lie(v), the Lie
+derivative along a vector field (needs no metric). They are tensor methods: Tensor inherits Derivatives.
 
                  every index              wedged (form indices antisymmetrized)
     plain        d                       wedge_d          = d∧
@@ -19,111 +19,92 @@ import math
 import numpy as np
 import sympy as sp
 
-from ..tensor.index import Index
-from ..tensor.tensor import Tensor
+from .index import Index
 
 
-# ---------------------------------------------------------------- the operators
-def d(X):
-    """Plain d: one new form index, first among the form indices. Needs only the coordinates."""
-    _check_tensor(X)
-    pos, indices = _with_new_indices(X, 1)
-    return Tensor(X.manifold, _d(X, pos), indices, None, copy=False)
+# ---------------------------------------------------------------- the derivatives
+class Derivatives:
+    """The derivatives, as tensor methods (Tensor inherits them): X.d(), X.nabla(), X.lie(v), …"""
 
+    def d(self):
+        """Plain d: one new form index, first among the form indices. Needs only the coordinates."""
+        pos, indices = _with_new_indices(self, 1)
+        return type(self)(self.manifold, _d(self, pos), indices, None, copy=False)
 
-def wedge_d(X):
-    """Wedge d: d∧X. Antisymmetrize X's form indices, take d, then (p+1)·Alt. No Γ."""
-    _check_tensor(X)
-    p = len(X._form_positions())
-    Xa = X.alt()
-    pos, indices = _with_new_indices(Xa, 1)
-    Y = _wedge_new(Tensor(X.manifold, _d(Xa, pos), indices, copy=False), p, 1)
-    return Y._new(label=None)
+    def wedge_d(self):
+        """Wedge d: d∧X. Antisymmetrize X's form indices, take d, then (p+1)·Alt. No Γ."""
+        p = len(self._form_positions())
+        Xa = self.alt()
+        pos, indices = _with_new_indices(Xa, 1)
+        Y = _wedge_new(type(self)(self.manifold, _d(Xa, pos), indices, copy=False), p, 1)
+        return Y._new(label=None)
 
+    def nabla(self):
+        """Covariant derivative: ∇X = dX + Γ on every index."""
+        pos, indices = _with_new_indices(self, 1)
+        data = _d(self, pos)
+        G, _ = _geometry(self)
+        if G is not None:
+            data = data + _act(G, self, indices)
+        return type(self)(self.manifold, data, indices, None, copy=False)
 
-def nabla(X):
-    """Covariant derivative: ∇X = dX + Γ on every index."""
-    _check_tensor(X)
-    pos, indices = _with_new_indices(X, 1)
-    data = _d(X, pos)
-    G, _ = _geometry(X)
-    if G is not None:
-        data = data + _act(G, X, indices)
-    return Tensor(X.manifold, data, indices, None, copy=False)
+    def wedge_nabla(self):
+        """Wedge derivative: ∇∧X = d∧X + Γ∧ on value indices."""
+        p = len(self._form_positions())
+        Xa = self.alt()                                   # wedge factors are antisymmetric first
+        pos, indices = _with_new_indices(Xa, 1)
+        data = _d(Xa, pos)
+        G, _ = _geometry(self)
+        if G is not None:
+            data = data + _act(G, Xa, indices, values_only=True)
+        Y = _wedge_new(type(self)(self.manifold, data, indices, copy=False), p, 1)
+        return Y._new(label=None)
 
+    def curvature(self):
+        """Curvature operator: ∇∧∇X = R on every index. X is never differentiated."""
+        pos, indices = _with_new_indices(self, 2)
+        _, R = _geometry(self)
+        if R is None:
+            data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
+        else:
+            data = _act(R(), self, indices)
+        return type(self)(self.manifold, data, indices, None, copy=False)
 
-def wedge_nabla(X):
-    """Wedge derivative: ∇∧X = d∧X + Γ∧ on value indices."""
-    _check_tensor(X)
-    p = len(X._form_positions())
-    Xa = X.alt()                                   # wedge factors are antisymmetric first
-    pos, indices = _with_new_indices(Xa, 1)
-    data = _d(Xa, pos)
-    G, _ = _geometry(X)
-    if G is not None:
-        data = data + _act(G, Xa, indices, values_only=True)
-    Y = _wedge_new(Tensor(X.manifold, data, indices, copy=False), p, 1)
-    return Y._new(label=None)
+    def wedge_curvature(self):
+        """Wedge curvature: ∇∧∇∧X = R∧ on value indices. X is never differentiated."""
+        p = len(self._form_positions())
+        Xa = self.alt()
+        pos, indices = _with_new_indices(Xa, 2)
+        _, R = _geometry(self)
+        if R is None:
+            data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
+        else:
+            data = _act(R(), Xa, indices, values_only=True)
+        Y = _wedge_new(type(self)(self.manifold, data, indices, copy=False), p, 2)
+        return Y._new(label=None)
 
-
-def curvature(X):
-    """Curvature operator: ∇∧∇X = R on every index. X is never differentiated."""
-    _check_tensor(X)
-    pos, indices = _with_new_indices(X, 2)
-    _, R = _geometry(X)
-    if R is None:
-        data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
-    else:
-        data = _act(R(), X, indices)
-    return Tensor(X.manifold, data, indices, None, copy=False)
-
-
-def wedge_curvature(X):
-    """Wedge curvature: ∇∧∇∧X = R∧ on value indices. X is never differentiated."""
-    _check_tensor(X)
-    p = len(X._form_positions())
-    Xa = X.alt()
-    pos, indices = _with_new_indices(Xa, 2)
-    _, R = _geometry(X)
-    if R is None:
-        data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
-    else:
-        data = _act(R(), Xa, indices, values_only=True)
-    Y = _wedge_new(Tensor(X.manifold, data, indices, copy=False), p, 2)
-    return Y._new(label=None)
-
-
-def lie(v, X):
-    """Lie derivative of X along the vector field v. The result has X's indices; no metric needed.
-        L_v X = (dX)v − J on each up index + J on each down or form index,  J = (dv).as_value()"""
-    _check_tensor(v)
-    _check_tensor(X)
-    M = X.manifold
-    if v.manifold is not M or len(v.indices) != 1 or not v.indices[0].is_up or v.indices[0].is_form \
-            or v.indices[0].space is not M.tangent:
-        raise TypeError(f"lie needs a vector field v (one up value index, same manifold); got {v.declaration()}")
-    coords = M.coords
-    diff = lambda e, x: sp.diff(e, x)
-    # (dX)v: v^c ∂_c X
-    data = sum((v.data[c] * np.vectorize(diff, otypes=[object])(X.data, coords[c]) for c in range(len(coords))),
-               np.zeros(X.data.shape, dtype=object))
-    # J[a, c] = ∂_c v^a
-    J = np.array([[sp.diff(v.data[a], x) for x in coords] for a in range(len(coords))], dtype=object)
-    for i, s in enumerate(X.indices):
-        if s.space is not M.tangent:
-            raise NotImplementedError(f"index {s.label} is not in {M.tangent.name}")
-        if s.is_up:                       # −J^a_c X^{…c…}: J's a takes index i's place
-            data = data - np.moveaxis(np.tensordot(J, X.data, axes=([1], [i])), 0, i)
-        else:                             # +X_{…c…} J^c_b: J's b takes index i's place
-            data = data + np.moveaxis(np.tensordot(X.data, J, axes=([i], [0])), -1, i)
-    return Tensor(M, data, X.indices, None, copy=False)
+    def lie(self, v):
+        """Lie derivative of X along the vector field v. The result has X's indices; no metric needed.
+            L_v X = (dX)v − J on each up index + J on each down or form index,  J = (dv).as_value()"""
+        M = self.manifold
+        if (not isinstance(v, type(self)) or v.manifold is not M or len(v.indices) != 1
+                or not v.indices[0].is_up or v.indices[0].is_form or v.indices[0].space is not M.tangent):
+            raise TypeError("lie needs a vector field v (one up value index, same manifold); "
+                            f"got {getattr(v, 'declaration', lambda: v)()}")
+        # (dX)v: d's new form index (first among the form indices) paired with v; the order is kept
+        data = np.tensordot(v.data, self.d().data, axes=([0], [_insert_position(self)]))
+        J = v.d().as_value().data                                   # J[a, c] = ∂_c v^a
+        for i, s in enumerate(self.indices):
+            if s.space is not M.tangent:
+                raise NotImplementedError(f"index {s.label} is not in {M.tangent.name}")
+            if s.is_up:                       # −J^a_c X^{…c…}: J's a takes index i's place
+                data = data - np.moveaxis(np.tensordot(J, self.data, axes=([1], [i])), 0, i)
+            else:                             # +X_{…c…} J^c_b: J's b takes index i's place
+                data = data + np.moveaxis(np.tensordot(self.data, J, axes=([i], [0])), -1, i)
+        return type(self)(M, data, self.indices, None, copy=False)
 
 
 # ---------------------------------------------------------------- helpers
-def _check_tensor(X):
-    if not isinstance(X, Tensor):
-        raise TypeError("the operators act on tensors")
-
 
 def _insert_position(X):
     """Where new form indices go: first among the form indices."""
@@ -166,7 +147,7 @@ def _act(C, X, indices, values_only=False):
         up index s:    +C X   (C's down index pairs with s; C's up index takes s's place)
         down index s:  −X C   (s pairs with C's up index; C's down index takes s's place)
     C's form indices become the new form indices, first among the form indices.
-    values_only: skip X's form indices (the wedged operators).
+    values_only: skip X's form indices (the wedged derivatives).
     C must be (↑ ↓ forms…): a matrix (one up, one down value index) with form indices, like Γ and R.
     The result's order is X's indices, s replaced in place, with C's forms inserted first among
     X's form indices (that is `indices`)."""

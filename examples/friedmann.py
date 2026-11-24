@@ -11,7 +11,6 @@ import sympy as sp
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import tensorforms as tf
-from tensorforms import otimes
 
 U = tf.Manifold.flrw()                          # scale factor a(t), unknown
 t = U.coords[0]
@@ -19,7 +18,7 @@ rho = sp.Function("rho")(t)                     # energy density
 p = sp.Function("p")(t)                         # pressure
 
 u = U.vector([1, 0, 0, 0]).lower()              # the fluid is at rest: u = e_t, lowered (μ↓)
-T = (rho + p) * otimes(u, u) + p * U.g          # perfect fluid (μ↓ ν↓)
+T = (rho + p) * u.otimes(u) + p * U.g          # perfect fluid (μ↓ ν↓)
 
 E = (U.einstein() - 8 * sp.pi * T).simplify()   # Einstein's equation: E = 0
 

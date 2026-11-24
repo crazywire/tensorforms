@@ -8,8 +8,7 @@ import sympy as sp
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tensorforms as tf
-from tensorforms import (Manifold, contract, curvature, interior, lie, nabla, otimes,
-                         wedge, wedge_curvature, wedge_d, wedge_nabla)
+from tensorforms import Manifold
 from tensorforms.symbolic.simplify import is_zero          # internal: for single components
 
 
@@ -21,14 +20,14 @@ def _first_form_position(X):
 def curvature_by_commutator(X):
     """∇∧∇ by definition: ∇ twice, minus the order swapped."""
     pos = _first_form_position(X)
-    Y = nabla(nabla(X))
+    Y = X.nabla().nabla()
     return Y - Y.swap(pos, pos + 1)
 
 
 def wedge_nabla_by_definition(X):
     """∇∧ by definition: ∇ on every index, then (p+1)·Alt over all form indices."""
     p = sum(s.is_form for s in X.indices)
-    Y = nabla(X.alt())
+    Y = X.alt().nabla()
     return Y if p == 0 else Y.alt() * (p + 1)
 
 
@@ -66,10 +65,10 @@ def test_sphere_symbolic_radius():
 
 def test_nabla_g_is_zero():
     S = tf.Manifold.sphere(r=1)
-    assert nabla(S.g).is_zero()
+    assert S.g.nabla().is_zero()
 
 
-# ---------------------------------------------------------------- the four operators
+# ---------------------------------------------------------------- the derivatives
 def _sphere_fields():
     S = tf.Manifold.sphere(r=1)
     th, ph = S.coords
@@ -79,50 +78,50 @@ def _sphere_fields():
 
 def test_curvature_operator_matches_its_definition():
     S, v, w = _sphere_fields()                                # R on every index == ∇ twice, antisymmetrized
-    assert curvature(v).equals(curvature_by_commutator(v))
-    assert curvature(w).equals(curvature_by_commutator(w))
-    assert curvature(w).is_zero() is None                    # w has unknown v1, v2: can't tell
+    assert v.curvature().equals(curvature_by_commutator(v))
+    assert w.curvature().equals(curvature_by_commutator(w))
+    assert w.curvature().is_zero() is None                    # w has unknown v1, v2: can't tell
     th, _ = S.coords                                         # a concrete w = dθ: compare with the known −Rᵀw
-    C = curvature(S.one_form([1, 0])).simplify()
+    C = S.one_form([1, 0]).curvature().simplify()
     assert C[0, 1, 1] == -sp.sin(th) ** 2 and C[1, 0, 1] == sp.sin(th) ** 2
 
 
 def test_curl_needs_no_connection():
     S, v, w = _sphere_fields()
-    assert wedge_nabla(w).equals(wedge_d(w))                  # ∇∧w = d∧w
+    assert w.wedge_nabla().equals(w.wedge_d())                  # ∇∧w = d∧w
 
 
 def test_wedge_nabla_matches_its_definition():
     S, v, w = _sphere_fields()                                # form-index corrections cancel
-    assert wedge_nabla(v).equals(wedge_nabla_by_definition(v))
-    assert wedge_nabla(w).equals(wedge_nabla_by_definition(w))
-    X = nabla(v)                                              # a vector-valued 1-form
-    assert wedge_nabla(X).equals(wedge_nabla_by_definition(X))
+    assert v.wedge_nabla().equals(wedge_nabla_by_definition(v))
+    assert w.wedge_nabla().equals(wedge_nabla_by_definition(w))
+    X = v.nabla()                                              # a vector-valued 1-form
+    assert X.wedge_nabla().equals(wedge_nabla_by_definition(X))
 
 
 def test_wedge_curvature():
     S, v, w = _sphere_fields()
-    assert wedge_curvature(w).is_zero()                       # 1-form: no value indices
-    assert wedge_curvature(v).equals(curvature(v))            # vector: same as the commutator
-    assert wedge_curvature(v).equals(wedge_curvature_by_definition(v))
-    assert wedge_curvature(w).equals(wedge_curvature_by_definition(w))
+    assert w.wedge_curvature().is_zero()                       # 1-form: no value indices
+    assert v.wedge_curvature().equals(v.curvature())            # vector: same as the commutator
+    assert v.wedge_curvature().equals(wedge_curvature_by_definition(v))
+    assert w.wedge_curvature().equals(wedge_curvature_by_definition(w))
 
 
 def test_scalar_has_no_curvature():
     S = tf.Manifold.sphere(r=1)
     f = S.scalar(sp.Function("f")(*S.coords))
-    assert curvature(f).is_zero()                             # Hessian is symmetric
+    assert f.curvature().is_zero()                             # Hessian is symmetric
 
 
 def test_bianchi_in_3d():
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z])
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
-    assert wedge_nabla(M.riemann()).is_zero()               # ∇∧R = 0
+    assert M.riemann().wedge_nabla().is_zero()               # ∇∧R = 0
     u = M.vector([y, x * z, 1])
-    assert curvature(u).equals(curvature_by_commutator(u))
-    X = nabla(u)                                              # a vector-valued 1-form: R∧ mixes 3 directions
-    assert wedge_curvature(X).equals(wedge_curvature_by_definition(X))
+    assert u.curvature().equals(curvature_by_commutator(u))
+    X = u.nabla()                                              # a vector-valued 1-form: R∧ mixes 3 directions
+    assert X.wedge_curvature().equals(wedge_curvature_by_definition(X))
 
 
 def test_product_rule():
@@ -131,8 +130,8 @@ def test_product_rule():
     a, b = S.indices(2)
     A = S.map([[th, ph], [th * ph, 1]], indices=(a, b))
     v = S.vector([sp.sin(th), ph], index=b)
-    lhs = nabla(contract(A, v, b))
-    rhs = contract(nabla(A), v, b) + contract(A, nabla(v), b)
+    lhs = A.contract(v, b).nabla()
+    rhs = A.nabla().contract(v, b) + A.contract(v.nabla(), b)
     assert lhs.equals(rhs)
 
 
@@ -161,7 +160,7 @@ def test_connection_is_s_symmetric():
 
 
 def test_gamma_and_riemann_match_index_formulas():
-    """Γ and R are computed with the operators; check them against the index formulas."""
+    """Γ and R are computed with the derivatives; check them against the index formulas."""
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z])
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
@@ -202,7 +201,7 @@ def test_wedge_single_factor_is_one_term():
     S = tf.Manifold.sphere(r=1)
     R = S.riemann()
     v = S.vector([1, 0])
-    assert wedge(R, v).equals(contract(R, v))                 # R∧v = Rv
+    assert R.wedge(v).equals(R @ v)                 # R∧v = Rv
 
 
 def test_ricci_by_names():
@@ -216,7 +215,7 @@ def test_type_errors():
     S = tf.Manifold.sphere(r=1)
     v, w = S.vector([1, 0]), S.covector([1, 0])
     for bad in (lambda: v + w,
-                lambda: contract(S.g, S.g, "μ", "μ")):        # down with down
+                lambda: S.g.contract(S.g, "μ", "μ")):        # down with down
         try:
             bad()
         except TypeError:
@@ -243,7 +242,7 @@ def test_bare_manifold_has_no_metric():
     th, ph = sp.symbols("theta phi")
     M = Manifold([th, ph])
     w = M.one_form([sp.cos(th), ph])
-    wedge_nabla(w)                                            # d∧ works with no metric
+    w.wedge_nabla()                                            # d∧ works with no metric
     try:
         M.g
     except AttributeError:
@@ -255,7 +254,7 @@ def test_names():
     S = tf.Manifold.sphere()
     R = S.riemann()
     assert [i.label for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
-    assert [s.label for s in nabla(R).indices] == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
+    assert [s.label for s in R.nabla().indices] == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
     assert R.tr("rho", "mu").equals(R.tr("ρ", "μ"))                # spelled-out Greek
     assert R.tr(0, 2).equals(R.tr("ρ", "μ"))                       # index numbers
     K = R.relabel_indices({"mu": "kappa"})
@@ -283,12 +282,12 @@ def test_labels():
     R, g, v = S.riemann(), S.g, S.vector([1, 0])
     assert [S.levi_civita().label, R.label, S.ricci().label, g.label, S.ginv.label] == ["Γ", "R", "Ric", "g", "g⁻¹"]
     computed = (R.alt(), R.sym(), -R, R + R, 3 * R, R / 2, R.tr(0, 1), g.inverse(), v.star(),
-                contract(R, v), otimes(v, v), wedge(S.one_form([1, 0]), S.one_form([0, 1])))
+                R @ v, v.otimes(v), S.one_form([1, 0]).wedge(S.one_form([0, 1])))
     assert all(X.label is None for X in computed)
     kept = (R.S, R.swap(0, 2), R.reorder(3, 2, 1, 0), R.relabel_indices({"mu": "kappa"}), v.lower(),
             v.lower().as_form(), R.simplify(), R + 0)
     assert all(X.label == X_label for X, X_label in zip(kept, "R R R R v v R R".split()))
-    X = contract(R, v)
+    X = R @ v
     X.label = "K"                                              # name a result yourself
     assert repr(X) == "K(ρ↑ μ ν)"
 
@@ -296,19 +295,19 @@ def test_contract_default_and_otimes():
     S = tf.Manifold.sphere(r=1)
     R, v, u = S.riemann(), S.vector([1, 0]), S.vector([0, 1])
     w, alpha = S.covector([1, 0]), S.one_form([1, 0])
-    assert contract(R, v).equals(contract(R, v, "σ", "μ"))       # default: R's column with v's row
-    assert contract(w, v).data.item() == 1                       # covector × vector: a number
-    assert contract(alpha, v, "μ", "μ").data.item() == 1         # a 1-form is paired by name
-    for bad in (lambda: contract(v, u),                          # column × column: mismatch
-                lambda: contract(v, w),                          # column × row: use otimes
-                lambda: contract(w, w),                          # row × row: mismatch
-                lambda: contract(alpha, v)):                     # form indices never pair by default
+    assert (R @ v).equals(R.contract(v, "σ", "μ"))       # default: R's column with v's row
+    assert (w @ v).data.item() == 1                       # covector × vector: a number
+    assert alpha.contract(v, "μ", "μ").data.item() == 1         # a 1-form is paired by name
+    for bad in (lambda: v @ u,                          # column × column: mismatch
+                lambda: v @ w,                          # column × row: use otimes
+                lambda: w @ w,                          # row × row: mismatch
+                lambda: alpha @ v):                     # form indices never pair by default
         try:
             bad()
         except TypeError:
             continue
         raise AssertionError("expected a TypeError")
-    T = otimes(v, u)                                             # v^μ u^ν: both indices kept
+    T = v.otimes(u)                                             # v^μ u^ν: both indices kept
     assert [s.label for s in T.indices] == ["μ", "ν"] and T.data[0, 1] == 1
 
 
@@ -330,11 +329,11 @@ def test_raise_lower_undo():
         except TypeError:
             continue
         raise AssertionError("expected a TypeError")
-    F = wedge_nabla(v.lower().as_form())                       # bridge to a 1-form, then d∧
+    F = v.lower().as_form().wedge_nabla()                       # bridge to a 1-form, then d∧
     assert all(s.is_form for s in F.indices)
     f = S.scalar(th ** 2)
-    df = tf.d(f)                                                # a 1-form (μ)
-    assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
+    df = f.d()                                                # a 1-form (μ)
+    assert (df.as_value() @ v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
     assert all(a.matches(b) for a, b in zip(df.as_value().as_form().indices, df.indices))
 
 def test_manifold_hands_out_copies():
@@ -351,8 +350,8 @@ def test_manifold_hands_out_copies():
 def test_operator_results_have_no_label():
     S = tf.Manifold.sphere()
     v = S.vector([1, 0])
-    assert all(X.label is None for X in (tf.d(v), wedge_d(v), nabla(v), wedge_nabla(v),
-                                          curvature(v), wedge_curvature(v)))
+    assert all(X.label is None for X in (v.d(), v.wedge_d(), v.nabla(), v.wedge_nabla(),
+                                          v.curvature(), v.wedge_curvature()))
 
 def test_euclidean_options():
     assert tf.Manifold.euclidean().dim == 3 and tf.Manifold.euclidean(4).dim == 4
@@ -406,16 +405,16 @@ def test_interior():
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     f = M.scalar(x * y ** 2 + sp.sin(z))
     v = M.vector([y, x * z, 1])
-    df = tf.d(f)
+    df = f.d()
     dv = sum(v.data[i] * sp.diff(f.data.item(), c) for i, c in enumerate(M.coords))
-    assert is_zero(interior(df, v).data.item() - dv)                  # df(v): the directional derivative
+    assert is_zero(df.interior(v).data.item() - dv)                  # df(v): the directional derivative
     a, b = M.one_form([x, y * z, 1]), M.one_form([z, 1, x * y])
-    lhs = interior(wedge(a, b), v)                                    # ι(a∧b) = (ι a) b − a (ι b)
-    rhs = b * interior(a, v).data.item() - a * interior(b, v).data.item()
+    lhs = a.wedge(b).interior(v)                                    # ι(a∧b) = (ι a) b − a (ι b)
+    rhs = b * a.interior(v).data.item() - a * b.interior(v).data.item()
     assert lhs.equals(rhs)
     R = M.riemann()
-    assert interior(R, v).equals(contract(R, v, "μ", v.indices[0].label))     # contract with X's first form index
-    for bad in (lambda: interior(v, v), lambda: interior(df, df)):     # no form index / no row
+    assert R.interior(v).equals(R.contract(v, "μ", v.indices[0].label))     # contract with X's first form index
+    for bad in (lambda: v.interior(v), lambda: df.interior(df)):     # no form index / no row
         try:
             bad()
         except TypeError:
@@ -486,8 +485,8 @@ def test_contract_keeps_form_order_when_names_clash():
     mu, nu, la = S.indices(3)
     A = S.tensor(mu.up, nu.form, data=[[1, 2], [3, 4]])
     B = S.tensor(la.up, mu.form, nu.form, data=[[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
-    clash = contract(A, B, 1, 0)
-    fresh = contract(A, B.relabel_indices({"μ": "α", "ν": "β"}), 1, 0)
+    clash = A.contract(B, 1, 0)
+    fresh = A.contract(B.relabel_indices({"μ": "α", "ν": "β"}), 1, 0)
     assert (clash.data == fresh.data).all()
 
 
@@ -513,12 +512,12 @@ def test_star_signs_and_curl():
     E = tf.Manifold.euclidean()
     x, y, z = E.coords
     alpha = E.one_form([-y, x, 0])
-    assert wedge_d(alpha).star().data.tolist() == [0, 0, 2]          # curl of the rotation
+    assert alpha.wedge_d().star().data.tolist() == [0, 0, 2]          # curl of the rotation
     assert alpha.star().star().equals(alpha)                           # 3D Riemannian: ⋆⋆ = 1
     assert E.scalar(1).star().equals(E.volume_form())                  # ⋆1 = ε
     Mk = tf.Manifold.minkowski()
     t, X, Y, Z = Mk.coords
-    F = wedge_d(Mk.one_form([t * X, Y, 0, X * Z]))
+    F = Mk.one_form([t * X, Y, 0, X * Z]).wedge_d()
     assert F.star().star().equals(-F)                                  # 4D Lorentzian 2-form: ⋆⋆ = −1
     S = tf.Manifold.sphere()
     a, b, c = S.indices(3)
@@ -531,10 +530,10 @@ def test_star_signs_and_curl():
 
 def test_star_divergence_matches_trace():
     def div_star(v):
-        return wedge_d(v.lower().as_form().star()).star().data.item()
+        return v.lower().as_form().star().wedge_d().star().data.item()
 
     def div_trace(v):
-        return nabla(v).tr(0, 1).data.item()
+        return v.nabla().tr(0, 1).data.item()
 
     P = tf.Manifold.euclidean(coords="polar")
     r, ph = P.coords
@@ -564,7 +563,7 @@ def test_division_is_exact():
 def test_adding_numbers():
     S = tf.Manifold.sphere()
     v = S.vector([1, 2])
-    s = contract(v.lower(), v)                                  # a scalar
+    s = v.lower() @ v                                  # a scalar
     assert (v + 0).equals(v) and (0 + v).equals(v) and (v - 0).equals(v) and (0 - v).equals(-v)
     assert sum([v, v, v]).equals(3 * v)                         # sum starts from 0
     assert sp.simplify((s + 1).data.item() - (s.data.item() + 1)) == 0
@@ -581,7 +580,7 @@ def test_sympy_accepts_tensors():
     S = tf.Manifold.sphere()
     th, _ = S.coords
     v = S.vector([1, 2])
-    s = contract(v.lower(), v)                                  # a scalar
+    s = v.lower() @ v                                  # a scalar
     assert sp.simplify(sp.diff(s, th) - sp.diff(s.data.item(), th)) == 0   # sympy takes it directly
     assert sp.sympify(v) == sp.Array([1, 2])                    # one axis per index
     for mixed in (th * s, th + s, th - s, sp.sin(th) * v, 2 / s, 0 / s):
@@ -645,7 +644,7 @@ def test_inverse():
     assert S.g.inverse().equals(S.ginv)                         # g⁻¹ is g's tensor inverse
     assert [s.is_up for s in S.g.inverse().indices] == [True, True]  # arrows flip
     A = S.map([[1, sp.sin(th)], [0, 2]])
-    assert contract(A, A.inverse()).equals(S.map([[1, 0], [0, 1]]))
+    assert (A @ A.inverse()).equals(S.map([[1, 0], [0, 1]]))
     mu, nu, la = S.indices(3)
     F = S.tensor(mu.up, nu.down, la.form, data=[[[1, 0], [2, 1]], [[0, th], [1, 3]]])
     for bad in (lambda: S.map([[1, 1], [1, 1]]).inverse(),      # determinant 0
@@ -725,33 +724,33 @@ def test_subs_and_at():
 def test_lie_derivative():
     S = tf.Manifold.sphere()
     th, ph = S.coords
-    assert lie(S.vector([0, 1]), S.g).is_zero()                           # ∂_φ: a symmetry (Killing)
-    assert lie(S.vector([1, 0]), S.g).simplify().data[1, 1] != 0           # ∂_θ: not one
+    assert S.g.lie(S.vector([0, 1])).is_zero()                           # ∂_φ: a symmetry (Killing)
+    assert S.g.lie(S.vector([1, 0])).simplify().data[1, 1] != 0           # ∂_θ: not one
     E = tf.Manifold.euclidean(2)
     x, y = E.coords
     v, w = E.vector([-y, x]), E.vector([1, 0])
-    assert lie(v, w).data.tolist() == [0, -1]                               # rotation vs a fixed arrow
-    assert lie(v, w).equals(-lie(w, v))                                    # the Lie bracket is antisymmetric
+    assert w.lie(v).data.tolist() == [0, -1]                               # rotation vs a fixed arrow
+    assert w.lie(v).equals(-v.lie(w))                                    # the Lie bracket is antisymmetric
     a = E.one_form([x * y, x**2])
-    assert lie(v, a).equals(interior(wedge_d(a), v) + tf.d(interior(a, v)))   # Cartan's formula
+    assert a.lie(v).equals(a.wedge_d().interior(v) + a.interior(v).d())   # Cartan's formula
     f = E.scalar(x**2 * y)
-    assert sp.simplify(lie(v, f).value - (-2 * x * y**2 + x**3)) == 0      # on a scalar: v(f)
+    assert sp.simplify(f.lie(v).value - (-2 * x * y**2 + x**3)) == 0      # on a scalar: v(f)
     # matches the ∇ version (the Γ terms cancel), on a mixed tensor
     i, j, k = S.indices(3)
     T = S.tensor(i.up, j.down, k.form, data=[[[th * ph, sp.sin(th)], [ph**2, 1]],
                                              [[sp.cos(ph), th], [0, th * ph**2]]])
     u = S.vector([sp.sin(ph), th * sp.cos(th)])
-    Jn, data = nabla(u).as_value().data, interior(nabla(T), u).data
+    Jn, data = u.nabla().as_value().data, T.nabla().interior(u).data
     for n, s in enumerate(T.indices):
         if s.is_up:
             data = data - np.moveaxis(np.tensordot(Jn, T.data, axes=([1], [n])), 0, n)
         else:
             data = data + np.moveaxis(np.tensordot(T.data, Jn, axes=([n], [0])), -1, n)
-    assert lie(u, T).equals(S.tensor(*T.indices, data=data))
+    assert T.lie(u).equals(S.tensor(*T.indices, data=data))
     N = tf.Manifold(list(sp.symbols("p q")))                               # no metric needed
-    assert lie(N.vector([1, 0]), N.vector([N.coords[0], 0])).data.tolist() == [1, 0]
+    assert N.vector([N.coords[0], 0]).lie(N.vector([1, 0])).data.tolist() == [1, 0]
     try:
-        lie(S.covector([1, 0]), S.g)                                       # v must be a vector
+        S.g.lie(S.covector([1, 0]))                                       # v must be a vector
         assert False
     except TypeError:
         pass

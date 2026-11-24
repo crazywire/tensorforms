@@ -28,7 +28,7 @@ The examples below use a sphere of radius r:
 
 ```python
 import sympy as sp
-from tensorforms import Manifold, contract
+from tensorforms import Manifold
 r = sp.Symbol("r", positive=True)
 th, ph = sp.symbols("theta phi", real=True)
 S = Manifold([th, ph], name="S2")
@@ -132,16 +132,15 @@ where v♭ is v as a 1-form (`v.lower().as_form()`).
 
 ```python
 import tensorforms as tf
-from tensorforms import wedge_d, nabla
 E = tf.Manifold.euclidean()
 x, y, z = E.coords
 
 rotation = E.vector([-y, x, 0]).lower().as_form()
-print(wedge_d(rotation).star().data.tolist())
+print(rotation.wedge_d().star().data.tolist())
 
 outward = E.vector([x, y, z])
 flat = outward.lower().as_form()
-print(wedge_d(flat.star()).star().value, nabla(outward).tr(0, 1).value)
+print(flat.star().wedge_d().star().value, outward.nabla().tr(0, 1).value)
 ```
 
 ```text
@@ -168,11 +167,11 @@ A∧B = k!/(p! q!) · Alt(AB),  k = p + q
 
 | call | is |
 |---|---|
-| `contract(A, B)` | AB; refuses if the pair doesn't exist |
-| `contract(A, B, a, b)` | pair the indices you name |
-| `interior(X, V)` | the interior product: like `contract(X, V)`, but X's first form index with V's row |
-| `otimes(A, B)` | A ⊗ B: pair nothing |
-| `wedge(A, B)`, `odot(A, B)` | A∧B, A⊙B |
+| `A @ B` | AB; refuses if the pair doesn't exist |
+| `A.contract(B, a, b)` | pair the indices you name |
+| `X.interior(V)` | the interior product: like `X @ V`, but X's first form index with V's row |
+| `A.otimes(B)` | A ⊗ B: pair nothing |
+| `A.wedge(B)`, `A.odot(B)` | A∧B, A⊙B |
 
 ### Example: how long is the φ direction on a sphere?
 
@@ -180,7 +179,7 @@ The length² of a vector v is the row (lowered v) times the column v.
 
 ```python
 e_phi = S.vector([0, 1])
-length2 = contract(e_phi.lower(), e_phi)
+length2 = e_phi.lower() @ e_phi
 print(length2.value)
 ```
 
@@ -196,7 +195,7 @@ Multiply R by e_θ (R's column with the vector's row):
 
 ```python
 e_theta = S.vector([1, 0])
-Rv = contract(R, e_theta)
+Rv = R @ e_theta
 Rv.label = "Rv"
 print(Rv)
 print(Rv.simplify().data[:, 0, 1])     # the θφ part
@@ -216,10 +215,9 @@ On a sphere, cos θ measures height (1 at the north pole, −1 at the south pole
 direction e_θ into its derivative df gives the rate of change along e_θ:
 
 ```python
-from tensorforms import d, interior
 f = S.scalar(sp.cos(th))              # height on the sphere
 v = S.vector([1, 0])                  # e_θ: moving south
-print(interior(d(f), v).value)
+print(f.d().interior(v).value)
 ```
 
 ```text

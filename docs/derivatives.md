@@ -1,19 +1,19 @@
-# Operators
+# Derivatives
 
 | operator | function | description |
 |---|---|---|
-| d | `d(X)` | partial derivative |
-| d∧ | `wedge_d(X)` | exterior derivative |
-| ∇ = d + Γ | `nabla(X)` | covariant derivative |
-| ∇∧ = d∧ + Γ∧ | `wedge_nabla(X)` | exterior covariant derivative |
-| ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
-| ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
-| L_v | `lie(v, X)` | Lie derivative along a vector field v |
+| d | `X.d()` | partial derivative |
+| d∧ | `X.wedge_d()` | exterior derivative |
+| ∇ = d + Γ | `X.nabla()` | covariant derivative |
+| ∇∧ = d∧ + Γ∧ | `X.wedge_nabla()` | exterior covariant derivative |
+| ∇∧∇ = R | `X.curvature()` | commutator of covariant derivatives |
+| ∇∧∇∧ = R∧ | `X.wedge_curvature()` | exterior covariant derivative squared |
+| L_v | `X.lie(v)` | Lie derivative along a vector field v |
 
 
-Each takes one tensor and returns a new one (unlabelled: its indices carry the information).
+Each is a method on the tensor and returns a new one (unlabelled: its indices carry the information).
 New form indices go first among the form indices. Γ and R come from the manifold; with no metric,
-∇ and ∇∧ act as d and d∧, and the two curvature operators are zero.
+∇ and ∇∧ act as d and d∧, and the two curvature derivatives are zero.
 
 Details:
 
@@ -22,11 +22,11 @@ Details:
   its two lower indices (no torsion).
 * d∧ multiplies by p + 1 after antisymmetrizing, and ∇∧∇∧ by C(p+2; 2, p), where p is the number
   of form indices of X.
-* The two curvature operators never differentiate X; they only multiply by R.
+* The two curvature derivatives never differentiate X; they only multiply by R.
 
 ### The Lie derivative
 
-`lie(v, X)`: v is a vector field, X any tensor on the same manifold. The result has X's indices.
+`X.lie(v)`: v is a vector field, X any tensor on the same manifold. The result has X's indices.
 No metric is needed.
 
 L_v X = (dX)v − J on each up index + J on each down or form index,  with J = (dv).as_value()
@@ -35,11 +35,10 @@ For example, checking whether a vector field is a symmetry of the metric (L_v g 
 
 ```python
 import tensorforms as tf
-from tensorforms import lie
 
 S = tf.Manifold.sphere()
-print(lie(S.vector([0, 1]), S.g).is_zero())         # ∂_φ: a symmetry
-print(lie(S.vector([1, 0]), S.g).simplify().data)   # ∂_θ: not one
+print(S.g.lie(S.vector([0, 1])).is_zero())         # ∂_φ: a symmetry
+print(S.g.lie(S.vector([1, 0])).simplify().data)   # ∂_θ: not one
 ```
 
 ```text
@@ -55,14 +54,14 @@ is not, because the direction "θ" itself turns as you move.
 
 ```python
 import sympy as sp
-from tensorforms import Manifold, d, nabla
+from tensorforms import Manifold
 th, ph = sp.symbols("theta phi", real=True)
 S = Manifold([th, ph], name="S2")
 S.metric([[1, 0], [0, sp.sin(th)**2]])
 
 e_theta = S.vector([1, 0])
-print(d(e_theta).data)
-print(nabla(e_theta).simplify().data)
+print(e_theta.d().data)
+print(e_theta.nabla().simplify().data)
 ```
 
 ```text
@@ -81,12 +80,11 @@ its curl:
 
 ```python
 import tensorforms as tf
-from tensorforms import wedge_d
 P = tf.Manifold.euclidean(2)
 x, y = P.coords
 
 alpha = P.one_form([-y, x])
-print(wedge_d(alpha).data)
+print(alpha.wedge_d().data)
 ```
 
 ```text
@@ -118,7 +116,7 @@ In R∇v the new index comes last (after μ ν), and US moves it to the front.
 
 ∇∧∇∧(A∧B) = (∇∧∇∧A)∧B + A∧(∇∧∇∧B)
 
-**Applying ∇∧ or ∇∧∇∧ to a plain product AB.** These operators only see the antisymmetric part
+**Applying ∇∧ or ∇∧∇∧ to a plain product AB.** These derivatives only see the antisymmetric part
 of AB, which is a multiple of A∧B. So rewrite first, then use the rules above:
 
 ∇∧(AB) = p! q!/(p+q)! · ∇∧(A∧B)

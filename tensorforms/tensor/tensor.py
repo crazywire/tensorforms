@@ -2,7 +2,7 @@
 
 Everything here acts on one tensor: describing it, adding and scaling, moving indices,
 changing value / form type, Alt/Sym, trace, and raising/lowering with the manifold's metric.
-Products of two tensors are in products.py.
+Products of two tensors are in products.py, derivatives in derivatives.py (both mixed in).
 """
 import itertools
 import math
@@ -17,6 +17,8 @@ from sympy.combinatorics import Permutation
 from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
 from .labels import index_label
 from .index import Index
+from .products import Products
+from .derivatives import Derivatives
 
 
 def _as_expr(x):
@@ -42,7 +44,10 @@ def _as_scalar(c):
     return c
 
 
-class Tensor:
+class Tensor(Derivatives, Products):
+    """Data plus an ordered tuple of indices. The derivatives (X.d(), X.nabla(), X.lie(v), …) come
+    from Derivatives in derivatives.py; the products (A @ B, A.otimes(B), …) from Products
+    in products.py."""
     # sympy defers mixed operations to objects with a higher _op_priority (its expressions have 10),
     # so θ * X and θ + s stay tensor arithmetic instead of sympy taking over.
     _op_priority = 20.0
@@ -415,7 +420,6 @@ class Tensor:
         """⋆X: the k form indices become n − k, with the same amount (direction ↔ plane ↔ volume …).
         Raise the form indices, fill them into the volume form ε in order, divide by k!.
         Value indices are carried along. Uses the metric and the coordinate order (orientation)."""
-        from .products import otimes                 # here, to avoid a circular import
         M = self.manifold
         if not M.has_metric():
             raise TypeError("star needs a metric: the volume form and raising both use it")
@@ -426,7 +430,7 @@ class Tensor:
         X = self.as_value(*forms) if k else self
         for p in forms:
             X = X.raise_(p)
-        T = otimes(X, M.volume_form())                # X's value indices, then ε's n form indices
+        T = X.otimes(M.volume_form())                # X's value indices, then ε's n form indices
         nv = len(X.indices)
         for j, p in enumerate(forms):                 # the j-th raised index fills ε's next index
             T = T.tr(p - j, nv - j)
