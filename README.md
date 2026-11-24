@@ -140,3 +140,7 @@ Schwarzschild's curvature takes about 0.3 s, Kerr's about 30 s.
 ## Not yet included
 
 Connections with torsion, embeddings, several spaces in one tensor.
+
+## Licence
+
+MIT: free to use, change and share, including in commercial software. See [LICENSE](LICENSE).

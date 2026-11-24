@@ -1,9 +1,22 @@
 [project]
 name = "tensorforms"
 version = "0.1.0"
-description = "Calculus of tensor-valued forms with six operators"
+description = "Exact symbolic calculus of tensor-valued forms on manifolds (d, ∇, curvature, Lie derivative, Hodge star), with typed value and form indices"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "crazywire" }]
 requires-python = ">=3.9"
 dependencies = ["sympy>=1.12", "numpy>=1.24"]
+keywords = ["tensor", "differential geometry", "differential forms", "general relativity", "sympy", "symbolic"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+Repository = "https://github.com/crazywire/tensorforms"
 
 [project.optional-dependencies]
 test = ["pytest"]
