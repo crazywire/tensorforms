@@ -53,7 +53,7 @@ def test_sphere_curvature():
     R = S.riemann()
     block = R.data[:, :, 0, 1]                               # R_θφ = [0, sin²θ; −1, 0]
     assert is_zero(block[0, 1] - sp.sin(th) ** 2) and is_zero(block[1, 0] + 1)
-    assert S.ricci().equals(S.g.rename(dict(zip([s.label for s in S.g.indices], [s.label for s in S.ricci().indices]))))
+    assert S.ricci().equals(S.g)
     assert is_zero(S.ricci_scalar() - 2)
     assert is_zero(S.gaussian_curvature() - 1)
 
@@ -258,7 +258,9 @@ def test_names():
     assert [s.label for s in nabla(R).indices] == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
     assert R.tr("rho", "mu").equals(R.tr("ρ", "μ"))                # spelled-out Greek
     assert R.tr(0, 2).equals(R.tr("ρ", "μ"))                       # index numbers
-    assert [s.label for s in R.rename({"mu": "kappa"}).indices] == ["ρ", "σ", "κ", "ν"]
+    K = R.relabel_indices({"mu": "kappa"})
+    assert [s.label for s in K.indices] == ["ρ", "σ", "κ", "ν"] and K.equals(R) and K.label == "R"
+    assert [s.label for s in R.relabel_indices({"μ": "ν", "ν": "μ"}).indices] == ["ρ", "σ", "ν", "μ"]  # exchange
 
 
 def test_scalar_multiplication():
@@ -283,7 +285,7 @@ def test_labels():
     computed = (R.alt(), R.sym(), -R, R + R, 3 * R, R / 2, R.tr(0, 1), g.inverse(), v.star(),
                 contract(R, v), otimes(v, v), wedge(S.one_form([1, 0]), S.one_form([0, 1])))
     assert all(X.label is None for X in computed)
-    kept = (R.S, R.swap(0, 2), R.reorder(3, 2, 1, 0), R.rename({"mu": "kappa"}), v.lower(),
+    kept = (R.S, R.swap(0, 2), R.reorder(3, 2, 1, 0), R.relabel_indices({"mu": "kappa"}), v.lower(),
             v.lower().as_form(), R.simplify(), R + 0)
     assert all(X.label == X_label for X, X_label in zip(kept, "R R R R v v R R".split()))
     X = contract(R, v)
@@ -485,7 +487,7 @@ def test_contract_keeps_form_order_when_names_clash():
     A = S.tensor(mu.up, nu.form, data=[[1, 2], [3, 4]])
     B = S.tensor(la.up, mu.form, nu.form, data=[[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
     clash = contract(A, B, 1, 0)
-    fresh = contract(A, B.rename({"μ": "α", "ν": "β"}), 1, 0)
+    fresh = contract(A, B.relabel_indices({"μ": "α", "ν": "β"}), 1, 0)
     assert (clash.data == fresh.data).all()
 
 

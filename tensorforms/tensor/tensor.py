@@ -276,8 +276,9 @@ class Tensor:
         """Transpose the matrix in indices 3 and 4, at every value of the others: swap(3, 4)."""
         return self.swap(3, 4)
 
-    def rename(self, mapping):
-        """New index labels: {index (label or number): new label}. The tensor's own label stays."""
+    def relabel_indices(self, mapping):
+        """New index labels: {index (label or number): new label}, for the indices you name; the
+        others, the numbers (shared) and the tensor's own label stay. R.relabel_indices({"μ": "α"})."""
         mapping = {self.position(k): index_label(v) for k, v in mapping.items()}
         return self._new(indices=[s.relabel(mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
                          label=self.label)
