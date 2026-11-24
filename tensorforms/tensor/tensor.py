@@ -156,10 +156,6 @@ class Tensor:
         return (isinstance(other, Tensor) and len(self.indices) == len(other.indices)
                 and all(a.matches(b) for a, b in zip(self.indices, other.indices)))
 
-    def _check_matching(self, other):
-        if not self.matches(other):
-            raise TypeError(f"can only add tensors whose indices match: {self.declaration()} vs "
-                            f"{getattr(other, 'declaration', lambda: other)()}")
 
     def _operand(self, other):
         """The other side of + or −, as a tensor. A number means a scalar (no indices), so the
@@ -178,7 +174,9 @@ class Tensor:
         other = self._operand(other)
         if other is None:                                     # X + 0 is X
             return self._new(label=self.label)
-        self._check_matching(other)
+        if not self.matches(other):
+            raise TypeError(f"can only add tensors whose indices match: {self.declaration()} vs "
+                            f"{other.declaration()}")
         return self._new(self._data + other._data, label=None)
 
     __radd__ = __add__                                        # 0 + X, 1 + s
@@ -187,8 +185,7 @@ class Tensor:
         other = self._operand(other)
         if other is None:                                     # X − 0 is X
             return self._new(label=self.label)
-        self._check_matching(other)
-        return self._new(self._data - other._data, label=None)
+        return self + (-other)                                # X − Y is X + (−Y), as in sympy
 
     def __rsub__(self, other):                                # 0 − X is −X; 1 − s
         other = self._operand(other)
