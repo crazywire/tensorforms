@@ -360,14 +360,14 @@ class Tensor:
         return T._new(label=f"⋆{wrap(self.label)}" if self.label else None)
 
     # ---------- symmetric and antisymmetric parts ----------
-    def _average(self, names, signed):
-        pos = [self.position(n) for n in names] if names else self.form_slots
+    def _average(self, slots, signed):
+        pos = [self.position(s) for s in slots] if slots else self.form_slots
+        if len(set(pos)) != len(pos):
+            raise ValueError(f"Alt/Sym: a slot is repeated in {list(slots)}")
         types = {self.slots[p].type for p in pos}
         if len(types) > 1:
             raise TypeError("Alt/Sym need slots of the same type (space and up/down)")
         k = len(pos)
-        if k < 2:
-            return self
         out = 0
         for perm in itertools.permutations(range(k)):
             axes = list(range(len(self.slots)))
@@ -378,10 +378,10 @@ class Tensor:
         label = f"{'Alt' if signed else 'Sym'}({self.label})" if self.label else None   # brackets already
         return self._new(out * sp.Rational(1, math.factorial(k)), label=label)
 
-    def alt(self, *names):
-        """Antisymmetric part over the named slots (default: all form slots)."""
-        return self._average(names, signed=True)
+    def alt(self, *slots):
+        """Antisymmetric part over the given slots, by label or position (default: all form slots)."""
+        return self._average(slots, signed=True)
 
-    def sym(self, *names):
-        """Symmetric part over the named slots (default: all form slots)."""
-        return self._average(names, signed=False)
+    def sym(self, *slots):
+        """Symmetric part over the given slots, by label or position (default: all form slots)."""
+        return self._average(slots, signed=False)

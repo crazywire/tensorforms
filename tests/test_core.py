@@ -190,6 +190,12 @@ def test_alt_sym_rules():
     assert X.alt().alt().equals(X.alt())                      # projections
     assert X.alt().sym().is_zero()                            # Sym Alt = 0
     assert (X.alt() + X.sym()).equals(X)                      # two slots: X = Sym + Alt
+    assert X.alt(a).equals(X) and X.alt(a) is not X           # one slot: same numbers, a new tensor
+    try:
+        X.alt(a, a)                                           # a repeated slot: refused
+        assert False
+    except ValueError:
+        pass
 
 
 def test_wedge_single_factor_is_one_term():
