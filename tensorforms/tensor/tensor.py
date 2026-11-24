@@ -2,7 +2,7 @@
 
 Everything here acts on one tensor: describing it, adding and scaling, moving indices,
 changing value / form type, Alt/Sym, trace, and raising/lowering with the manifold's metric.
-Products of two tensors are in products.py.
+Products of two tensors are in products.py, derivatives in operators/operators.py (both mixed in).
 """
 import itertools
 import math
@@ -17,6 +17,8 @@ from sympy.combinatorics import Permutation
 from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
 from .labels import index_label
 from .index import Index
+from .products import Products
+from ..operators.operators import Derivatives
 
 
 def _as_expr(x):
@@ -42,7 +44,10 @@ def _as_scalar(c):
     return c
 
 
-class Tensor:
+class Tensor(Derivatives, Products):
+    """Data plus an ordered tuple of indices. The derivatives (X.d(), X.nabla(), X.lie(v), …) come
+    from Derivatives in operators/operators.py; the products (A @ B, A.otimes(B), …) from Products
+    in products.py."""
     # sympy defers mixed operations to objects with a higher _op_priority (its expressions have 10),
     # so θ * X and θ + s stay tensor arithmetic instead of sympy taking over.
     _op_priority = 20.0
@@ -415,7 +420,6 @@ class Tensor:
         """⋆X: the k form indices become n − k, with the same amount (direction ↔ plane ↔ volume …).
         Raise the form indices, fill them into the volume form ε in order, divide by k!.
         Value indices are carried along. Uses the metric and the coordinate order (orientation)."""
-        from .products import otimes                 # here, to avoid a circular import
         M = self.manifold
         if not M.has_metric():
             raise TypeError("star needs a metric: the volume form and raising both use it")
@@ -426,87 +430,12 @@ class Tensor:
         X = self.as_value(*forms) if k else self
         for p in forms:
             X = X.raise_(p)
-        T = otimes(X, M.volume_form())                # X's value indices, then ε's n form indices
+        T = X.otimes(M.volume_form())                # X's value indices, then ε's n form indices
         nv = len(X.indices)
         for j, p in enumerate(forms):                 # the j-th raised index fills ε's next index
             T = T.tr(p - j, nv - j)
         T = T / math.factorial(k)
         return T._new(label=None)
-
-    # ---------- derivatives (code in operators/operators.py) ----------
-    def d(self):
-        """Plain d: one new form index, first among the form indices. Needs only the coordinates."""
-        from ..operators import operators
-        return operators.d(self)
-
-    def wedge_d(self):
-        """Exterior derivative d∧."""
-        from ..operators import operators
-        return operators.wedge_d(self)
-
-    def nabla(self):
-        """Covariant derivative ∇ = d + Γ on every index."""
-        from ..operators import operators
-        return operators.nabla(self)
-
-    def wedge_nabla(self):
-        """Exterior covariant derivative ∇∧ = d∧ + Γ∧ on value indices."""
-        from ..operators import operators
-        return operators.wedge_nabla(self)
-
-    def curvature(self):
-        """∇∧∇ = R on every index (the tensor itself is not differentiated)."""
-        from ..operators import operators
-        return operators.curvature(self)
-
-    def wedge_curvature(self):
-        """∇∧∇∧ = R∧ on value indices."""
-        from ..operators import operators
-        return operators.wedge_curvature(self)
-
-    def lie(self, v):
-        """Lie derivative along the vector field v. Same indices; no metric needed.
-            L_v X = (dX)v − J on each up index + J on each down or form index,  J = (dv).as_value()"""
-        from ..operators import operators
-        return operators.lie(v, self)
-
-    # ---------- products with another tensor (code in products.py) ----------
-    def _other(self, other, what):
-        if not isinstance(other, Tensor):
-            raise TypeError(f"{what} needs another tensor, not {type(other).__name__} "
-                            "(to scale by a number, use *)")
-        return other
-
-    def __matmul__(self, other):
-        """A @ B: A's column (last value index) with B's row (first value index), as in AB."""
-        from . import products
-        return products.contract(self, self._other(other, "@"))
-
-    def contract(self, other, a, b=None):
-        """Pair index a of this tensor with index b of other (b defaults to a's label) and sum.
-        For the usual AB (column with row), write A @ B."""
-        from . import products
-        return products.contract(self, self._other(other, "contract"), a, b)
-
-    def otimes(self, other):
-        """Tensor product A ⊗ B: pair nothing, keep every index."""
-        from . import products
-        return products.otimes(self, self._other(other, "otimes"))
-
-    def wedge(self, other, pair=None):
-        """Wedge product A ∧ B (form indices antisymmetrized)."""
-        from . import products
-        return products.wedge(self, self._other(other, "wedge"), pair)
-
-    def odot(self, other, pair=None):
-        """Symmetric product A ⊙ B (form indices symmetrized)."""
-        from . import products
-        return products.odot(self, self._other(other, "odot"), pair)
-
-    def interior(self, V):
-        """Interior product ι: this tensor's first form index with V's row (first value index, up)."""
-        from . import products
-        return products.interior(self, self._other(V, "interior"))
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, indices, signed):

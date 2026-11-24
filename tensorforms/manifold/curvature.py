@@ -1,13 +1,11 @@
 """Curvature: R from Γ, then its traces Ricci, scalar curvature and the Einstein tensor."""
 import sympy as sp
 
-from ..tensor.products import wedge
 
 
 def riemann(Gamma):
     """R = d∧Γ + Γ∧Γ, computed with the operators themselves. Indices (ρ↑ σ↓ μ ν)."""
-    from ..operators.operators import wedge_d                   # here, to avoid a circular import
-    R = (wedge_d(Gamma) + wedge(Gamma, Gamma)).simplify()
+    R = (Gamma.wedge_d() + Gamma.wedge(Gamma)).simplify()
     R = R.relabel_indices({0: "ρ", 1: "σ", 2: "μ", 3: "ν"})
     R.label = "R"
     return R

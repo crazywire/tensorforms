@@ -1,11 +1,12 @@
-"""Products of two tensors (no Einstein summation; nothing is chosen silently).
+"""Products of two tensors (no Einstein summation; nothing is chosen silently), as tensor methods
+(Tensor inherits Products):
 
-    contract(A, B)         your AB: A's column (last value index, down) with B's row (first, up)
-    contract(A, B, a, b)   the paired product over the indices you name
-    interior(X, V)         X's first form index with V's row (the interior product)
-    otimes(A, B)           tensor product: pairs nothing
-    wedge(A, B)            A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
-    odot(A, B)             A ⊙ B = k!/(p! q!) · Sym(AB)
+    A @ B                  your AB: A's column (last value index, down) with B's row (first, up)
+    A.contract(B, a, b)    the paired product over the indices you name
+    X.interior(V)          X's first form index with V's row (the interior product)
+    A.otimes(B)            tensor product: pairs nothing
+    A.wedge(B)             A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
+    A.odot(B)              A ⊙ B = k!/(p! q!) · Sym(AB)
 
 Results put value indices first, then A's form indices, then B's.
 """
@@ -13,8 +14,6 @@ import math
 
 import numpy as np
 import sympy as sp
-
-from .tensor import Tensor
 
 
 def _rename_clashes(keep_names, indices):
@@ -50,33 +49,28 @@ def _values_first(indices, n_a):
 
 def _joined(A, data, indices, n_a, label):
     order = _values_first(indices, n_a)
-    return Tensor(A.manifold, np.transpose(data, order), [indices[k] for k in order], label, copy=False)
+    return type(A)(A.manifold, np.transpose(data, order), [indices[k] for k in order], label, copy=False)
 
 
 def _default_pair(A, B):
     """A's column (last value index, down) with B's row (first value index, up)."""
     av, bv = A._value_positions(), B._value_positions()
     if not (av and bv):
-        raise TypeError("contract(A, B) needs value indices on both: one factor has none, "
-                        "so nothing pairs; use otimes(A, B)")
+        raise TypeError("A @ B needs value indices on both: one factor has none, "
+                        "so nothing pairs; use A.otimes(B)")
     sa, sb = A.index(av[-1]), B.index(bv[0])
     if sa.space is sb.space and not sa.is_up and sb.is_up:
         return av[-1], bv[0]
     if sa.space is sb.space and sa.is_up and not sb.is_up:
         raise TypeError(f"{A.declaration()} has no column and {B.declaration()} has no row: "
-                        "nothing pairs (column × row); use otimes(A, B)")
+                        "nothing pairs (column × row); use A.otimes(B)")
     raise TypeError(f"can't pair {sa.label} with {sb.label} (shape mismatch); "
-                    "name the indices, use otimes(A, B), or raise or lower one first")
+                    "name the indices (A.contract(B, a, b)), use A.otimes(B), or raise or lower one first")
 
 
-def contract(A, B, a=None, b=None):
-    """Pair one index of A with one index of B and sum over it.
-    contract(A, B): the default, A's column with B's row (your AB).
-    contract(A, B, a, b): the indices you name (b defaults to a).
-    Result: value indices first, then A's form indices, then B's."""
-    if a is None:
-        a, b = _default_pair(A, B)
-    b = a if b is None else b
+def _contract(A, B, a, b):
+    """Pair index a of A with index b of B and sum. Result: value indices first, then A's form
+    indices, then B's."""
     i, j = A.position(a), B.position(b)
     _check_pair(A.indices[i], B.indices[j])
     data = np.tensordot(A.data, B.data, axes=([i], [j]))
@@ -85,49 +79,65 @@ def contract(A, B, a=None, b=None):
     return _joined(A, data, keep_a + keep_b, len(keep_a), None)
 
 
-def interior(X, V):
-    """The interior product: X's first form index with V's row
-    (its first value index, up). Like contract(X, V), but using X's first form index instead of
-    its column. Everything else is carried along: value indices first, then X's form indices, then V's."""
-    if not X._form_positions():
-        raise TypeError(f"interior needs a form index in X; {X.declaration()} has none")
-    if not V._value_positions() or not V.index(V._value_positions()[0]).is_up:
-        raise TypeError(f"interior needs a row (first value index, up) in V; got {V.declaration()}")
-    P = contract(X, V, X._form_positions()[0], V._value_positions()[0])
-    label = None
-    return P._new(label=label)
-
-
-def otimes(A, B):
-    """Tensor product A ⊗ B: pair nothing, keep every index.
-    Result: value indices first, then A's form indices, then B's."""
-    keep_b = _rename_clashes(A._index_labels(), B.indices)
-    return _joined(A, np.multiply.outer(A.data, B.data), (*A.indices, *keep_b), len(A.indices),
-                   None)
+def _other(A, other, what):
+    if not isinstance(other, type(A)):
+        raise TypeError(f"{what} needs another tensor, not {type(other).__name__} "
+                        "(to scale by a number, use *)")
+    return other
 
 
 def _wedge_like(A, B, pair, signed):
     p, q = len(A._form_positions()), len(B._form_positions())
-    project = Tensor.alt if signed else Tensor.sym
+    project = (lambda X: X.alt()) if signed else (lambda X: X.sym())
     A2, B2 = project(A), project(B)              # each factor's own form indices first
     if pair is not None:
-        P = contract(A2, B2, *pair)
+        P = _contract(A2, B2, *pair)
     elif not (A._value_positions() and B._value_positions()):
-        P = otimes(A2, B2)                       # a scalar-valued factor: nothing can pair
+        P = A2.otimes(B2)                        # a scalar-valued factor: nothing can pair
     else:
-        P = contract(A2, B2)
+        P = A2 @ B2
     k = p + q
     if k >= 2:
         P = project(P) * sp.Rational(math.factorial(k), math.factorial(p) * math.factorial(q))
     return P._new(label=None)
 
 
-def wedge(A, B, pair=None):
-    """A ∧ B = k!/(p! q!) · Alt(AB) over all form indices (each interleaving once).
-    AB pairs A's column with B's row (or the indices in pair); with a scalar-valued factor it is A ⊗ B."""
-    return _wedge_like(A, B, pair, signed=True)
+class Products:
+    """Products with another tensor, as tensor methods (Tensor inherits them)."""
 
+    def __matmul__(self, other):
+        """A @ B: A's column (last value index, down) with B's row (first value index, up), as in AB."""
+        other = _other(self, other, "@")
+        return _contract(self, other, *_default_pair(self, other))
 
-def odot(A, B, pair=None):
-    """A ⊙ B = k!/(p! q!) · Sym(AB) over all form indices."""
-    return _wedge_like(A, B, pair, signed=False)
+    def contract(self, other, a, b=None):
+        """Pair index a of this tensor with index b of other (b defaults to a's label) and sum.
+        For the usual AB (column with row), write A @ B."""
+        return _contract(self, _other(self, other, "contract"), a, a if b is None else b)
+
+    def interior(self, V):
+        """The interior product: this tensor's first form index with V's row (first value index, up).
+        Like A @ B, but using the first form index instead of the column."""
+        V = _other(self, V, "interior")
+        if not self._form_positions():
+            raise TypeError(f"interior needs a form index; {self.declaration()} has none")
+        if not V._value_positions() or not V.index(V._value_positions()[0]).is_up:
+            raise TypeError(f"interior needs a row (first value index, up) in V; got {V.declaration()}")
+        return _contract(self, V, self._form_positions()[0], V._value_positions()[0])
+
+    def otimes(self, other):
+        """Tensor product A ⊗ B: pair nothing, keep every index.
+        Result: value indices first, then A's form indices, then B's."""
+        other = _other(self, other, "otimes")
+        keep_b = _rename_clashes(self._index_labels(), other.indices)
+        return _joined(self, np.multiply.outer(self.data, other.data), (*self.indices, *keep_b),
+                       len(self.indices), None)
+
+    def wedge(self, other, pair=None):
+        """A ∧ B = k!/(p! q!) · Alt(AB) over all form indices (each interleaving once).
+        AB pairs A's column with B's row (or the indices in pair); with a scalar-valued factor it is A ⊗ B."""
+        return _wedge_like(self, _other(self, other, "wedge"), pair, signed=True)
+
+    def odot(self, other, pair=None):
+        """A ⊙ B = k!/(p! q!) · Sym(AB) over all form indices."""
+        return _wedge_like(self, _other(self, other, "odot"), pair, signed=False)
