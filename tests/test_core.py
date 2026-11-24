@@ -681,3 +681,23 @@ def test_indices_are_immutable():
     assert mu.up.pairs_with(nu.form) and not mu.down.pairs_with(nu.form)
     assert mu.form.type == "form" and mu.up.type == "value"
 
+
+def test_arithmetic_edges():
+    S = tf.Manifold.sphere()
+    th = S.coords[0]
+    assert (S.scalar(2) * S.scalar(th)).value == 2 * th                  # scalar × scalar
+    hidden_zero = sp.sin(th)**2 + sp.cos(th)**2 - 1
+    try:
+        S.g / hidden_zero                                                 # sympy shows it is 0
+        assert False
+    except ZeroDivisionError:
+        pass
+    assert (S.g + hidden_zero).equals(S.g)                                # a 0 of any type
+    assert S.g.matches(S.ricci()) and not S.g.matches(S.vector([1, 0]))   # labels don't matter
+    assert not S.g.matches(S.g.as_form(1)) and not S.g.matches(3)
+    try:
+        S.g + S.vector([1, 0])
+        assert False
+    except TypeError as e:
+        assert "indices match" in str(e)
+
