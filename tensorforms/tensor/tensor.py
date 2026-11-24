@@ -9,7 +9,7 @@ import math
 
 import numpy as np
 import sympy as sp
-from sympy.matrices.exceptions import NonInvertibleMatrixError
+from sympy.matrices.exceptions import NonInvertibleMatrixError, NonSquareMatrixError
 from sympy.combinatorics import Permutation
 
 from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
@@ -319,14 +319,17 @@ class Tensor:
         Numbers: the matrix inverse. Slots: the two swap roles and both arrows flip,
         g(μ↓ ν↓) → g⁻¹(ν↑ μ↑), A(ρ↑ σ↓) → A⁻¹(σ↑ ρ↓).
         Refused for anything else: inverting is not linear, so it can't be done slot by slot
-        over other (e.g. form) slots without depending on the coordinates. Sympy refuses a
-        matrix that isn't square or whose determinant is 0."""
+        over other (e.g. form) slots without depending on the coordinates. Also refused if it
+        isn't square or the determinant is 0 (sympy checks; the messages are ours)."""
         if len(self.slots) != 2 or any(s.is_form for s in self.slots):
             raise TypeError(f"inverse needs exactly two value slots and no others; got {self.declaration()}")
         so, si = self.slots
         m = sp.Matrix(self.data.tolist())                     # rows: slot 0 (out), columns: slot 1 (in)
-        try:                                                  # sympy checks invertibility, with our zero test
+        try:                                                  # sympy does the checks, with our zero test
             inv = m.inv(iszerofunc=_is_zero)
+        except NonSquareMatrixError:
+            raise ValueError(f"inverse: slots {so.name} and {si.name} have different sizes "
+                             f"({so.space.dim}, {si.space.dim}): not square") from None
         except NonInvertibleMatrixError:
             raise ValueError("inverse: not invertible (the determinant is 0)") from None
         flip = lambda s: Slot(s.name, s.space, "down" if s.is_up else "up", "value")
