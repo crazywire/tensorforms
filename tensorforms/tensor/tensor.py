@@ -4,7 +4,6 @@ Everything here acts on one tensor: describing it, adding and scaling, moving in
 changing value / form type, Alt/Sym, trace, and raising/lowering with the manifold's metric.
 Products of two tensors are in products.py.
 """
-from dataclasses import replace
 import itertools
 import math
 
@@ -287,7 +286,7 @@ class Tensor:
     def rename(self, mapping):
         """New labels: {index (name or number): new name}."""
         mapping = {self.position(k): index_label(v) for k, v in mapping.items()}
-        return self._new(indices=[replace(s, label=mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
+        return self._new(indices=[s.relabel(mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
                          label=self.label)
 
     def _change_type(self, which, change, eligible, need):

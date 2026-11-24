@@ -14,8 +14,8 @@ ARROW = {"up": "↑", "down": "↓"}
 
 @dataclass(frozen=True, repr=False)
 class Index:
-    """A label in a space, up or down, value or form (default: up value). Immutable: .up, .down
-    and .form give new indices; dataclasses.replace(index, label=…) gives a new label."""
+    """A label in a space, up or down, value or form (default: up value). Immutable: .up, .down,
+    .form and relabel give new indices."""
     label: str
     space: object
     variance: str = "up"   # "up" or "down"
@@ -68,6 +68,10 @@ class Index:
     def pairs_with(self, other):
         """Can be contracted: same space, one up and the other down (a form index is down)."""
         return self.space is other.space and {self.variance, other.variance} == {"up", "down"}
+
+    def relabel(self, label):
+        """The same index with a new label."""
+        return Index(label, self.space, self.variance, self.type)
 
     def describe(self):
         return f"{self.label}: {self.variance} {self.type} index in {self.space.name}"
