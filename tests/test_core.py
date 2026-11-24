@@ -68,7 +68,7 @@ def test_nabla_g_is_zero():
     assert S.g.nabla().is_zero()
 
 
-# ---------------------------------------------------------------- the four operators
+# ---------------------------------------------------------------- the derivatives
 def _sphere_fields():
     S = tf.Manifold.sphere(r=1)
     th, ph = S.coords
@@ -160,7 +160,7 @@ def test_connection_is_s_symmetric():
 
 
 def test_gamma_and_riemann_match_index_formulas():
-    """Γ and R are computed with the operators; check them against the index formulas."""
+    """Γ and R are computed with the derivatives; check them against the index formulas."""
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z])
     M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))

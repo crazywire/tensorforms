@@ -2,7 +2,7 @@
 
 Everything here acts on one tensor: describing it, adding and scaling, moving indices,
 changing value / form type, Alt/Sym, trace, and raising/lowering with the manifold's metric.
-Products of two tensors are in products.py, derivatives in operators/operators.py (both mixed in).
+Products of two tensors are in products.py, derivatives in derivatives.py (both mixed in).
 """
 import itertools
 import math
@@ -18,7 +18,7 @@ from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
 from .labels import index_label
 from .index import Index
 from .products import Products
-from ..operators.operators import Derivatives
+from .derivatives import Derivatives
 
 
 def _as_expr(x):
@@ -46,7 +46,7 @@ def _as_scalar(c):
 
 class Tensor(Derivatives, Products):
     """Data plus an ordered tuple of indices. The derivatives (X.d(), X.nabla(), X.lie(v), …) come
-    from Derivatives in operators/operators.py; the products (A @ B, A.otimes(B), …) from Products
+    from Derivatives in derivatives.py; the products (A @ B, A.otimes(B), …) from Products
     in products.py."""
     # sympy defers mixed operations to objects with a higher _op_priority (its expressions have 10),
     # so θ * X and θ + s stay tensor arithmetic instead of sympy taking over.

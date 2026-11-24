@@ -1,4 +1,4 @@
-# Operators
+# Derivatives
 
 | operator | function | description |
 |---|---|---|
@@ -13,7 +13,7 @@
 
 Each is a method on the tensor and returns a new one (unlabelled: its indices carry the information).
 New form indices go first among the form indices. Γ and R come from the manifold; with no metric,
-∇ and ∇∧ act as d and d∧, and the two curvature operators are zero.
+∇ and ∇∧ act as d and d∧, and the two curvature derivatives are zero.
 
 Details:
 
@@ -22,7 +22,7 @@ Details:
   its two lower indices (no torsion).
 * d∧ multiplies by p + 1 after antisymmetrizing, and ∇∧∇∧ by C(p+2; 2, p), where p is the number
   of form indices of X.
-* The two curvature operators never differentiate X; they only multiply by R.
+* The two curvature derivatives never differentiate X; they only multiply by R.
 
 ### The Lie derivative
 
@@ -116,7 +116,7 @@ In R∇v the new index comes last (after μ ν), and US moves it to the front.
 
 ∇∧∇∧(A∧B) = (∇∧∇∧A)∧B + A∧(∇∧∇∧B)
 
-**Applying ∇∧ or ∇∧∇∧ to a plain product AB.** These operators only see the antisymmetric part
+**Applying ∇∧ or ∇∧∇∧ to a plain product AB.** These derivatives only see the antisymmetric part
 of AB, which is a multiple of A∧B. So rewrite first, then use the rules above:
 
 ∇∧(AB) = p! q!/(p+q)! · ∇∧(A∧B)

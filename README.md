@@ -9,7 +9,7 @@ tensorforms treats a tensor as an object whose indices are typed. Each index liv
 space, is up (contravariant) or down (covariant), and is either a value index or a form index.
 
 With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
-Ric, the Ricci scalar R_s and the Einstein tensor G, using differential operators that act
+Ric, the Ricci scalar R_s and the Einstein tensor G, using derivatives that act
 on the tensors.
 
 ## Notation
@@ -116,7 +116,7 @@ took the traces.
 |---|---|
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G, ready-made manifolds |
 | [Tensors](docs/tensors.md) | the notation (indices and arrows), one tensor, products |
-| [Operators](docs/operators.md) | the six operators and their product rules |
+| [Derivatives](docs/derivatives.md) | the derivatives (d, ∇, curvature, Lie) and their product rules |
 
 ## Examples
 

@@ -4,7 +4,7 @@ import sympy as sp
 
 
 def riemann(Gamma):
-    """R = d∧Γ + Γ∧Γ, computed with the operators themselves. Indices (ρ↑ σ↓ μ ν)."""
+    """R = d∧Γ + Γ∧Γ, computed with the derivatives themselves. Indices (ρ↑ σ↓ μ ν)."""
     R = (Gamma.wedge_d() + Gamma.wedge(Gamma)).simplify()
     R = R.relabel_indices({0: "ρ", 1: "σ", 2: "μ", 3: "ν"})
     R.label = "R"

@@ -1,4 +1,4 @@
-"""The operators, each written with the formula we proved (no torsion). Plus X.lie(v), the Lie
+"""The derivatives, each written with the formula we proved (no torsion). Plus X.lie(v), the Lie
 derivative along a vector field (needs no metric). They are tensor methods: Tensor inherits Derivatives.
 
                  every index              wedged (form indices antisymmetrized)
@@ -19,10 +19,10 @@ import math
 import numpy as np
 import sympy as sp
 
-from ..tensor.index import Index
+from .index import Index
 
 
-# ---------------------------------------------------------------- the operators
+# ---------------------------------------------------------------- the derivatives
 class Derivatives:
     """The derivatives, as tensor methods (Tensor inherits them): X.d(), X.nabla(), X.lie(v), …"""
 
@@ -147,7 +147,7 @@ def _act(C, X, indices, values_only=False):
         up index s:    +C X   (C's down index pairs with s; C's up index takes s's place)
         down index s:  −X C   (s pairs with C's up index; C's down index takes s's place)
     C's form indices become the new form indices, first among the form indices.
-    values_only: skip X's form indices (the wedged operators).
+    values_only: skip X's form indices (the wedged derivatives).
     C must be (↑ ↓ forms…): a matrix (one up, one down value index) with form indices, like Γ and R.
     The result's order is X's indices, s replaced in place, with C's forms inserted first among
     X's form indices (that is `indices`)."""
