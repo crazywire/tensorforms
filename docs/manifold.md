@@ -1,7 +1,6 @@
 # Manifold
 
-A manifold is where everything lives: its coordinates, its tangent space, and (once you give
-it one) its metric. Γ, R, Ric, R_s and G all come from the metric.
+A manifold holds the coordinates, the tangent space and (once you give it one) the metric.
 
 ```python
 import sympy as sp
@@ -11,8 +10,8 @@ th, ph = sp.symbols("theta phi", real=True)
 M = Manifold([th, ph], name="S2")
 ```
 
-`Manifold(coords, name="M")` — a manifold with these coordinates (sympy symbols). It has no
-metric yet; tensors, d and d∧ already work.
+`Manifold(coords, name="M")`: a manifold with these coordinates (sympy symbols), no metric yet.
+Tensors, d, d∧ and the Lie derivative work without one.
 
 ## Making tensors
 
@@ -50,7 +49,7 @@ metric of functions g_ij(x), for solving.
 
 ## Connection and curvature
 
-Everything follows from g (no torsion):
+Computed from g (Levi-Civita, no torsion):
 
 | tensor | method | description |
 |---|---|---|
@@ -63,7 +62,7 @@ Everything follows from g (no torsion):
 | ε = √\|det g\| dx¹ ∧ … ∧ dxⁿ | `M.volume_form()` | volume form (μ ν …): length, area, volume, … |
 | K = R_s / 2 | `M.gaussian_curvature()` | Gaussian curvature (2D only), a scalar |
 
-### Example: the curvature of a sphere of radius r, step by step
+### Example: a sphere of radius r
 
 ```python
 r = sp.Symbol("r", positive=True)
@@ -71,10 +70,10 @@ S = Manifold([th, ph], name="S2")
 S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 G = S.levi_civita()
-print(G.data[0])        # Γ^θ: how θ-components change
-print(G.data[1])        # Γ^φ: how φ-components change
+print(G.data[0])        # Γ^θ
+print(G.data[1])        # Γ^φ
 print(S.ricci().data)
-print(S.ricci_scalar().value, S.gaussian_curvature().value)   # scalar tensors; .value gives the expression
+print(S.ricci_scalar().value, S.gaussian_curvature().value)   # .value: a scalar's expression
 ```
 
 ```text
@@ -87,13 +86,11 @@ print(S.ricci_scalar().value, S.gaussian_curvature().value)   # scalar tensors; 
 2/r**2 r**(-2)
 ```
 
-Γ is not zero, because the coordinate grid bends; Ric, R_s and K are not zero because the
-surface itself is curved. K = 1/r², the same at every point.
+Each is computed once and stored; each call gives you your own tensor (changing it never changes
+the stored one).
 
-Each is computed once and stored; you get a copy each time.
-
-Γ is stored as a tensor so you can multiply and wedge it, but it is not tensorial (it changes
-differently under a change of coordinates), so ∇Γ has no meaning.
+Γ is returned as a tensor so you can multiply, wedge and d it, but it isn't tensorial: ∇Γ is
+computed if you ask, and has no meaning.
 
 ## Ready-made manifolds
 
@@ -113,10 +110,9 @@ R = 0 everywhere.
 |---|---|
 | `Manifold.euclidean(n=None, coords="cartesian")` | x, y, z (or x1 … xn); `"polar"` (r, φ), `"spherical"` (r, θ, φ), `"cylindrical"` (r, φ, z) |
 | `Manifold.minkowski(n=None, coords="cartesian")` | t, then the same spatial coordinates: −dt² plus flat space |
-| `Manifold.cylinder(r=None)` | r² dφ² + dz² (a plane rolled up: flat, though it looks curved from outside) |
+| `Manifold.cylinder(r=None)` | r² dφ² + dz² |
 
-Γ ≠ 0 in curved coordinates even though R = 0. n follows the coordinates (Cartesian default:
-3 for Euclidean, 4 for Minkowski).
+n follows the coordinates (Cartesian default: 3 for Euclidean, 4 for Minkowski).
 
 ### Curved
 
@@ -150,13 +146,9 @@ bare manifold, attaches the metric, and returns it.
 | `tf.templates.conformally_flat(M, signature=None)` | e^{2ω(x)} × the flat metric |
 | `tf.templates.static_spherical(M)` | −A(r)dt² + B(r)dr² + r²dΩ², coordinates (t, r, θ, φ) |
 
-Setting the Einstein tensor of `static_spherical` to zero and solving gives A = 1 − 2m/r,
-B = 1/A: Schwarzschild.
-
 ### Example: the Friedmann equation
 
-The Einstein tensor of the expanding universe (FLRW, flat, scale factor a(t)) gives the
-equations for how the universe expands.
+The Einstein tensor of flat FLRW with scale factor a(t):
 
 ```python
 import tensorforms as tf
@@ -168,10 +160,3 @@ print(G.data[0, 0])
 ```text
 3*Derivative(a(t), t)**2/a(t)**2
 ```
-
-So G_tt = 3(ȧ/a)². Einstein's equation G = 8πT with energy density ρ (T_tt = ρ) gives the
-Friedmann equation
-
-(ȧ/a)² = 8πρ/3
-
-the expansion rate set by the density.

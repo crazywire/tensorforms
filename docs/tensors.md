@@ -2,27 +2,26 @@
 
 ## The notation
 
-A tensor is a list of **indices**. Each index is up (↑) or down (↓), and is either a **value**
-index (part of what the tensor is) or a **form** index (a step it takes). A value index carries ↑ or
-↓; a form index carries no arrow:
+A tensor has numbers and an ordered tuple of **indices**. Each index is a **value** index, up (↑)
+or down (↓), or a **form** index (always down, shown with no arrow):
 
-| object | indices | reads as |
-|---|---|---|
-| vector | (μ↑) | a column |
-| covector | (μ↓) | a row |
-| matrix | (μ↑ ν↓) | row index ↑, column index ↓ |
-| 1-form | (μ) | takes one step |
-| Γ | (ρ↑ σ↓ μ) | a matrix-valued 1-form |
-| R | (ρ↑ σ↓ μ ν) | a matrix-valued 2-form |
-| g | (μ↓ ν↓) | |
+| object | indices |
+|---|---|
+| vector | (μ↑) |
+| covector | (μ↓) |
+| matrix | (μ↑ ν↓): row ↑, column ↓ |
+| 1-form | (μ) |
+| Γ | (ρ↑ σ↓ μ) |
+| R | (ρ↑ σ↓ μ ν) |
+| g | (μ↓ ν↓) |
 
-Form indices are always down, so they need no arrow. The letters are labels; the arrows carry the
-meaning. Labels can be anything you choose; the ones the package hands out are Greek
-(μ ν λ κ ρ σ …), and `"mu"` works for μ. An index can also be given by number (0, 1, …).
+Labels are only for display and for pointing at an index; everything is computed by position.
+The package hands out Greek labels (μ ν λ κ ρ σ …); `"mu"` works for μ, and an index can also be
+given by number (0, 1, …).
 
-An index's **type** is value or form. Two rules use the rest too: indices **match**
-(`a.matches(b)`: same space, up/down and type, any label) to be added or averaged, and **pair**
-(`a.pairs_with(b)`: same space, one up and one down; a form index is down) to be contracted.
+Indices **match** (`a.matches(b)`: same space, up/down and type, any label) to be added or
+averaged, and **pair** (`a.pairs_with(b)`: same space, one up and one down; a form index counts as
+down) to be contracted.
 
 The examples below use a sphere of radius r:
 
@@ -61,9 +60,9 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.star()` | Hodge star: k form indices become n − k, same amount (uses the metric) |
 | `X.inverse()` | for a matrix at each point (exactly two value indices, nothing else): the matrix inverse; the indices swap places and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
 
-**Swaps.** Index order matters. T, S, U and V swap neighbouring indices, counted from 0 across
-all indices. Each transposes the matrix in those two indices at every value of the others (for
-R(ρ↑ σ↓ μ ν), T transposes the (ρ, σ) matrix at each μ, ν). They are properties, so no brackets:
+**Swaps.** T, S, U and V swap neighbouring indices, counted from 0 across all indices: each
+transposes the matrix in those two indices at every value of the others. They are properties
+(no brackets) and chain: `X.U.S` is X^US.
 
 | swap | short for | code |
 |---|---|---|
@@ -74,18 +73,11 @@ R(ρ↑ σ↓ μ ν), T transposes the (ρ, σ) matrix at each μ, ν). They are
 
 Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`.
 
-X^US means apply U, then S: `X.U.S`. For example, R(ρ↑ σ↓ μ ν) with S applied is
-(ρ↑ μ σ↓ ν): the second and third indices trade places.
+**Labels.** A tensor's label is a name you give (or the manifold's: g, Γ, R, Ric, …). Swaps,
+reorders, index relabelling, raising/lowering, `as_form`/`as_value` and `simplify` keep it;
+anything computed has none and prints as `Tensor(…)`. Set one with `X.label = "K"`.
 
-**Labels.** A tensor's label is just a name: one you give, or the manifold's (g, Γ, R, Ric, …).
-Changes that keep the tensor keep the name: swaps and reorders, index relabelling, raising and
-lowering, form ↔ value, simplify. Anything computed (sums, products, traces, derivatives, Alt, …)
-has no label and prints as `Tensor(…)`; its indices carry the information. Name a result yourself
-with `X.label = "K"`.
-
-### Example: Ricci from Riemann by a trace
-
-Ric = tr(R^S): swap R's second and third indices, then pair the first two.
+### Example: Ric = tr(R^S)
 
 ```python
 R = S.riemann()                 # R(ρ↑ σ↓ μ ν)
@@ -101,34 +93,17 @@ Ric(σ↓ ν)
  [0 sin(theta)**2]]
 ```
 
-The trace leaves one value index and one form index; the numbers are the Ricci tensor.
-
-Raising and lowering never act on form indices; use `as_value()` first.
+Raising and lowering act on value indices only; use `as_value()` first for a form index.
 
 ### The Hodge star
 
-⋆ pairs each set of directions with the directions left over, keeping the amount. In 3D:
+`X.star()` raises X's k form indices, fills them in order into the volume form ε (n form
+indices) and divides by k!, leaving n − k form indices. Value indices are carried along. It needs
+a metric, and k ≤ n.
 
-number ↔ volume
+### Example: curl and divergence
 
-direction ↔ plane
-
-It raises X's k form indices and fills them, in order, into the volume form ε (n form indices),
-then divides by k! (each plane is stored k! times). What is left are n − k form indices. Value
-indices are carried along. For a 1-form α:
-
-⋆α = ι(ε, α raised)
-
-### Example: curl and divergence with ⋆
-
-d∧ does the work (circulation per plane, outflow per box); ⋆ turns the result into the shape you
-want.
-
-curl v = ⋆ d∧ v♭
-
-div v = ⋆ d∧ ⋆ v♭
-
-where v♭ is v as a 1-form (`v.lower().as_form()`).
+curl v = ⋆ d∧ v♭ and div v = ⋆ d∧ ⋆ v♭, where v♭ = `v.lower().as_form()`:
 
 ```python
 import tensorforms as tf
@@ -148,18 +123,11 @@ print(flat.star().wedge_d().star().value, outward.nabla().tr(0, 1).value)
 3 3
 ```
 
-The rotation spins 2 per unit area in the xy plane, so its curl points along z. The outward flow
-has divergence 3, the same as tr(∇v).
-
 ## Products
 
-**AB is A's column with B's row**: A's last value index (↓) pairs with B's first value index (↑),
-as in matrix multiplication. Everything else is carried along: value indices first, then A's
-form indices, then B's.
-
-Rv: (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν)
-
-If the meeting indices are both up or both down, AB isn't defined (like column × column).
+`A @ B` is AB: A's column (last value index, ↓) with B's row (first value index, ↑). It refuses
+if both are up or both down. Every product puts value indices first, then A's form indices, then
+B's: R @ v is (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν).
 
 The wedge of A (p form indices) and B (q form indices), each first made antisymmetric:
 
@@ -173,9 +141,7 @@ A∧B = k!/(p! q!) · Alt(AB),  k = p + q
 | `A.otimes(B)` | A ⊗ B: pair nothing |
 | `A.wedge(B)`, `A.odot(B)` | A∧B, A⊙B |
 
-### Example: how long is the φ direction on a sphere?
-
-The length² of a vector v is the row (lowered v) times the column v.
+### Example: the length² of e_φ
 
 ```python
 e_phi = S.vector([0, 1])
@@ -187,11 +153,7 @@ print(length2.value)
 r**2*sin(theta)**2
 ```
 
-So e_φ has length r sin θ: the radius of the circle of latitude, which shrinks to zero at the poles.
-
-### Example: what does curvature do to a vector?
-
-Multiply R by e_θ (R's column with the vector's row):
+### Example: R times a vector
 
 ```python
 e_theta = S.vector([1, 0])
@@ -206,24 +168,14 @@ Rv(ρ↑ μ ν)
 [0 -1]
 ```
 
-Rv is a vector-valued 2-form: for a small loop in the θ and φ directions, it rotates e_θ into
-−e_φ. On a flat surface it would be zero.
-
-### Example: how fast does the height change as you move south?
-
-On a sphere, cos θ measures height (1 at the north pole, −1 at the south pole). Feeding the
-direction e_θ into its derivative df gives the rate of change along e_θ:
+### Example: df fed a direction (interior product)
 
 ```python
-f = S.scalar(sp.cos(th))              # height on the sphere
-v = S.vector([1, 0])                  # e_θ: moving south
+f = S.scalar(sp.cos(th))
+v = S.vector([1, 0])                  # e_θ
 print(f.d().interior(v).value)
 ```
 
 ```text
 -sin(theta)
 ```
-
-Moving south (increasing θ), the height drops at rate sin θ: fastest at the equator, zero at
-the poles.
-
