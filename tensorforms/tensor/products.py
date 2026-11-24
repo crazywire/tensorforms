@@ -50,7 +50,7 @@ def _values_first(slots, n_a):
 
 def _joined(A, data, slots, n_a, label):
     order = _values_first(slots, n_a)
-    return Tensor(A.manifold, np.transpose(data, order), [slots[k] for k in order], label)
+    return Tensor(A.manifold, np.transpose(data, order), [slots[k] for k in order], label, copy=False)
 
 
 def _default_pair(A, B):

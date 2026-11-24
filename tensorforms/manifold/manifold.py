@@ -99,7 +99,7 @@ class Manifold:
         return Tensor(self, data, slots, label)
 
     def scalar(self, value):
-        return Tensor(self, np.array(sp.sympify(value), dtype=object), [])
+        return Tensor(self, np.array(sp.sympify(value), dtype=object), [], copy=False)
 
     def vector(self, data, index=None):
         a = index or self.index()

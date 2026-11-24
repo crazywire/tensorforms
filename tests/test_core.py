@@ -443,6 +443,9 @@ def test_copy_on_write():
     Z = S.tensor(*X.slots, data=X.data)                        # built from X.data: its own copy
     X[1, 1] = 0
     assert Z.data.tolist() == [[1, 2], [3, 4]]
+    a = np.array([[1, 2], [3, 4]], dtype=object)
+    assert not np.may_share_memory(tf.Tensor(S, a, X.slots)._data, a)              # default: copies
+    assert np.may_share_memory(tf.Tensor(S, a, X.slots, copy=False)._data, a)      # copy=False: as is
     g = S.g
     g[0, 0] = 1                                                # your g, not the manifold's
     assert S.g.data[0, 0] != 1
