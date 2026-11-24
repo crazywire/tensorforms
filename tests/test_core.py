@@ -655,3 +655,19 @@ def test_inverse():
             assert False, "should refuse"
         except (TypeError, ValueError):
             pass
+
+
+def test_slots_are_immutable():
+    S = tf.Manifold.sphere()
+    Y = S.g.T()
+    mu = S.index()
+    for change in (lambda: setattr(Y.slots[0], "name", "α"),
+                   lambda: setattr(Y.slots[0], "variance", "up"),
+                   lambda: setattr(mu, "name", "x")):
+        try:
+            change()
+            assert False
+        except AttributeError:                                 # FrozenInstanceError is an AttributeError
+            pass
+    assert repr(S.g) == "g(μ↓ ν↓)"                             # the manifold's metric is untouched
+

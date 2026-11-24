@@ -4,20 +4,29 @@ A slot has a name, a space (owned by the manifold), up or down, and a role: "val
 Form slots are always down: they take a step.
 """
 
+from dataclasses import dataclass
+
 from .labels import slot_label
 
 ARROW = {"up": "↑", "down": "↓"}
 
 
+@dataclass(frozen=True, repr=False)
 class Slot:
-    def __init__(self, name, space, variance, role):
-        if variance not in ("up", "down"):
+    """Immutable: a slot never changes after it is made; renamed / with_role give new slots."""
+    name: str
+    space: object
+    variance: str          # "up" or "down"
+    role: str              # "value" or "form"
+
+    def __post_init__(self):
+        if self.variance not in ("up", "down"):
             raise ValueError("variance must be 'up' or 'down'")
-        if role not in ("value", "form"):
+        if self.role not in ("value", "form"):
             raise ValueError("role must be 'value' or 'form'")
-        if role == "form" and variance != "down":
+        if self.role == "form" and self.variance != "down":
             raise ValueError("form slots are always down")
-        self.name, self.space, self.variance, self.role = slot_label(name), space, variance, role
+        object.__setattr__(self, "name", slot_label(self.name))     # "mu" → "μ", once, at creation
 
     @property
     def type(self):
@@ -45,11 +54,14 @@ class Slot:
         return self.name if self.is_form else f"{self.name}{ARROW[self.variance]}"
 
 
+@dataclass(frozen=True, repr=False)
 class Index:
-    """A slot name tied to a space. Choose up, down or form when you use it."""
+    """A slot name tied to a space. Choose up, down or form when you use it. Immutable."""
+    name: str
+    space: object
 
-    def __init__(self, name, space):
-        self.name, self.space = slot_label(name), space
+    def __post_init__(self):
+        object.__setattr__(self, "name", slot_label(self.name))
 
     @property
     def up(self):
