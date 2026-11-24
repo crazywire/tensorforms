@@ -15,7 +15,7 @@ from sympy.matrices.exceptions import NonInvertibleMatrixError, NonSquareMatrixE
 from sympy.combinatorics import Permutation
 
 from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
-from .labels import divided, func, index_label, negated, postfix, prefix, scaled, summed, swapped
+from .labels import index_label
 from .index import Index
 
 
@@ -29,18 +29,17 @@ def _as_expr(x):
 
 
 def _as_scalar(c):
-    """c as an exact scalar, with its label: a number, an expression or a scalar tensor."""
+    """c as an exact scalar: a number, an expression or a scalar tensor."""
     not_scalar = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
                   "(for products of tensors: contract, otimes, wedge)")
-    c_label = None
     if isinstance(c, Tensor):
         if c.indices:
             raise TypeError(not_scalar)
-        c_label, c = c.label, c.data.item()
+        c = c.data.item()
     c = _as_expr(c)
     if c is None:
         raise TypeError(not_scalar)
-    return c, c_label
+    return c
 
 
 class Tensor:
@@ -167,14 +166,14 @@ class Tensor:
             raise TypeError(f"can only add tensors and numbers, not {type(other).__name__}")
         if c == 0:
             return None
-        return Tensor(self.manifold, c, [], label=sp.pretty(c, use_unicode=True))
+        return Tensor(self.manifold, c, [], label=None)
 
     def __add__(self, other):
         other = self._operand(other)
         if other is None:                                     # X + 0 is X
             return self._new(label=self.label)
         self._check_same_type(other)
-        return self._new(self._data + other._data, label=summed(self.label, "+", other.label))
+        return self._new(self._data + other._data, label=None)
 
     __radd__ = __add__                                        # 0 + X, 1 + s
 
@@ -183,30 +182,30 @@ class Tensor:
         if other is None:                                     # X − 0 is X
             return self._new(label=self.label)
         self._check_same_type(other)
-        return self._new(self._data - other._data, label=summed(self.label, "−", other.label))
+        return self._new(self._data - other._data, label=None)
 
     def __rsub__(self, other):                                # 0 − X is −X; 1 − s
         other = self._operand(other)
         return -self if other is None else other - self
 
     def __neg__(self):
-        return self._new(-self._data, label=negated(self.label))
+        return self._new(-self._data, label=None)
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no indices)."""
         if not self.indices and isinstance(c, Tensor):         # scalar × tensor
             return c * self
-        c, c_label = _as_scalar(c)
-        return self._new(self._data * c, label=scaled(c, c_label, self.label))
+        c = _as_scalar(c)
+        return self._new(self._data * c, label=None)
 
     __rmul__ = __mul__
 
     def __truediv__(self, c):
         """Divide by a number, a sympy expression, or a scalar tensor: exact (X / 2 is ½X, never 0.5X)."""
-        c, c_label = _as_scalar(c)
+        c = _as_scalar(c)
         if c == 0:
             raise ZeroDivisionError("division of a tensor by zero")
-        return self._new(self._data / c, label=divided(self.label, c, c_label))
+        return self._new(self._data / c, label=None)
 
     def __rtruediv__(self, c):
         """A number divided by a scalar is a scalar (2 / s); dividing by a tensor with indices is refused."""
@@ -215,7 +214,7 @@ class Tensor:
         n = _as_expr(c)
         if n is None:
             raise TypeError(f"can only divide a number or expression by a scalar, not {type(c).__name__}")
-        return Tensor(self.manifold, n, [], label=sp.pretty(n, use_unicode=True)) / self
+        return Tensor(self.manifold, n, [], label=None) / self
 
     def _sympy_(self):
         """What sympy sees when it is handed a tensor: its value. So sp.simplify(s), sp.diff(s, θ) work."""
@@ -256,29 +255,24 @@ class Tensor:
         return self._transposed(order)
 
     # T, S, U, V: the notation's swaps of neighbouring indices
-    def _letter_swap(self, i, letter):
-        X = self.swap(i, i + 1)
-        X.label = swapped(self.label, letter)
-        return X
-
     def T(self):
         """Short for swap(0, 1)."""
-        return self._letter_swap(0, "T")
+        return self.swap(0, 1)
 
     def S(self):
         """Short for swap(1, 2)."""
-        return self._letter_swap(1, "S")
+        return self.swap(1, 2)
 
     def U(self):
         """Short for swap(2, 3)."""
-        return self._letter_swap(2, "U")
+        return self.swap(2, 3)
 
     def V(self):
         """Short for swap(3, 4)."""
-        return self._letter_swap(3, "V")
+        return self.swap(3, 4)
 
     def rename(self, mapping):
-        """New labels: {index (name or number): new name}."""
+        """New index labels: {index (label or number): new label}. The tensor's own label stays."""
         mapping = {self.position(k): index_label(v) for k, v in mapping.items()}
         return self._new(indices=[s.relabel(mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
                          label=self.label)
@@ -311,7 +305,7 @@ class Tensor:
         if not si.pairs_with(sj):
             raise TypeError(f"can't pair {si.label} and {sj.label}: need the same space, one up and one down")
         data = np.asarray(np.trace(self._data, axis1=i, axis2=j), dtype=object)
-        label = func("tr", self.label)
+        label = None
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.indices) if k not in (i, j)], label,
                       copy=False)
 
@@ -362,7 +356,7 @@ class Tensor:
             raise ValueError("inverse: not invertible (the determinant is 0)") from None
         flip = lambda s: Index(s.label, s.space, "down" if s.is_up else "up", "value")
         return self._new(np.array(inv.tolist(), dtype=object), [flip(si), flip(so)],
-                         label=postfix(self.label, "⁻¹"))
+                         label=None)
 
     # ---------- Hodge star (needs the manifold's metric) ----------
     def star(self):
@@ -385,7 +379,7 @@ class Tensor:
         for j, p in enumerate(forms):                 # the j-th raised index fills ε's next index
             T = T.tr(p - j, nv - j)
         T = T / math.factorial(k)
-        return T._new(label=prefix("⋆", self.label))
+        return T._new(label=None)
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, indices, signed):
@@ -402,7 +396,7 @@ class Tensor:
                 axes[pos[dst]] = pos[src]
             term = np.transpose(self._data, axes)
             out = out + (Permutation(perm).signature() if signed else 1) * term
-        label = func("Alt" if signed else "Sym", self.label)
+        label = None
         return self._new(out * sp.Rational(1, math.factorial(k)), label=label)
 
     def alt(self, *indices):
