@@ -275,25 +275,20 @@ def test_scalar_multiplication():
 
 
 def test_labels():
+    """A label is just a name: given, or the manifold's. Computed results have none; changes that
+    keep the tensor (index order, index labels, arrows, form/value, simplify) keep the name."""
     S = tf.Manifold.sphere()
-    R = S.riemann()
-    B = R._new(label="B")
-    f = S.scalar(sp.sin(S.coords[0]))
-    f.label = "f"
-    expected = {"Alt(R)": R.alt(), "Sym(R)": R.sym(), "−R": -R, "R": -(-R),
-                "R+B": R + B, "R−(−B)": R - (-B), "−(R+B)": -(R + B), "3(R+B)": 3 * (R + B),
-                "−2R": -2 * R, "(1/2)·R": sp.Rational(1, 2) * R, "f·R": f * R,
-                "R^U": R.U(), "R^US": R.U().S(), "(R+B)^S": (R + B).S()}
-    for label, X in expected.items():
-        assert X.label == label, (label, X.label)
-    v = S.vector([1, 0])
-    brackets = {"∇(Rv)": nabla(contract(R, v)), "(R∇v)^US": contract(R, nabla(v)).U().S(),
-                "d∧(v⊗v)": wedge_d(otimes(v, v)), "R": R.T().T(), "∇∇v": nabla(nabla(v)),
-                "(∇∇v)^TS": nabla(nabla(v)).T().S(), "∇(R^S)": nabla(R.S()), "(∇R)^S": nabla(R).S(),
-                "(R+B)/2": (R + B) / 2, "R∇v": contract(R, nabla(v))}
-    for label, X in brackets.items():
-        assert X.label == label, (label, X.label)
-
+    R, g, v = S.riemann(), S.g, S.vector([1, 0])
+    assert [S.levi_civita().label, R.label, S.ricci().label, g.label, S.ginv.label] == ["Γ", "R", "Ric", "g", "g⁻¹"]
+    computed = (R.alt(), R.sym(), -R, R + R, 3 * R, R / 2, R.tr(0, 1), g.inverse(), v.star(),
+                contract(R, v), otimes(v, v), wedge(S.one_form([1, 0]), S.one_form([0, 1])))
+    assert all(X.label is None for X in computed)
+    kept = (R.S(), R.swap(0, 2), R.reorder(3, 2, 1, 0), R.rename({"mu": "kappa"}), v.lower(),
+            v.lower().as_form(), R.simplify(), R + 0)
+    assert all(X.label == X_label for X, X_label in zip(kept, "R R R R v v R R".split()))
+    X = contract(R, v)
+    X.label = "K"                                              # name a result yourself
+    assert repr(X) == "K(ρ↑ μ ν)"
 
 def test_contract_default_and_otimes():
     S = tf.Manifold.sphere(r=1)
@@ -351,12 +346,11 @@ def test_manifold_hands_out_copies():
     assert isinstance(S.indices(1), list) and S.index().label == "μ"
 
 
-def test_operator_labels():
+def test_operator_results_have_no_label():
     S = tf.Manifold.sphere()
     v = S.vector([1, 0])
-    assert [X.label for X in (tf.d(v), wedge_d(v), nabla(v), wedge_nabla(v),
-                              curvature(v), wedge_curvature(v))] == ["dv", "d∧v", "∇v", "∇∧v", "∇∧∇v", "∇∧∇∧v"]
-
+    assert all(X.label is None for X in (tf.d(v), wedge_d(v), nabla(v), wedge_nabla(v),
+                                          curvature(v), wedge_curvature(v)))
 
 def test_euclidean_options():
     assert tf.Manifold.euclidean().dim == 3 and tf.Manifold.euclidean(4).dim == 4

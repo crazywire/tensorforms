@@ -10,7 +10,7 @@
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
 
 
-Each takes one tensor and returns a new one, labelled by the operator (dX, ∇X, …).
+Each takes one tensor and returns a new one (unlabelled: its indices carry the information).
 New form indices go first among the form indices. Γ and R come from the manifold; with no metric,
 ∇ and ∇∧ act as d and d∧, and the two curvature operators are zero.
 

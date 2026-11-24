@@ -14,7 +14,6 @@ import math
 import numpy as np
 import sympy as sp
 
-from .labels import func, product
 from .tensor import Tensor
 
 
@@ -83,7 +82,7 @@ def contract(A, B, a=None, b=None):
     data = np.tensordot(A.data, B.data, axes=([i], [j]))
     keep_a = [s for k, s in enumerate(A.indices) if k != i]
     keep_b = _rename_clashes([s.label for s in keep_a], [s for k, s in enumerate(B.indices) if k != j])
-    return _joined(A, data, keep_a + keep_b, len(keep_a), product(A.label, "", B.label))
+    return _joined(A, data, keep_a + keep_b, len(keep_a), None)
 
 
 def interior(X, V):
@@ -95,7 +94,7 @@ def interior(X, V):
     if not V._value_positions() or not V.index(V._value_positions()[0]).is_up:
         raise TypeError(f"interior needs a row (first value index, up) in V; got {V.declaration()}")
     P = contract(X, V, X._form_positions()[0], V._value_positions()[0])
-    label = func("ι", X.label, V.label)
+    label = None
     return P._new(label=label)
 
 
@@ -104,7 +103,7 @@ def otimes(A, B):
     Result: value indices first, then A's form indices, then B's."""
     keep_b = _rename_clashes(A._index_labels(), B.indices)
     return _joined(A, np.multiply.outer(A.data, B.data), (*A.indices, *keep_b), len(A.indices),
-                   product(A.label, "⊗", B.label))
+                   None)
 
 
 def _wedge_like(A, B, pair, signed):
@@ -120,8 +119,7 @@ def _wedge_like(A, B, pair, signed):
     k = p + q
     if k >= 2:
         P = project(P) * sp.Rational(math.factorial(k), math.factorial(p) * math.factorial(q))
-    sym = "∧" if signed else "⊙"
-    return P._new(label=product(A.label, sym, B.label))
+    return P._new(label=None)
 
 
 def wedge(A, B, pair=None):

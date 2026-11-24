@@ -11,14 +11,13 @@ nabla and curvature correct every index. The wedged ones correct only value indi
 the form-index corrections cancel because Γ is S-symmetric.
 New form indices always go first among the form indices.
 On a manifold with no metric: nabla is d, wedge_nabla is d∧, and both curvatures are zero.
-Results are labelled by the operation: dX, d∧X, ∇X, ∇∧X, ∇∧∇X, ∇∧∇∧X.
+Results have no label (their indices carry the information); name one with X.label = ….
 """
 import math
 
 import numpy as np
 import sympy as sp
 
-from ..tensor.labels import prefix
 from ..tensor.index import Index
 from ..tensor.tensor import Tensor
 
@@ -28,7 +27,7 @@ def d(X):
     """Plain d: one new form index, first among the form indices. Needs only the coordinates."""
     _check_tensor(X)
     pos, indices = _with_new_indices(X, 1)
-    return Tensor(X.manifold, _d(X, pos), indices, _label("d", X), copy=False)
+    return Tensor(X.manifold, _d(X, pos), indices, None, copy=False)
 
 
 def wedge_d(X):
@@ -38,7 +37,7 @@ def wedge_d(X):
     Xa = X.alt()
     pos, indices = _with_new_indices(Xa, 1)
     Y = _wedge_new(Tensor(X.manifold, _d(Xa, pos), indices, copy=False), p, 1)
-    return Y._new(label=_label("d∧", X))
+    return Y._new(label=None)
 
 
 def nabla(X):
@@ -49,7 +48,7 @@ def nabla(X):
     G, _ = _geometry(X)
     if G is not None:
         data = data + _act(G, X, indices)
-    return Tensor(X.manifold, data, indices, _label("∇", X), copy=False)
+    return Tensor(X.manifold, data, indices, None, copy=False)
 
 
 def wedge_nabla(X):
@@ -63,7 +62,7 @@ def wedge_nabla(X):
     if G is not None:
         data = data + _act(G, Xa, indices, values_only=True)
     Y = _wedge_new(Tensor(X.manifold, data, indices, copy=False), p, 1)
-    return Y._new(label=_label("∇∧", X))
+    return Y._new(label=None)
 
 
 def curvature(X):
@@ -75,7 +74,7 @@ def curvature(X):
         data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
     else:
         data = _act(R(), X, indices)
-    return Tensor(X.manifold, data, indices, _label("∇∧∇", X), copy=False)
+    return Tensor(X.manifold, data, indices, None, copy=False)
 
 
 def wedge_curvature(X):
@@ -90,7 +89,7 @@ def wedge_curvature(X):
     else:
         data = _act(R(), Xa, indices, values_only=True)
     Y = _wedge_new(Tensor(X.manifold, data, indices, copy=False), p, 2)
-    return Y._new(label=_label("∇∧∇∧", X))
+    return Y._new(label=None)
 
 
 # ---------------------------------------------------------------- helpers
@@ -110,10 +109,6 @@ def _geometry(X):
     if not M.has_metric():
         return None, None
     return M.levi_civita(), M.riemann
-
-
-def _label(op, X):
-    return prefix(op, X.label)
 
 
 def _new_form_indices(X, count):

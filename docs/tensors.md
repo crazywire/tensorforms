@@ -70,8 +70,13 @@ counted from 0 across all indices:
 Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`.
 
 X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ μ ν) with S applied is
-(ρ↑ μ σ↓ ν): the second and third indices trade places. A result's label says how it was made:
-R^US, −A, Alt(R), tr(R), …
+(ρ↑ μ σ↓ ν): the second and third indices trade places.
+
+**Labels.** A tensor's label is just a name: one you give, or the manifold's (g, Γ, R, Ric, …).
+Changes that keep the tensor keep the name: swaps and reorders, index relabelling, raising and
+lowering, form ↔ value, simplify. Anything computed (sums, products, traces, derivatives, Alt, …)
+has no label and prints as `Tensor(…)`; its indices carry the information. Name a result yourself
+with `X.label = "K"`.
 
 ### Example: Ricci from Riemann by a trace
 
@@ -80,12 +85,13 @@ Ric = tr(R^S): swap R's second and third indices, then pair the first two.
 ```python
 R = S.riemann()                 # R(ρ↑ σ↓ μ ν)
 Ric = R.S().tr(0, 1)
+Ric.label = "Ric"               # a computed result has no label until you name it
 print(Ric)
 print(Ric.simplify().data)
 ```
 
 ```text
-tr(R^S)(σ↓ ν)
+Ric(σ↓ ν)
 [[1 0]
  [0 sin(theta)**2]]
 ```
@@ -186,6 +192,7 @@ Multiply R by e_θ (R's column with the vector's row):
 ```python
 e_theta = S.vector([1, 0])
 Rv = contract(R, e_theta)
+Rv.label = "Rv"
 print(Rv)
 print(Rv.simplify().data[:, 0, 1])     # the θφ part
 ```
