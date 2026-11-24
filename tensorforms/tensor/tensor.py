@@ -150,9 +150,14 @@ class Tensor:
         self._data[key] = value
 
     # ---------- arithmetic (+ and − need matching indices) ----------
+    def matches(self, other):
+        """Can be added: the same number of indices, each matching the one at the same position
+        (same space, up/down and type; labels don't matter). g(μ↓ ν↓) matches h(α↓ β↓)."""
+        return (isinstance(other, Tensor) and len(self.indices) == len(other.indices)
+                and all(a.matches(b) for a, b in zip(self.indices, other.indices)))
+
     def _check_matching(self, other):
-        if (not isinstance(other, Tensor) or len(self.indices) != len(other.indices)
-                or not all(a.matches(b) for a, b in zip(self.indices, other.indices))):
+        if not self.matches(other):
             raise TypeError(f"can only add tensors whose indices match: {self.declaration()} vs "
                             f"{getattr(other, 'declaration', lambda: other)()}")
 

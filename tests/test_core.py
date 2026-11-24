@@ -693,6 +693,8 @@ def test_arithmetic_edges():
     except ZeroDivisionError:
         pass
     assert (S.g + hidden_zero).equals(S.g)                                # a 0 of any type
+    assert S.g.matches(S.ricci()) and not S.g.matches(S.vector([1, 0]))   # labels don't matter
+    assert not S.g.matches(S.g.as_form(1)) and not S.g.matches(3)
     try:
         S.g + S.vector([1, 0])
         assert False
