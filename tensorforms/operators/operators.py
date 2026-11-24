@@ -34,7 +34,7 @@ def d(X):
 def wedge_d(X):
     """Wedge d: d∧X. Antisymmetrize X's form indices, take d, then (p+1)·Alt. No Γ."""
     _check_tensor(X)
-    p = len(X.form_indices)
+    p = len(X._form_positions())
     Xa = X.alt()
     pos, indices = _with_new_indices(Xa, 1)
     Y = _wedge_new(Tensor(X.manifold, _d(Xa, pos), indices, copy=False), p, 1)
@@ -55,7 +55,7 @@ def nabla(X):
 def wedge_nabla(X):
     """Wedge derivative: ∇∧X = d∧X + Γ∧ on value indices."""
     _check_tensor(X)
-    p = len(X.form_indices)
+    p = len(X._form_positions())
     Xa = X.alt()                                   # wedge factors are antisymmetric first
     pos, indices = _with_new_indices(Xa, 1)
     data = _d(Xa, pos)
@@ -81,7 +81,7 @@ def curvature(X):
 def wedge_curvature(X):
     """Wedge curvature: ∇∧∇∧X = R∧ on value indices. X is never differentiated."""
     _check_tensor(X)
-    p = len(X.form_indices)
+    p = len(X._form_positions())
     Xa = X.alt()
     pos, indices = _with_new_indices(Xa, 2)
     _, R = _geometry(X)
@@ -118,7 +118,7 @@ def _label(op, X):
 
 def _new_form_indices(X, count):
     """`count` fresh form indices, with names unused by X."""
-    M, used = X.manifold, list(X.labels)
+    M, used = X.manifold, X._index_labels()
     indices = []
     for _ in range(count):
         name = M.tangent.fresh_name(used)
@@ -129,7 +129,7 @@ def _new_form_indices(X, count):
 
 def _with_new_indices(X, count):
     pos = _insert_position(X)
-    return pos, X.indices[:pos] + _new_form_indices(X, count) + X.indices[pos:]
+    return pos, (*X.indices[:pos], *_new_form_indices(X, count), *X.indices[pos:])
 
 
 def _d(X, pos):
