@@ -185,7 +185,10 @@ class Tensor:
         other = self._operand(other)
         if other is None:                                     # X − 0 is X
             return self._new(label=self.label)
-        return self + (-other)                                # X − Y is X + (−Y), as in sympy
+        if not self.matches(other):
+            raise TypeError(f"can only subtract tensors whose indices match: {self.declaration()} vs "
+                            f"{other.declaration()}")
+        return self._new(self._data - other._data, label=None)
 
     def __rsub__(self, other):                                # 0 − X is −X; 1 − s
         other = self._operand(other)
