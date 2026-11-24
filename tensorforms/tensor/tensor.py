@@ -4,6 +4,7 @@ Everything here acts on one tensor: describing it, adding and scaling, moving in
 changing value / form type, Alt/Sym, trace, and raising/lowering with the manifold's metric.
 Products of two tensors are in products.py.
 """
+from dataclasses import replace
 import itertools
 import math
 
@@ -286,11 +287,11 @@ class Tensor:
     def rename(self, mapping):
         """New labels: {index (name or number): new name}."""
         mapping = {self.position(k): index_label(v) for k, v in mapping.items()}
-        return self._new(indices=[s.renamed(mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
+        return self._new(indices=[replace(s, label=mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
                          label=self.label)
 
-    def _change_type(self, which, new_type, eligible, need):
-        """The chosen indices (default: every eligible one) get the new type; same numbers."""
+    def _change_type(self, which, change, eligible, need):
+        """The given indices (default: every eligible one) are changed by `change`; same numbers."""
         if which:
             targets = {self.position(x) for x in which}
             bad = [self.indices[k] for k in sorted(targets) if not eligible(self.indices[k])]
@@ -298,16 +299,16 @@ class Tensor:
                 raise TypeError(f"needs {need}; got {bad}")
         else:
             targets = {k for k, s in enumerate(self.indices) if eligible(s)}
-        return self._new(indices=[s.with_type(new_type) if k in targets else s for k, s in enumerate(self.indices)],
+        return self._new(indices=[change(s) if k in targets else s for k, s in enumerate(self.indices)],
                          label=self.label)
 
     def as_form(self, *indices):
         """Down value indices → form indices (default: all). Covector (μ↓) → 1-form (μ). Same numbers."""
-        return self._change_type(indices, "form", lambda s: not s.is_up and not s.is_form, "down value indices")
+        return self._change_type(indices, lambda s: s.form, lambda s: s.is_down and not s.is_form, "down value indices")
 
     def as_value(self, *indices):
         """Form indices → down value indices (default: all). 1-form (μ) → covector (μ↓). Same numbers."""
-        return self._change_type(indices, "value", lambda s: s.is_form, "form indices")
+        return self._change_type(indices, lambda s: s.down, lambda s: s.is_form, "form indices")
 
     # ---------- trace ----------
     def tr(self, a, b):

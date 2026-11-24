@@ -9,6 +9,7 @@
 
 Results put value indices first, then A's form indices, then B's.
 """
+from dataclasses import replace
 import math
 
 import numpy as np
@@ -28,7 +29,7 @@ def _rename_clashes(keep_names, indices):
             n = s.space.fresh_name(used)
             used.add(n)
         taken.add(n)
-        out.append(s.renamed(n))
+        out.append(replace(s, label=n))
     return out
 
 
