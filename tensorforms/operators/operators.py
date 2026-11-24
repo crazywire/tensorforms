@@ -94,12 +94,8 @@ def wedge_curvature(X):
 
 
 def lie(v, X):
-    """Lie derivative L_v X: how X changes as the flow of the vector field v carries it.
-        L_v X = (dX)v − (dv) on each up index + (dv) on each down or form index
-    (dX)v: X's derivative along v. dv, the Jacobian of v, says how the flow stretches and turns
-    what it carries; it takes the place of Γ in ∇, with the opposite signs. Needs no metric and
-    no Γ, only d. For a vector it is the Lie bracket: L_v w = (dw)v − (dv)w = [v, w].
-    The result has X's indices. L_v g = 0 says v is a symmetry of the metric (a Killing vector)."""
+    """Lie derivative of X along the vector field v. The result has X's indices; no metric needed.
+        L_v X = (dX)v − (dv) on each up index + (dv) on each down or form index"""
     _check_tensor(v)
     _check_tensor(X)
     M = X.manifold

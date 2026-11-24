@@ -26,23 +26,20 @@ Details:
 
 ### The Lie derivative
 
-`lie(v, X)` asks how X changes as the flow of a vector field v carries it. Picture v as moving
-water: an arrow is a tiny line between two specks, and the water carries each speck; where the
-water moves differently at the two ends, the arrow is stretched or turned. That stretching is
-the Jacobian of v, dv; it takes the place of Γ (which comes from the metric) with opposite signs:
+`lie(v, X)`: v is a vector field, X any tensor on the same manifold. The result has X's indices.
+No metric is needed.
 
 L_v X = (dX)v − (dv) on each up index + (dv) on each down or form index
 
-For a vector it is the Lie bracket, L_v w = (dw)v − (dv)w = [v, w]. It needs no metric. A flow
-is a symmetry of the metric (a Killing vector) exactly when L_v g = 0:
+For example, checking whether a vector field is a symmetry of the metric (L_v g = 0):
 
 ```python
 import tensorforms as tf
 from tensorforms import lie
 
 S = tf.Manifold.sphere()
-print(lie(S.vector([0, 1]), S.g).is_zero())         # spinning about the axis: a symmetry
-print(lie(S.vector([1, 0]), S.g).simplify().data)   # sliding towards the pole: not one
+print(lie(S.vector([0, 1]), S.g).is_zero())         # ∂_φ: a symmetry
+print(lie(S.vector([1, 0]), S.g).simplify().data)   # ∂_θ: not one
 ```
 
 ```text
