@@ -48,7 +48,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.simplify()` | simplify every component (exact rewrites only) |
 | `X.is_zero()`, `X.equals(Y)` | sympy's answer: True (simplifies to 0), False (sympy proves nonzero), None (can't tell); never sampled |
 | `sp.diff(s, θ)`, `sp.solve(s, r)`, … | sympy accepts tensors directly: a scalar as its expression, others as a sympy Array (one axis per index) |
-| `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap positions 0–1, 1–2, 2–3, 3–4 |
+| `X.T`, `X.S`, `X.U`, `X.V` | swap positions 0–1, 1–2, 2–3, 3–4 |
 | `X.swap(a, b)`, `X.reorder(*indices)`, `X.rename({…})` | move or rename indices (by label or position) |
 | `X.alt()`, `X.sym()` | antisymmetric / symmetric part (default: form indices) |
 | `X.tr(a, b)` | pair two indices and sum |
@@ -57,19 +57,20 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.star()` | Hodge star: k form indices become n − k, same amount (uses the metric) |
 | `X.inverse()` | for a matrix at each point (exactly two value indices, nothing else): the matrix inverse; the indices swap places and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
 
-**Swaps.** Index order matters. T, S, U and V are short for swapping neighbouring indices,
-counted from 0 across all indices:
+**Swaps.** Index order matters. T, S, U and V swap neighbouring indices, counted from 0 across
+all indices. Each transposes the matrix in those two indices at every value of the others (for
+R(ρ↑ σ↓ μ ν), T transposes the (ρ, σ) matrix at each μ, ν). They are properties, so no brackets:
 
 | swap | short for | code |
 |---|---|---|
-| T | swap positions 0 and 1 | `X.T()` = `X.swap(0, 1)` |
-| S | swap positions 1 and 2 | `X.S()` = `X.swap(1, 2)` |
-| U | swap positions 2 and 3 | `X.U()` = `X.swap(2, 3)` |
-| V | swap positions 3 and 4 | `X.V()` = `X.swap(3, 4)` |
+| T | swap positions 0 and 1 | `X.T` = `X.swap(0, 1)` |
+| S | swap positions 1 and 2 | `X.S` = `X.swap(1, 2)` |
+| U | swap positions 2 and 3 | `X.U` = `X.swap(2, 3)` |
+| V | swap positions 3 and 4 | `X.V` = `X.swap(3, 4)` |
 
 Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`.
 
-X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ μ ν) with S applied is
+X^US means apply U, then S: `X.U.S`. For example, R(ρ↑ σ↓ μ ν) with S applied is
 (ρ↑ μ σ↓ ν): the second and third indices trade places.
 
 **Labels.** A tensor's label is just a name: one you give, or the manifold's (g, Γ, R, Ric, …).
@@ -84,7 +85,7 @@ Ric = tr(R^S): swap R's second and third indices, then pair the first two.
 
 ```python
 R = S.riemann()                 # R(ρ↑ σ↓ μ ν)
-Ric = R.S().tr(0, 1)
+Ric = R.S.tr(0, 1)
 Ric.label = "Ric"               # a computed result has no label until you name it
 print(Ric)
 print(Ric.simplify().data)

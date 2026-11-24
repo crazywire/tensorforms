@@ -283,7 +283,7 @@ def test_labels():
     computed = (R.alt(), R.sym(), -R, R + R, 3 * R, R / 2, R.tr(0, 1), g.inverse(), v.star(),
                 contract(R, v), otimes(v, v), wedge(S.one_form([1, 0]), S.one_form([0, 1])))
     assert all(X.label is None for X in computed)
-    kept = (R.S(), R.swap(0, 2), R.reorder(3, 2, 1, 0), R.rename({"mu": "kappa"}), v.lower(),
+    kept = (R.S, R.swap(0, 2), R.reorder(3, 2, 1, 0), R.rename({"mu": "kappa"}), v.lower(),
             v.lower().as_form(), R.simplify(), R + 0)
     assert all(X.label == X_label for X, X_label in zip(kept, "R R R R v v R R".split()))
     X = contract(R, v)
@@ -438,7 +438,7 @@ def test_minkowski_options():
 def test_copy_on_write():
     S = tf.Manifold.sphere()
     X = S.tensor(*S.g.indices, data=[[1, 2], [3, 4]])
-    Y = X.T()                                                  # shares X's numbers
+    Y = X.T                                                  # shares X's numbers
     Y[0, 1] = 99
     assert X.data.tolist() == [[1, 2], [3, 4]] and Y.data.tolist() == [[1, 99], [2, 4]]
     Z = S.tensor(*X.indices, data=X.data)                        # built from X.data: its own copy
@@ -660,7 +660,7 @@ def test_inverse():
 
 def test_indices_are_immutable():
     S = tf.Manifold.sphere()
-    Y = S.g.T()
+    Y = S.g.T
     mu = S.index()
     for change in (lambda: setattr(Y.indices[0], "name", "α"),
                    lambda: setattr(Y.indices[0], "variance", "up"),
