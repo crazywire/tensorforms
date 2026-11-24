@@ -8,6 +8,7 @@
 | ∇∧ = d∧ + Γ∧ | `wedge_nabla(X)` | exterior covariant derivative |
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
+| L_v | `lie(v, X)` | Lie derivative along a vector field v |
 
 
 Each takes one tensor and returns a new one (unlabelled: its indices carry the information).
@@ -22,6 +23,33 @@ Details:
 * d∧ multiplies by p + 1 after antisymmetrizing, and ∇∧∇∧ by C(p+2; 2, p), where p is the number
   of form indices of X.
 * The two curvature operators never differentiate X; they only multiply by R.
+
+### The Lie derivative
+
+`lie(v, X)` asks how X changes as the flow of a vector field v carries it. Picture v as moving
+water: an arrow is a tiny line between two specks, and the water carries each speck; where the
+water moves differently at the two ends, the arrow is stretched or turned. That stretching is
+the Jacobian of v, dv; it takes the place of Γ (which comes from the metric) with opposite signs:
+
+L_v X = (dX)v − (dv) on each up index + (dv) on each down or form index
+
+For a vector it is the Lie bracket, L_v w = (dw)v − (dv)w = [v, w]. It needs no metric. A flow
+is a symmetry of the metric (a Killing vector) exactly when L_v g = 0:
+
+```python
+import tensorforms as tf
+from tensorforms import lie
+
+S = tf.Manifold.sphere()
+print(lie(S.vector([0, 1]), S.g).is_zero())         # spinning about the axis: a symmetry
+print(lie(S.vector([1, 0]), S.g).simplify().data)   # sliding towards the pole: not one
+```
+
+```text
+True
+[[0 0]
+ [0 r**2*sin(2*theta)]]
+```
 
 ### Example: how does e_θ change as you move on a sphere?
 

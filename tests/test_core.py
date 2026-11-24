@@ -8,7 +8,7 @@ import sympy as sp
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tensorforms as tf
-from tensorforms import (Manifold, contract, curvature, interior, nabla, otimes,
+from tensorforms import (Manifold, contract, curvature, interior, lie, nabla, otimes,
                          wedge, wedge_curvature, wedge_d, wedge_nabla)
 from tensorforms.symbolic.simplify import is_zero          # internal: for single components
 
@@ -720,4 +720,39 @@ def test_subs_and_at():
     G = S.g.at({th: sp.pi / 2, "phi": 0})                                  # plain values, not a tensor
     assert isinstance(G, sp.Array) and G == sp.Array([[r**2, 0], [0, r**2]])
     assert sp.simplify(S.ricci_scalar().at({th: 1, ph: 0}) - 2 / r**2) == 0
+
+
+def test_lie_derivative():
+    S = tf.Manifold.sphere()
+    th, ph = S.coords
+    assert lie(S.vector([0, 1]), S.g).is_zero()                           # ∂_φ: a symmetry (Killing)
+    assert lie(S.vector([1, 0]), S.g).simplify().data[1, 1] != 0           # ∂_θ: not one
+    E = tf.Manifold.euclidean(2)
+    x, y = E.coords
+    v, w = E.vector([-y, x]), E.vector([1, 0])
+    assert lie(v, w).data.tolist() == [0, -1]                               # rotation vs a fixed arrow
+    assert lie(v, w).equals(-lie(w, v))                                    # the Lie bracket is antisymmetric
+    a = E.one_form([x * y, x**2])
+    assert lie(v, a).equals(interior(wedge_d(a), v) + tf.d(interior(a, v)))   # Cartan's formula
+    f = E.scalar(x**2 * y)
+    assert sp.simplify(lie(v, f).value - (-2 * x * y**2 + x**3)) == 0      # on a scalar: v(f)
+    # matches the ∇ version (the Γ terms cancel), on a mixed tensor
+    i, j, k = S.indices(3)
+    T = S.tensor(i.up, j.down, k.form, data=[[[th * ph, sp.sin(th)], [ph**2, 1]],
+                                             [[sp.cos(ph), th], [0, th * ph**2]]])
+    u = S.vector([sp.sin(ph), th * sp.cos(th)])
+    Jn, data = nabla(u).as_value().data, interior(nabla(T), u).data
+    for n, s in enumerate(T.indices):
+        if s.is_up:
+            data = data - np.moveaxis(np.tensordot(Jn, T.data, axes=([1], [n])), 0, n)
+        else:
+            data = data + np.moveaxis(np.tensordot(T.data, Jn, axes=([n], [0])), -1, n)
+    assert lie(u, T).equals(S.tensor(*T.indices, data=data))
+    N = tf.Manifold(list(sp.symbols("p q")))                               # no metric needed
+    assert lie(N.vector([1, 0]), N.vector([N.coords[0], 0])).data.tolist() == [1, 0]
+    try:
+        lie(S.covector([1, 0]), S.g)                                       # v must be a vector
+        assert False
+    except TypeError:
+        pass
 
