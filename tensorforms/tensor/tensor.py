@@ -15,7 +15,7 @@ from sympy.matrices.exceptions import NonInvertibleMatrixError, NonSquareMatrixE
 from sympy.combinatorics import Permutation
 
 from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
-from .labels import join, negated, scaled, index_label, swapped, wrap
+from .labels import divided, func, index_label, negated, postfix, prefix, scaled, summed, swapped
 from .index import Index
 
 
@@ -174,9 +174,7 @@ class Tensor:
         if other is None:                                     # X + 0 is X
             return self._new(label=self.label)
         self._check_same_type(other)
-        # brackets only where needed: A+(−B); A+B+C needs none
-        return self._new(self._data + other._data, label=join(self.label, "+", wrap(other.label)
-                                                              if other.label and other.label[0] == "−" else other.label))
+        return self._new(self._data + other._data, label=summed(self.label, "+", other.label))
 
     __radd__ = __add__                                        # 0 + X, 1 + s
 
@@ -185,7 +183,7 @@ class Tensor:
         if other is None:                                     # X − 0 is X
             return self._new(label=self.label)
         self._check_same_type(other)
-        return self._new(self._data - other._data, label=join(self.label, "−", wrap(other.label)))
+        return self._new(self._data - other._data, label=summed(self.label, "−", other.label))
 
     def __rsub__(self, other):                                # 0 − X is −X; 1 − s
         other = self._operand(other)
@@ -208,8 +206,7 @@ class Tensor:
         c, c_label = _as_scalar(c)
         if c == 0:
             raise ZeroDivisionError("division of a tensor by zero")
-        label = f"{wrap(self.label)}/{c_label or wrap(sp.pretty(c, use_unicode=True))}" if self.label else None
-        return self._new(self._data / c, label=label)
+        return self._new(self._data / c, label=divided(self.label, c, c_label))
 
     def __rtruediv__(self, c):
         """A number divided by a scalar is a scalar (2 / s); dividing by a tensor with indices is refused."""
@@ -314,7 +311,7 @@ class Tensor:
         if not si.pairs_with(sj):
             raise TypeError(f"can't pair {si.label} and {sj.label}: need the same space, one up and one down")
         data = np.asarray(np.trace(self._data, axis1=i, axis2=j), dtype=object)
-        label = f"tr({self.label})" if self.label else None
+        label = func("tr", self.label)
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.indices) if k not in (i, j)], label,
                       copy=False)
 
@@ -365,7 +362,7 @@ class Tensor:
             raise ValueError("inverse: not invertible (the determinant is 0)") from None
         flip = lambda s: Index(s.label, s.space, "down" if s.is_up else "up", "value")
         return self._new(np.array(inv.tolist(), dtype=object), [flip(si), flip(so)],
-                         label=f"{wrap(self.label)}⁻¹" if self.label else None)
+                         label=postfix(self.label, "⁻¹"))
 
     # ---------- Hodge star (needs the manifold's metric) ----------
     def star(self):
@@ -388,7 +385,7 @@ class Tensor:
         for j, p in enumerate(forms):                 # the j-th raised index fills ε's next index
             T = T.tr(p - j, nv - j)
         T = T / math.factorial(k)
-        return T._new(label=f"⋆{wrap(self.label)}" if self.label else None)
+        return T._new(label=prefix("⋆", self.label))
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, indices, signed):
@@ -405,7 +402,7 @@ class Tensor:
                 axes[pos[dst]] = pos[src]
             term = np.transpose(self._data, axes)
             out = out + (Permutation(perm).signature() if signed else 1) * term
-        label = f"{'Alt' if signed else 'Sym'}({self.label})" if self.label else None   # brackets already
+        label = func("Alt" if signed else "Sym", self.label)
         return self._new(out * sp.Rational(1, math.factorial(k)), label=label)
 
     def alt(self, *indices):

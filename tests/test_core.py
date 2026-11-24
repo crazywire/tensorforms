@@ -282,9 +282,16 @@ def test_labels():
     f.label = "f"
     expected = {"Alt(R)": R.alt(), "Sym(R)": R.sym(), "−R": -R, "R": -(-R),
                 "R+B": R + B, "R−(−B)": R - (-B), "−(R+B)": -(R + B), "3(R+B)": 3 * (R + B),
-                "−2R": -2 * R, "1/2·R": sp.Rational(1, 2) * R, "f·R": f * R,
+                "−2R": -2 * R, "(1/2)·R": sp.Rational(1, 2) * R, "f·R": f * R,
                 "R^U": R.U(), "R^US": R.U().S(), "(R+B)^S": (R + B).S()}
     for label, X in expected.items():
+        assert X.label == label, (label, X.label)
+    v = S.vector([1, 0])
+    brackets = {"∇(Rv)": nabla(contract(R, v)), "(R∇v)^US": contract(R, nabla(v)).U().S(),
+                "d∧(v⊗v)": wedge_d(otimes(v, v)), "R": R.T().T(), "∇∇v": nabla(nabla(v)),
+                "(∇∇v)^TS": nabla(nabla(v)).T().S(), "∇(R^S)": nabla(R.S()), "(∇R)^S": nabla(R).S(),
+                "(R+B)/2": (R + B) / 2, "R∇v": contract(R, nabla(v))}
+    for label, X in brackets.items():
         assert X.label == label, (label, X.label)
 
 
