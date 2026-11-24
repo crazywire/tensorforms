@@ -1,3 +1,1 @@
-from .operators import d, wedge_d, nabla, wedge_nabla, curvature, wedge_curvature, lie
-
-__all__ = ["d", "wedge_d", "nabla", "wedge_nabla", "curvature", "wedge_curvature", "lie"]
+"""The derivatives' code. Use them as tensor methods: X.d(), X.nabla(), X.lie(v), …"""

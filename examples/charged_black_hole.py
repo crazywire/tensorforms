@@ -17,7 +17,7 @@ import sys
 import sympy as sp
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from tensorforms import Manifold, contract, wedge_d
+from tensorforms import Manifold
 
 t, th, ph = sp.symbols("t theta phi", real=True)
 r = sp.Symbol("r", positive=True)
@@ -28,14 +28,14 @@ f = 1 - 2 * m / r + q ** 2 / r ** 2
 M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
 
 A = M.one_form([-q / r, 0, 0, 0])               # electric potential q/r
-F = wedge_d(A)                                  # field strength (μ ν)
+F = A.wedge_d()                                  # field strength (μ ν)
 print("E_r = F_rt:", F.data[1, 0])
-print("d∧F = 0: ", wedge_d(F).is_zero())
-print("d∧⋆F = 0:", wedge_d(F.star()).simplify().is_zero())
+print("d∧F = 0: ", F.wedge_d().is_zero())
+print("d∧⋆F = 0:", F.star().wedge_d().simplify().is_zero())
 
 Fv = F.as_value()                                            # (μ↓ ν↓)
-FF = contract(Fv, Fv.raise_(1), 1, 1)                        # F_μλ F_ν^λ
-F2 = contract(Fv.raise_(0).raise_(1), Fv, 0, 0).tr(0, 1)     # F^αβ F_αβ
+FF = Fv.contract(Fv.raise_(1), 1, 1)                        # F_μλ F_ν^λ
+F2 = Fv.raise_(0).raise_(1).contract(Fv, 0, 0).tr(0, 1)     # F^αβ F_αβ
 T = (FF - F2 * M.g / 4) / (4 * sp.pi)
 
 print("G = 8πT: ", (M.einstein() - 8 * sp.pi * T).simplify().is_zero())

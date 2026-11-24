@@ -26,14 +26,12 @@ from ..tensor.tensor import Tensor
 # ---------------------------------------------------------------- the operators
 def d(X):
     """Plain d: one new form index, first among the form indices. Needs only the coordinates."""
-    _check_tensor(X)
     pos, indices = _with_new_indices(X, 1)
     return Tensor(X.manifold, _d(X, pos), indices, None, copy=False)
 
 
 def wedge_d(X):
     """Wedge d: d∧X. Antisymmetrize X's form indices, take d, then (p+1)·Alt. No Γ."""
-    _check_tensor(X)
     p = len(X._form_positions())
     Xa = X.alt()
     pos, indices = _with_new_indices(Xa, 1)
@@ -43,7 +41,6 @@ def wedge_d(X):
 
 def nabla(X):
     """Covariant derivative: ∇X = dX + Γ on every index."""
-    _check_tensor(X)
     pos, indices = _with_new_indices(X, 1)
     data = _d(X, pos)
     G, _ = _geometry(X)
@@ -54,7 +51,6 @@ def nabla(X):
 
 def wedge_nabla(X):
     """Wedge derivative: ∇∧X = d∧X + Γ∧ on value indices."""
-    _check_tensor(X)
     p = len(X._form_positions())
     Xa = X.alt()                                   # wedge factors are antisymmetric first
     pos, indices = _with_new_indices(Xa, 1)
@@ -68,7 +64,6 @@ def wedge_nabla(X):
 
 def curvature(X):
     """Curvature operator: ∇∧∇X = R on every index. X is never differentiated."""
-    _check_tensor(X)
     pos, indices = _with_new_indices(X, 2)
     _, R = _geometry(X)
     if R is None:
@@ -80,7 +75,6 @@ def curvature(X):
 
 def wedge_curvature(X):
     """Wedge curvature: ∇∧∇∧X = R∧ on value indices. X is never differentiated."""
-    _check_tensor(X)
     p = len(X._form_positions())
     Xa = X.alt()
     pos, indices = _with_new_indices(Xa, 2)
@@ -96,19 +90,13 @@ def wedge_curvature(X):
 def lie(v, X):
     """Lie derivative of X along the vector field v. The result has X's indices; no metric needed.
         L_v X = (dX)v − J on each up index + J on each down or form index,  J = (dv).as_value()"""
-    _check_tensor(v)
-    _check_tensor(X)
     M = X.manifold
-    if v.manifold is not M or len(v.indices) != 1 or not v.indices[0].is_up or v.indices[0].is_form \
+    if not isinstance(v, Tensor) or v.manifold is not M or len(v.indices) != 1 or not v.indices[0].is_up or v.indices[0].is_form \
             or v.indices[0].space is not M.tangent:
-        raise TypeError(f"lie needs a vector field v (one up value index, same manifold); got {v.declaration()}")
-    coords = M.coords
-    diff = lambda e, x: sp.diff(e, x)
-    # (dX)v: v^c ∂_c X
-    data = sum((v.data[c] * np.vectorize(diff, otypes=[object])(X.data, coords[c]) for c in range(len(coords))),
-               np.zeros(X.data.shape, dtype=object))
-    # J[a, c] = ∂_c v^a
-    J = np.array([[sp.diff(v.data[a], x) for x in coords] for a in range(len(coords))], dtype=object)
+        raise TypeError(f"lie needs a vector field v (one up value index, same manifold); got {getattr(v, 'declaration', lambda: v)()}")
+    # (dX)v: d's new form index (first among X's form indices) paired with v; X's order is kept
+    data = np.tensordot(v.data, d(X).data, axes=([0], [_insert_position(X)]))
+    J = d(v).as_value().data                                   # J[a, c] = ∂_c v^a
     for i, s in enumerate(X.indices):
         if s.space is not M.tangent:
             raise NotImplementedError(f"index {s.label} is not in {M.tangent.name}")
@@ -120,10 +108,6 @@ def lie(v, X):
 
 
 # ---------------------------------------------------------------- helpers
-def _check_tensor(X):
-    if not isinstance(X, Tensor):
-        raise TypeError("the operators act on tensors")
-
 
 def _insert_position(X):
     """Where new form indices go: first among the form indices."""

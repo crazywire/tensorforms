@@ -433,6 +433,81 @@ class Tensor:
         T = T / math.factorial(k)
         return T._new(label=None)
 
+    # ---------- derivatives (code in operators/operators.py) ----------
+    def d(self):
+        """Plain d: one new form index, first among the form indices. Needs only the coordinates."""
+        from ..operators import operators
+        return operators.d(self)
+
+    def wedge_d(self):
+        """Exterior derivative d∧."""
+        from ..operators import operators
+        return operators.wedge_d(self)
+
+    def nabla(self):
+        """Covariant derivative ∇ = d + Γ on every index."""
+        from ..operators import operators
+        return operators.nabla(self)
+
+    def wedge_nabla(self):
+        """Exterior covariant derivative ∇∧ = d∧ + Γ∧ on value indices."""
+        from ..operators import operators
+        return operators.wedge_nabla(self)
+
+    def curvature(self):
+        """∇∧∇ = R on every index (the tensor itself is not differentiated)."""
+        from ..operators import operators
+        return operators.curvature(self)
+
+    def wedge_curvature(self):
+        """∇∧∇∧ = R∧ on value indices."""
+        from ..operators import operators
+        return operators.wedge_curvature(self)
+
+    def lie(self, v):
+        """Lie derivative along the vector field v. Same indices; no metric needed.
+            L_v X = (dX)v − J on each up index + J on each down or form index,  J = (dv).as_value()"""
+        from ..operators import operators
+        return operators.lie(v, self)
+
+    # ---------- products with another tensor (code in products.py) ----------
+    def _other(self, other, what):
+        if not isinstance(other, Tensor):
+            raise TypeError(f"{what} needs another tensor, not {type(other).__name__} "
+                            "(to scale by a number, use *)")
+        return other
+
+    def __matmul__(self, other):
+        """A @ B: A's column (last value index) with B's row (first value index), as in AB."""
+        from . import products
+        return products.contract(self, self._other(other, "@"))
+
+    def contract(self, other, a, b=None):
+        """Pair index a of this tensor with index b of other (b defaults to a's label) and sum.
+        For the usual AB (column with row), write A @ B."""
+        from . import products
+        return products.contract(self, self._other(other, "contract"), a, b)
+
+    def otimes(self, other):
+        """Tensor product A ⊗ B: pair nothing, keep every index."""
+        from . import products
+        return products.otimes(self, self._other(other, "otimes"))
+
+    def wedge(self, other, pair=None):
+        """Wedge product A ∧ B (form indices antisymmetrized)."""
+        from . import products
+        return products.wedge(self, self._other(other, "wedge"), pair)
+
+    def odot(self, other, pair=None):
+        """Symmetric product A ⊙ B (form indices symmetrized)."""
+        from . import products
+        return products.odot(self, self._other(other, "odot"), pair)
+
+    def interior(self, V):
+        """Interior product ι: this tensor's first form index with V's row (first value index, up)."""
+        from . import products
+        return products.interior(self, self._other(V, "interior"))
+
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, indices, signed):
         pos = [self.position(s) for s in indices] if indices else self._form_positions()
