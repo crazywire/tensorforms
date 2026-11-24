@@ -106,17 +106,18 @@ class Tensor:
         return [k for k, s in enumerate(self.indices) if not s.is_form]
 
     def position(self, x):
-        """An index by name ("μ", "mu", an Index or Index) or by number (0, 1, …)."""
+        """Where an index is: given by label ("μ", "mu", or an Index) or by number (0, 1, …)."""
         if isinstance(x, int) and not isinstance(x, bool):
             if not 0 <= x < len(self.indices):
                 raise IndexError(f"no index number {x}; this tensor has {len(self.indices)} indices")
             return x
-        n = index_label(x)
-        if n not in self._index_labels():
-            raise KeyError(f"no index named {n}; indices are {self._index_labels()}")
-        return self._index_labels().index(n)
+        n, labels = index_label(x), self._index_labels()
+        if n not in labels:
+            raise KeyError(f"no index labelled {n}; labels are {labels}")
+        return labels.index(n)
 
     def index(self, x):
+        """One index, by label or number (X.indices has them all)."""
         return self.indices[self.position(x)]
 
     def declaration(self):
