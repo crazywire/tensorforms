@@ -23,44 +23,123 @@ def index_label(x):
     return GREEK.get(name, name)
 
 
-def wrap(label):
-    """Brackets around a label that has + or − in it, so it can sit inside a bigger expression."""
-    if label and any(ch in label for ch in "+−"):
-        return f"({label})"
-    return label
+# ---------------------------------------------------------------- tensor labels
+# A label built by an operation remembers what kind of expression it is, so an operand gets
+# brackets exactly when reading it without them would be wrong or ambiguous:
+#   atom    R, Ric, tr(R), Alt(R), (A+B)        a name, a function form, or bracketed
+#   post    R^S, A⁻¹                            a postfix on an atom
+#   pre     ∇v, dg, ⋆α, ∇∇v                     a prefix operator (they chain: ∇∇v)
+#   prod    Rv, v⊗w, α∧β, 3A, f·A, A/2          products and scaling
+#   sum     A+B, A−B, −A
+# A plain string (a name you give, or the manifold's) is an atom.
+
+class Label(str):
+    """A label built by an operation: the text plus what kind of expression it is."""
+
+    def __new__(cls, text, kind, **extra):
+        obj = super().__new__(cls, text)
+        obj.kind = kind
+        obj.extra = extra
+        return obj
 
 
-def join(a, op, b):
-    return f"{a}{op}{b}" if a and b else None
+def kind(label):
+    return getattr(label, "kind", "atom")
+
+
+def _operand(label, allowed):
+    """The label as an operand: bracketed unless its kind is allowed in that place."""
+    return label if kind(label) in allowed else f"({label})"
+
+
+def prefix(op, label):
+    """∇v, dg, ⋆α. The operand is an atom or another prefix (∇∇v); anything else is bracketed:
+    ∇(Rv), ∇(R^S)."""
+    if not label:
+        return None
+    return Label(f"{op}{_operand(label, {'atom', 'pre'})}", "pre")
+
+
+def postfix(label, mark):
+    """A⁻¹, (Rv)⁻¹: the operand must be an atom."""
+    if not label:
+        return None
+    return Label(f"{_operand(label, {'atom'})}{mark}", "post")
+
+
+def swapped(label, letter):
+    """R^S, then R^ST: the swap letters in the order applied. The same letter twice in a row
+    cancels (a swap undone): R^SS is R. The base must be an atom: (Rv)^S."""
+    if not label:
+        return None
+    letters = label.extra.get("letters") if isinstance(label, Label) else None
+    if letters is not None:
+        base, letters = label.extra["base"], letters + letter
+    else:
+        base, letters = label, letter
+    while any(a == b for a, b in zip(letters, letters[1:])):        # TT, SS, … cancel
+        k = next(i for i, (a, b) in enumerate(zip(letters, letters[1:])) if a == b)
+        letters = letters[:k] + letters[k + 2:]
+    if not letters:
+        return base
+    return Label(f"{_operand(base, {'atom'})}^{letters}", "post", base=base, letters=letters)
+
+
+def product(a, op, b):
+    """AB (op ""), A⊗B, A∧B. The left factor is an atom or postfix; the right may also be a
+    prefix (R∇v). Products nest with brackets: (AB)C, A(BC)."""
+    if not (a and b):
+        return None
+    return Label(f"{_operand(a, {'atom', 'post'})}{op}{_operand(b, {'atom', 'post', 'pre'})}", "prod")
+
+
+def func(name, *labels):
+    """tr(R), Alt(R), ι(X,V): the brackets are the function's own."""
+    if not all(labels):
+        return None
+    return Label(f"{name}({','.join(labels)})", "atom")
+
+
+def summed(a, op, b):
+    """A+B, A−B; the right side is bracketed if it is itself a sum: A−(B+C)."""
+    if not (a and b):
+        return None
+    return Label(f"{a}{op}{_operand(b, {'atom', 'post', 'pre', 'prod'})}", "sum")
 
 
 def negated(label):
+    """−A, −(A+B); and −(−A) is A."""
     if not label:
         return None
-    if label.startswith("−") and not any(ch in label[1:] for ch in "+−"):
-        return label[1:]                                         # −(−A) = A
-    return "−" + wrap(label)
+    if isinstance(label, Label) and "negates" in label.extra:
+        return label.extra["negates"]
+    return Label(f"−{_operand(label, {'atom', 'post', 'pre', 'prod'})}", "sum", negates=label)
+
+
+def _number(c):
+    text = sp.pretty(c, use_unicode=True)
+    return text if isinstance(c, (sp.Integer, sp.Symbol)) else f"({text})"
 
 
 def scaled(c, c_label, label):
-    """3A, ½·A, sin(θ)·A, f·A. Unlabelled tensor: no label."""
+    """3A, ½·A, sin(θ)·A, f·A; 1·A is A and −1·A is −A. Unlabelled tensor: no label."""
     if not label:
         return None
     if c == 1:
         return label
     if c == -1:
         return negated(label)
+    body = _operand(label, {"atom", "post", "pre", "prod"})
     if c_label:
-        return f"{c_label}·{wrap(label)}"
+        return Label(f"{_operand(c_label, {'atom', 'post'})}·{body}", "prod")
     if isinstance(c, sp.Integer):
-        return f"{c}{wrap(label)}" if c > 0 else f"−{-c}{wrap(label)}"
-    return f"{wrap(sp.pretty(c, use_unicode=True))}·{wrap(label)}"
+        return Label(f"{c}{body}", "prod") if c > 0 else negated(Label(f"{-c}{body}", "prod"))
+    return Label(f"{_number(c)}·{body}", "prod")
 
 
-def swapped(label, letter):
-    """R^S, then R^ST: the swap letters in the order they were applied."""
+def divided(label, c, c_label):
+    """A/2, A/f, (A+B)/2."""
     if not label:
         return None
-    if re.search(r"\^[TSUV]+$", label) and wrap(label.split("^")[0]) == label.split("^")[0]:
-        return label + letter
-    return f"{wrap(label)}^{letter}"
+    by = _operand(c_label, {"atom", "post"}) if c_label else _number(c)
+    return Label(f"{_operand(label, {'atom', 'post', 'pre', 'prod'})}/{by}", "prod")

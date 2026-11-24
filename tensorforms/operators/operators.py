@@ -18,7 +18,7 @@ import math
 import numpy as np
 import sympy as sp
 
-from ..tensor.labels import wrap
+from ..tensor.labels import prefix
 from ..tensor.index import Index
 from ..tensor.tensor import Tensor
 
@@ -113,7 +113,7 @@ def _geometry(X):
 
 
 def _label(op, X):
-    return f"{op}{wrap(X.label)}" if X.label else None
+    return prefix(op, X.label)
 
 
 def _new_form_indices(X, count):
