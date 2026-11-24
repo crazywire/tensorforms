@@ -8,7 +8,7 @@ def riemann(Gamma):
     """R = d∧Γ + Γ∧Γ, computed with the operators themselves. Indices (ρ↑ σ↓ μ ν)."""
     from ..operators.operators import wedge_d                   # here, to avoid a circular import
     R = (wedge_d(Gamma) + wedge(Gamma, Gamma)).simplify()
-    R = R.rename({0: "ρ", 1: "σ", 2: "μ", 3: "ν"})
+    R = R._with_labels("ρ", "σ", "μ", "ν")
     R.label = "R"
     return R
 
@@ -18,7 +18,7 @@ def ricci(R):
     The trace leaves (σ↓ ν); Ric is returned as (μ↓ ν↓) so it has g's type
     and can be added to g in G = Ric − ½R_s g."""
     Ric = R.S.tr(0, 1).as_value().simplify()
-    Ric = Ric.rename({0: "μ", 1: "ν"})
+    Ric = Ric._with_labels("μ", "ν")
     Ric.label = "Ric"
     return Ric
 
@@ -34,6 +34,6 @@ def ricci_scalar(Ric):
 def einstein(Ric, Rs, g):
     """G = Ric − ½ R_s g (adding is index by index), then named (μ↓ ν↓)."""
     G = (Ric - g * (sp.Rational(1, 2) * Rs)).simplify()
-    G = G.rename({0: "μ", 1: "ν"})
+    G = G._with_labels("μ", "ν")
     G.label = "G"
     return G

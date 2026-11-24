@@ -276,11 +276,10 @@ class Tensor:
         """Transpose the matrix in indices 3 and 4, at every value of the others: swap(3, 4)."""
         return self.swap(3, 4)
 
-    def rename(self, mapping):
-        """New index labels: {index (label or number): new label}. The tensor's own label stays."""
-        mapping = {self.position(k): index_label(v) for k, v in mapping.items()}
-        return self._new(indices=[s.relabel(mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
-                         label=self.label)
+    def _with_labels(self, *labels):
+        """The same tensor with these index labels, in order (shares the numbers). For the manifold's
+        own results (Γ, R, Ric, …); users relabel indices with Index.relabel and build a tensor."""
+        return self._new(indices=[s.relabel(l) for s, l in zip(self.indices, labels)], label=self.label)
 
     def _change_type(self, which, change, eligible, need):
         """The given indices (default: every eligible one) are changed by `change`; same numbers."""
