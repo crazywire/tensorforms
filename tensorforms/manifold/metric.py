@@ -43,7 +43,7 @@ def build_metric(M, data=None, signature=None):
         arr = np.empty((n, n), dtype=object)
         for a, b in itertools.combinations_with_replacement(range(n), 2):
             arr[a, b] = arr[b, a] = sp.Function(f"g{a}{b}")(*M.coords)
-        return Tensor(M, arr, [i.down, j.down], label="g"), signature
+        return Tensor(M, arr, [i.down, j.down], label="g", copy=False), signature
     if isinstance(data, Tensor):
         if len(data.slots) != 2 or any(s.is_up or s.is_form for s in data.slots):
             raise TypeError(f"a metric has two down value slots; got {data.declaration()} "

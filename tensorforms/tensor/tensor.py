@@ -48,10 +48,13 @@ class Tensor:
     # so θ * X and θ + s stay tensor arithmetic instead of sympy taking over.
     _op_priority = 20.0
 
-    def __init__(self, manifold, data, slots, label=None, *, _refs=None):
+    def __init__(self, manifold, data, slots, label=None, *, copy=True, _refs=None):
+        """copy=True (default): the tensor takes its own copy of an array it is given, so it
+        never shares numbers behind our back. copy=False: use the array as is; only for an
+        array just made that nothing else holds (e.g. a freshly computed result)."""
         self.manifold = manifold
         if _refs is None:                                    # a new tensor: its own numbers
-            self._data = np.array(data, dtype=object)
+            self._data = np.array(data, dtype=object) if copy else np.asarray(data, dtype=object)
             self._refs = weakref.WeakSet()
         else:                                                # made by _new: shares the numbers
             self._data = data
@@ -318,7 +321,8 @@ class Tensor:
             raise TypeError(f"can't pair {si.name} and {sj.name}: need the same space, one up and one down")
         data = np.asarray(np.trace(self._data, axis1=i, axis2=j), dtype=object)
         label = f"tr({self.label})" if self.label else None
-        return Tensor(self.manifold, data, [s for k, s in enumerate(self.slots) if k not in (i, j)], label)
+        return Tensor(self.manifold, data, [s for k, s in enumerate(self.slots) if k not in (i, j)], label,
+                      copy=False)
 
     # ---------- raising and lowering (needs the manifold's metric) ----------
     def _flip(self, slot, to, metric):

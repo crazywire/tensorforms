@@ -28,7 +28,7 @@ def d(X):
     """Plain d: one new form slot, first among the form slots. Needs only the coordinates."""
     _check_tensor(X)
     pos, slots = _with_new_slots(X, 1)
-    return Tensor(X.manifold, _d(X, pos), slots, _label("d", X))
+    return Tensor(X.manifold, _d(X, pos), slots, _label("d", X), copy=False)
 
 
 def wedge_d(X):
@@ -37,7 +37,7 @@ def wedge_d(X):
     p = len(X.form_slots)
     Xa = X.alt()
     pos, slots = _with_new_slots(Xa, 1)
-    Y = _wedge_new(Tensor(X.manifold, _d(Xa, pos), slots), p, 1)
+    Y = _wedge_new(Tensor(X.manifold, _d(Xa, pos), slots, copy=False), p, 1)
     return Y._new(label=_label("d∧", X))
 
 
@@ -49,7 +49,7 @@ def nabla(X):
     G, _ = _geometry(X)
     if G is not None:
         data = data + _act(G, X, slots)
-    return Tensor(X.manifold, data, slots, _label("∇", X))
+    return Tensor(X.manifold, data, slots, _label("∇", X), copy=False)
 
 
 def wedge_nabla(X):
@@ -62,7 +62,7 @@ def wedge_nabla(X):
     G, _ = _geometry(X)
     if G is not None:
         data = data + _act(G, Xa, slots, values_only=True)
-    Y = _wedge_new(Tensor(X.manifold, data, slots), p, 1)
+    Y = _wedge_new(Tensor(X.manifold, data, slots, copy=False), p, 1)
     return Y._new(label=_label("∇∧", X))
 
 
@@ -75,7 +75,7 @@ def curvature(X):
         data = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
     else:
         data = _act(R(), X, slots)
-    return Tensor(X.manifold, data, slots, _label("∇∧∇", X))
+    return Tensor(X.manifold, data, slots, _label("∇∧∇", X), copy=False)
 
 
 def wedge_curvature(X):
@@ -89,7 +89,7 @@ def wedge_curvature(X):
         data = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
     else:
         data = _act(R(), Xa, slots, values_only=True)
-    Y = _wedge_new(Tensor(X.manifold, data, slots), p, 2)
+    Y = _wedge_new(Tensor(X.manifold, data, slots, copy=False), p, 2)
     return Y._new(label=_label("∇∧∇∧", X))
 
 
