@@ -1,4 +1,5 @@
-"""The operators, each written with the formula we proved (no torsion).
+"""The operators, each written with the formula we proved (no torsion). Plus lie(v, X), the Lie
+derivative along a vector field (needs no metric).
 
                  every index              wedged (form indices antisymmetrized)
     plain        d                       wedge_d          = d∧
@@ -90,6 +91,32 @@ def wedge_curvature(X):
         data = _act(R(), Xa, indices, values_only=True)
     Y = _wedge_new(Tensor(X.manifold, data, indices, copy=False), p, 2)
     return Y._new(label=None)
+
+
+def lie(v, X):
+    """Lie derivative of X along the vector field v. The result has X's indices; no metric needed.
+        L_v X = (dX)v − J on each up index + J on each down or form index,  J = (dv).as_value()"""
+    _check_tensor(v)
+    _check_tensor(X)
+    M = X.manifold
+    if v.manifold is not M or len(v.indices) != 1 or not v.indices[0].is_up or v.indices[0].is_form \
+            or v.indices[0].space is not M.tangent:
+        raise TypeError(f"lie needs a vector field v (one up value index, same manifold); got {v.declaration()}")
+    coords = M.coords
+    diff = lambda e, x: sp.diff(e, x)
+    # (dX)v: v^c ∂_c X
+    data = sum((v.data[c] * np.vectorize(diff, otypes=[object])(X.data, coords[c]) for c in range(len(coords))),
+               np.zeros(X.data.shape, dtype=object))
+    # J[a, c] = ∂_c v^a
+    J = np.array([[sp.diff(v.data[a], x) for x in coords] for a in range(len(coords))], dtype=object)
+    for i, s in enumerate(X.indices):
+        if s.space is not M.tangent:
+            raise NotImplementedError(f"index {s.label} is not in {M.tangent.name}")
+        if s.is_up:                       # −J^a_c X^{…c…}: J's a takes index i's place
+            data = data - np.moveaxis(np.tensordot(J, X.data, axes=([1], [i])), 0, i)
+        else:                             # +X_{…c…} J^c_b: J's b takes index i's place
+            data = data + np.moveaxis(np.tensordot(X.data, J, axes=([i], [0])), -1, i)
+    return Tensor(M, data, X.indices, None, copy=False)
 
 
 # ---------------------------------------------------------------- helpers

@@ -77,6 +77,7 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | ∇∧ = d∧ + Γ∧ | `wedge_nabla(X)` | exterior covariant derivative |
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
+| L_v | `lie(v, X)` | Lie derivative along a vector field v (no metric needed) |
 
 ## Example: how curved is a sphere?
 

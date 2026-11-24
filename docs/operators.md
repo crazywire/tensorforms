@@ -8,6 +8,7 @@
 | ∇∧ = d∧ + Γ∧ | `wedge_nabla(X)` | exterior covariant derivative |
 | ∇∧∇ = R | `curvature(X)` | commutator of covariant derivatives |
 | ∇∧∇∧ = R∧ | `wedge_curvature(X)` | exterior covariant derivative squared |
+| L_v | `lie(v, X)` | Lie derivative along a vector field v |
 
 
 Each takes one tensor and returns a new one (unlabelled: its indices carry the information).
@@ -22,6 +23,30 @@ Details:
 * d∧ multiplies by p + 1 after antisymmetrizing, and ∇∧∇∧ by C(p+2; 2, p), where p is the number
   of form indices of X.
 * The two curvature operators never differentiate X; they only multiply by R.
+
+### The Lie derivative
+
+`lie(v, X)`: v is a vector field, X any tensor on the same manifold. The result has X's indices.
+No metric is needed.
+
+L_v X = (dX)v − J on each up index + J on each down or form index,  with J = (dv).as_value()
+
+For example, checking whether a vector field is a symmetry of the metric (L_v g = 0):
+
+```python
+import tensorforms as tf
+from tensorforms import lie
+
+S = tf.Manifold.sphere()
+print(lie(S.vector([0, 1]), S.g).is_zero())         # ∂_φ: a symmetry
+print(lie(S.vector([1, 0]), S.g).simplify().data)   # ∂_θ: not one
+```
+
+```text
+True
+[[0 0]
+ [0 r**2*sin(2*theta)]]
+```
 
 ### Example: how does e_θ change as you move on a sphere?
 
