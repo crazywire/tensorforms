@@ -1,22 +1,12 @@
 # tensorforms
 
-Tensor calculus with differential forms, for Riemannian geometry and general relativity,
-in a matrix-style notation. Built on Python and sympy.
-
-## What it does
-
-tensorforms treats a tensor as an object whose indices are typed. Each index lives in the tangent
-space, is up (contravariant) or down (covariant), and is either a value index or a form index.
-
-With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
-Ric, the Ricci scalar R_s and the Einstein tensor G, using derivatives that act
-on the tensors.
+Exact symbolic tensor calculus with differential forms, for Riemannian geometry and general
+relativity, in a matrix-style notation. Built on Python and sympy.
 
 ## Notation
 
-Each index of a tensor is **up or down** (↑ / ↓: like a matrix's row and column index) and
-either a **value** index (what the tensor is) or a **form** index (a direction it acts on, like dx).
-A value index carries ↑ or ↓; a form index carries no arrow (form indices are always down):
+Each index of a tensor is a **value** index, up (↑, contravariant) or down (↓, covariant), or a
+**form** index (always down, shown with no arrow):
 
 | object | indices |
 |---|---|
@@ -53,7 +43,7 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 
 ## Tensors
 
-| operation | function | description |
+| operation | call | description |
 |---|---|---|
 | AB | `A @ B` | product: A's column with B's row |
 | | `A.contract(B, a, b)` | pair the indices you name |
@@ -64,12 +54,12 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | X^T, X^S, X^U, X^V | `X.T`, `X.S`, `X.U`, `X.V` | swap neighbouring indices |
 | Alt X, Sym X | `X.alt()`, `X.sym()` | antisymmetric and symmetric parts |
 | | `X.lower(a)`, `X.raise_(a)` | lower or raise a value index with g |
-| ⋆X | `X.star()` | Hodge star: k form indices become n − k (direction ↔ plane ↔ volume …) |
+| ⋆X | `X.star()` | Hodge star: k form indices become n − k |
 | X⁻¹ | `X.inverse()` | inverse of a tensor with exactly two value indices (g⁻¹ = g's inverse) |
 
-## Operators
+## Derivatives
 
-| operator | function | description |
+| derivative | call | description |
 |---|---|---|
 | d | `X.d()` | partial derivative |
 | d∧ | `X.wedge_d()` | exterior derivative |
@@ -79,10 +69,7 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | ∇∧∇∧ = R∧ | `X.wedge_curvature()` | exterior covariant derivative squared |
 | L_v | `X.lie(v)` | Lie derivative along a vector field v (no metric needed) |
 
-## Example: how curved is a sphere?
-
-A sphere of radius r has the metric r² dθ² + r² sin²θ dφ². Its curvature should not depend on
-where you are, and should grow as the sphere gets smaller. Let's compute it.
+## Example: the curvature of a sphere of radius r
 
 ```python
 import sympy as sp
@@ -106,17 +93,13 @@ print(S.gaussian_curvature().value)
 r**(-2)
 ```
 
-The Gaussian curvature is K = 1/r²: the same everywhere on the sphere, and larger for a
-smaller sphere. Behind those three lines the package built Γ from g, then R = d∧Γ + Γ∧Γ, then
-took the traces.
-
 ## Documentation
 
 | | |
 |---|---|
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G, ready-made manifolds |
-| [Tensors](docs/tensors.md) | the notation (indices and arrows), one tensor, products |
-| [Derivatives](docs/derivatives.md) | the derivatives (d, ∇, curvature, Lie) and their product rules |
+| [Tensors](docs/tensors.md) | the notation, everything you can do with a tensor, products |
+| [Derivatives](docs/derivatives.md) | d, d∧, ∇, ∇∧, the curvature derivatives, the Lie derivative |
 
 ## Examples
 
