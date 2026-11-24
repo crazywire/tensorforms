@@ -67,7 +67,7 @@ counted from 0 across all indices:
 | U | swap positions 2 and 3 | `X.U()` = `X.swap(2, 3)` |
 | V | swap positions 3 and 4 | `X.V()` = `X.swap(3, 4)` |
 
-Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`.
+Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`. A neighbour swap gets its letter in the label whichever way you write it (`R.swap(1, 2)` is R^S); any other move has no letter, so the result has no label.
 
 X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ μ ν) with S applied is
 (ρ↑ μ σ↓ ν): the second and third indices trade places. A result's label says how it was made:

@@ -43,6 +43,8 @@ def _as_scalar(c):
     return c, c_label
 
 
+_SWAP_LETTERS = "TSUV"     # the notation's neighbour swaps: T (0,1), S (1,2), U (2,3), V (3,4)
+
 class Tensor:
     # sympy defers mixed operations to objects with a higher _op_priority (its expressions have 10),
     # so θ * X and θ + s stay tensor arithmetic instead of sympy taking over.
@@ -241,44 +243,47 @@ class Tensor:
         return (self - other).is_zero()
 
     # ---------- moving indices ----------
-    def _transposed(self, order):
-        return self._new(np.transpose(self._data, order), [self.indices[i] for i in order], label=self.label)
+    def _transposed(self, order, label):
+        return self._new(np.transpose(self._data, order), [self.indices[i] for i in order], label=label)
 
     def reorder(self, *indices):
-        """Put every index in the given order (labels or positions)."""
+        """Put every index in the given order (labels or positions). The result is a different
+        tensor, so it keeps the label only if nothing moved."""
         order = [self.position(s) for s in indices]
         if sorted(order) != list(range(len(self.indices))):
             raise ValueError("reorder needs every index exactly once")
-        return self._transposed(order)
+        moved = order != list(range(len(order)))
+        return self._transposed(order, None if moved else self.label)
 
     def swap(self, a, b):
-        """Exchange two indices, given by label or position."""
-        i, j = self.position(a), self.position(b)
+        """Exchange two indices, given by label or position. Neighbours at 0–4 get the notation's
+        letter (swap(1, 2) is R^S); any other swap has no letter, so the label is dropped."""
+        i, j = sorted((self.position(a), self.position(b)))
         order = list(range(len(self.indices)))
         order[i], order[j] = order[j], order[i]
-        return self._transposed(order)
-
-    # T, S, U, V: the notation's swaps of neighbouring indices
-    def _letter_swap(self, i, letter):
-        X = self.swap(i, i + 1)
-        X.label = swapped(self.label, letter)
-        return X
+        if i == j:
+            label = self.label
+        elif j == i + 1 and i < len(_SWAP_LETTERS):
+            label = swapped(self.label, _SWAP_LETTERS[i])
+        else:
+            label = None
+        return self._transposed(order, label)
 
     def T(self):
-        """Short for swap(0, 1)."""
-        return self._letter_swap(0, "T")
+        """swap(0, 1)."""
+        return self.swap(0, 1)
 
     def S(self):
-        """Short for swap(1, 2)."""
-        return self._letter_swap(1, "S")
+        """swap(1, 2)."""
+        return self.swap(1, 2)
 
     def U(self):
-        """Short for swap(2, 3)."""
-        return self._letter_swap(2, "U")
+        """swap(2, 3)."""
+        return self.swap(2, 3)
 
     def V(self):
-        """Short for swap(3, 4)."""
-        return self._letter_swap(3, "V")
+        """swap(3, 4)."""
+        return self.swap(3, 4)
 
     def rename(self, mapping):
         """New labels: {index (name or number): new name}."""

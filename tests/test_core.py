@@ -678,3 +678,19 @@ def test_indices_are_immutable():
     assert mu.up.pairs_with(nu.form) and not mu.down.pairs_with(nu.form)
     assert mu.form.type == "form" and mu.up.type == "value"
 
+
+def test_reorder_and_swap_labels():
+    S = tf.Manifold.sphere()
+    R = S.riemann()
+    assert repr(R.swap(1, 2)) == repr(R.S()) == "R^S(ρ↑ μ σ↓ ν)"          # a neighbour swap gets its letter
+    assert R.swap("σ", "ρ").label == "R^T" and R.swap(0, 2).label is None  # no letter for (0, 2)
+    Y = R.reorder("μ", "ν", "ρ", "σ")
+    assert Y.label is None and [s.label for s in Y.indices] == ["μ", "ν", "ρ", "σ"]
+    assert Y.reorder(2, 3, 0, 1).equals(R)                                 # and back
+    assert R.reorder(0, 1, 2, 3).label == "R"                              # nothing moved
+    try:
+        R.reorder(0, 1, 2)                                                 # every index exactly once
+        assert False
+    except ValueError:
+        pass
+
