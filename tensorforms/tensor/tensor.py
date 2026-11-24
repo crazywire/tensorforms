@@ -319,14 +319,11 @@ class Tensor:
         Numbers: the matrix inverse. Slots: the two swap roles and both arrows flip,
         g(μ↓ ν↓) → g⁻¹(ν↑ μ↑), A(ρ↑ σ↓) → A⁻¹(σ↑ ρ↓).
         Refused for anything else: inverting is not linear, so it can't be done slot by slot
-        over other (e.g. form) slots without depending on the coordinates. Also refused if the
-        sizes differ or sympy shows the determinant is 0."""
+        over other (e.g. form) slots without depending on the coordinates. Sympy refuses a
+        matrix that isn't square or whose determinant is 0."""
         if len(self.slots) != 2 or any(s.is_form for s in self.slots):
             raise TypeError(f"inverse needs exactly two value slots and no others; got {self.declaration()}")
         so, si = self.slots
-        if so.space.dim != si.space.dim:
-            raise ValueError(f"inverse: slots {so.name} and {si.name} have different sizes "
-                             f"({so.space.dim}, {si.space.dim}): not square")
         m = sp.Matrix(self.data.tolist())                     # rows: slot 0 (out), columns: slot 1 (in)
         try:                                                  # sympy checks invertibility, with our zero test
             inv = m.inv(iszerofunc=_is_zero)
