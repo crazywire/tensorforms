@@ -53,7 +53,7 @@ def build_metric(M, data=None, signature=None):
     if arr.shape != (n, n):
         raise ValueError(f"metric must be {n}×{n} on this manifold, got {arr.shape}")
     G = Tensor(M, arr, [i.down, j.down], label="g")
-    if G.equals(G.T()) is not True:                          # refused unless shown symmetric
+    if G.equals(G.T) is not True:                          # refused unless shown symmetric
         raise ValueError("a metric must be symmetric (g = gᵀ is not shown)")
     found = _infer_signature(G)
     if signature and found and signature != found:

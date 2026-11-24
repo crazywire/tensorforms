@@ -254,21 +254,26 @@ class Tensor:
         order[i], order[j] = order[j], order[i]
         return self._transposed(order)
 
-    # T, S, U, V: the notation's swaps of neighbouring indices
+    # T, S, U, V: the notation's swaps of neighbouring indices. Each transposes the matrix in two
+    # neighbouring indices at every value of the others; they chain: R.U.S is R^US.
+    @property
     def T(self):
-        """Short for swap(0, 1)."""
+        """Transpose the matrix in indices 0 and 1, at every value of the others: swap(0, 1)."""
         return self.swap(0, 1)
 
+    @property
     def S(self):
-        """Short for swap(1, 2)."""
+        """Transpose the matrix in indices 1 and 2, at every value of the others: swap(1, 2)."""
         return self.swap(1, 2)
 
+    @property
     def U(self):
-        """Short for swap(2, 3)."""
+        """Transpose the matrix in indices 2 and 3, at every value of the others: swap(2, 3)."""
         return self.swap(2, 3)
 
+    @property
     def V(self):
-        """Short for swap(3, 4)."""
+        """Transpose the matrix in indices 3 and 4, at every value of the others: swap(3, 4)."""
         return self.swap(3, 4)
 
     def rename(self, mapping):

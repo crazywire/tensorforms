@@ -61,7 +61,7 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | A ⊗ B | `otimes(A, B)` | tensor product |
 | A∧B, A⊙B | `wedge(A, B)`, `odot(A, B)` | wedge and symmetric products |
 | tr X | `X.tr(a, b)` | trace over two indices |
-| X^T, X^S, X^U, X^V | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap neighbouring indices |
+| X^T, X^S, X^U, X^V | `X.T`, `X.S`, `X.U`, `X.V` | swap neighbouring indices |
 | Alt X, Sym X | `X.alt()`, `X.sym()` | antisymmetric and symmetric parts |
 | | `X.lower(a)`, `X.raise_(a)` | lower or raise a value index with g |
 | ⋆X | `X.star()` | Hodge star: k form indices become n − k (direction ↔ plane ↔ volume …) |
