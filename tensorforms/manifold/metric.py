@@ -31,7 +31,7 @@ def _infer_signature(G):
 def build_metric(M, data=None, signature=None):
     """Make and check a metric tensor g (μ↓ ν↓). Returns (g, signature).
 
-    data: nested lists, a matrix, or a tensor with two down value slots.
+    data: nested lists, a matrix, or a tensor with two down value indices.
     No data: unknown functions g_ij(x). Their signature is only what you declare;
     nothing about unknown functions can be checked."""
     i, j = M.indices(2, names=("μ", "ν"))
@@ -45,9 +45,9 @@ def build_metric(M, data=None, signature=None):
             arr[a, b] = arr[b, a] = sp.Function(f"g{a}{b}")(*M.coords)
         return Tensor(M, arr, [i.down, j.down], label="g", copy=False), signature
     if isinstance(data, Tensor):
-        if len(data.slots) != 2 or any(s.is_up or s.is_form for s in data.slots):
-            raise TypeError(f"a metric has two down value slots; got {data.declaration()} "
-                            "(the inverse metric g⁻¹ has two up slots)")
+        if len(data.indices) != 2 or any(s.is_up or s.is_form for s in data.indices):
+            raise TypeError(f"a metric has two down value indices; got {data.declaration()} "
+                            "(the inverse metric g⁻¹ has two up indices)")
         data = data.data
     arr = np.asarray(data, dtype=object)
     if arr.shape != (n, n):

@@ -1,6 +1,6 @@
-"""Spaces: where slots live. Each manifold owns its tangent space (M.tangent).
+"""Spaces: where indices live. Each manifold owns its tangent space (M.tangent).
 
-A space has a name, a dimension, and the list of names it hands out to new slots:
+A space has a name, a dimension, and the list of names it hands out to new indices:
 Greek for the tangent space, Latin for any other space.
 """
 

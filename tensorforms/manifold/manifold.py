@@ -7,7 +7,7 @@ connection and curvature are then computed when asked. Γ always comes from the 
 import numpy as np
 import sympy as sp
 
-from ..tensor.slot import Index
+from ..tensor.index import Index
 from ..tensor.tensor import Tensor
 from .connection import levi_civita
 from .curvature import einstein, ricci, riemann, ricci_scalar
@@ -21,7 +21,7 @@ class Manifold:
         self.coords = list(coords)
         self.dim = len(self.coords)
         self.name = name
-        self.tangent = Space(f"T{name}", self.dim, names=TANGENT_NAMES)      # value and form slots live here
+        self.tangent = Space(f"T{name}", self.dim, names=TANGENT_NAMES)      # value and form indices live here
         self._g = self._ginv = self._signature = None
         self._cache = {}        # Γ, R, Ric, R_s, G: computed once, cleared when the metric changes
 
@@ -95,8 +95,8 @@ class Manifold:
         return Index(name or self.tangent.names[0], self.tangent)
 
     # ---------- tensors ----------
-    def tensor(self, *slots, data, label=None):
-        return Tensor(self, data, slots, label)
+    def tensor(self, *indices, data, label=None):
+        return Tensor(self, data, indices, label)
 
     def scalar(self, value):
         return Tensor(self, np.array(sp.sympify(value), dtype=object), [], copy=False)
@@ -106,12 +106,12 @@ class Manifold:
         return Tensor(self, data, [a.up], label="v")
 
     def covector(self, data, index=None):
-        """A row (μ↓): a down value slot. Pairs with vectors by default; lower(v) gives one."""
+        """A row (μ↓): a down value index. Pairs with vectors by default; lower(v) gives one."""
         a = index or self.index()
         return Tensor(self, data, [a.down], label="w")
 
     def one_form(self, data, index=None):
-        """A 1-form (μ): one form slot. For d∧ and wedge; d of a function gives one."""
+        """A 1-form (μ): one form index. For d∧ and wedge; d of a function gives one."""
         a = index or self.index()
         return Tensor(self, data, [a.form], label="α")
 
@@ -122,7 +122,7 @@ class Manifold:
     # ---------- metric ----------
     def metric(self, data=None, signature=None):
         """Make, check and attach the metric; returns g.
-        data: a matrix (or a tensor with two down value slots). No data: unknown functions
+        data: a matrix (or a tensor with two down value indices). No data: unknown functions
         g_ij(x), with the signature you declare (e.g. "-+++"). Calling it again replaces
         the metric and clears everything computed from the old one."""
         g, sig = build_metric(self, data, signature)
