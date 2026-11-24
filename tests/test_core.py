@@ -483,6 +483,13 @@ def test_star_signs_and_curl():
     t, X, Y, Z = Mk.coords
     F = wedge_d(Mk.one_form([t * X, Y, 0, X * Z]))
     assert F.star().star().equals(-F)                                  # 4D Lorentzian 2-form: ⋆⋆ = −1
+    S = tf.Manifold.sphere()
+    a, b, c = S.indices(3)
+    try:
+        S.tensor(a.form, b.form, c.form, data=[[[0] * 2] * 2] * 2).star()  # 3 form slots in 2D: refused
+        assert False
+    except ValueError:
+        pass
 
 
 def test_star_divergence_matches_trace():

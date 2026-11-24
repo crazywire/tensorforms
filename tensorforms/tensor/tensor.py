@@ -347,6 +347,8 @@ class Tensor:
             raise TypeError("star needs a metric: the volume form and raising both use it")
         forms = self.form_slots
         k = len(forms)
+        if k > M.dim:
+            raise ValueError(f"star: {k} form slots but the space has only {M.dim} dimensions")
         X = self.as_value(*forms) if k else self
         for p in forms:
             X = X.raise_(p)
@@ -354,7 +356,7 @@ class Tensor:
         nv = len(X.slots)
         for j, p in enumerate(forms):                 # the j-th raised slot fills ε's next slot
             T = T.tr(p - j, nv - j)
-        T = T * sp.Rational(1, math.factorial(k)) if k > 1 else T
+        T = T / math.factorial(k)
         return T._new(label=f"⋆{wrap(self.label)}" if self.label else None)
 
     # ---------- symmetric and antisymmetric parts ----------
