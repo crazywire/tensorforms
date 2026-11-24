@@ -18,7 +18,7 @@ def index_label(x):
     """An index label as stored, from a string ("mu" → "μ"; anything else is kept), an Index or a Index."""
     from .index import Index                # here, to avoid a circular import
     if isinstance(x, Index):
-        return x.name
+        return x.label
     name = str(x)
     return GREEK.get(name, name)
 

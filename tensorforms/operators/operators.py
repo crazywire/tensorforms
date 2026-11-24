@@ -118,7 +118,7 @@ def _label(op, X):
 
 def _new_form_indices(X, count):
     """`count` fresh form indices, with names unused by X."""
-    M, used = X.manifold, list(X.names)
+    M, used = X.manifold, list(X.labels)
     indices = []
     for _ in range(count):
         name = M.tangent.fresh_name(used)
@@ -158,7 +158,7 @@ def _act(C, X, indices, values_only=False):
         if values_only and s.is_form:
             continue
         if s.space is not X.manifold.tangent:
-            raise NotImplementedError(f"index {s.name} is not in {X.manifold.tangent.name}")
+            raise NotImplementedError(f"index {s.label} is not in {X.manifold.tangent.name}")
         rest = lambda t: t if t < j else t - 1             # X's index t among X's other indices
         if s.is_up:
             # tensordot(C, X): [C's up, C's forms, X's other indices]

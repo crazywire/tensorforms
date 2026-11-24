@@ -53,7 +53,7 @@ def test_sphere_curvature():
     R = S.riemann()
     block = R.data[:, :, 0, 1]                               # R_θφ = [0, sin²θ; −1, 0]
     assert is_zero(block[0, 1] - sp.sin(th) ** 2) and is_zero(block[1, 0] + 1)
-    assert S.ricci().equals(S.g.rename(dict(zip(S.g.names, S.ricci().names))))
+    assert S.ricci().equals(S.g.rename(dict(zip(S.g.labels, S.ricci().labels))))
     assert is_zero(S.ricci_scalar() - 2)
     assert is_zero(S.gaussian_curvature() - 1)
 
@@ -254,11 +254,11 @@ def test_bare_manifold_has_no_metric():
 def test_names():
     S = tf.Manifold.sphere()
     R = S.riemann()
-    assert [i.name for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
-    assert nabla(R).names == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
+    assert [i.label for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
+    assert nabla(R).labels == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
     assert R.tr("rho", "mu").equals(R.tr("ρ", "μ"))                # spelled-out Greek
     assert R.tr(0, 2).equals(R.tr("ρ", "μ"))                       # index numbers
-    assert R.rename({"mu": "kappa"}).names == ["ρ", "σ", "κ", "ν"]
+    assert R.rename({"mu": "kappa"}).labels == ["ρ", "σ", "κ", "ν"]
 
 
 def test_scalar_multiplication():
@@ -305,7 +305,7 @@ def test_contract_default_and_otimes():
             continue
         raise AssertionError("expected a TypeError")
     T = otimes(v, u)                                             # v^μ u^ν: both indices kept
-    assert [s.name for s in T.indices] == ["μ", "ν"] and T.data[0, 1] == 1
+    assert [s.label for s in T.indices] == ["μ", "ν"] and T.data[0, 1] == 1
 
 
 def test_raise_lower_undo():
@@ -331,7 +331,7 @@ def test_raise_lower_undo():
     f = S.scalar(th ** 2)
     df = tf.d(f)                                                # a 1-form (μ)
     assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
-    assert df.as_value().as_form().types == df.types
+    assert all(a.matches(b) for a, b in zip(df.as_value().as_form().indices, df.indices))
 
 def test_manifold_hands_out_copies():
     S = tf.Manifold.sphere()
@@ -341,7 +341,7 @@ def test_manifold_hands_out_copies():
     g = S.g
     g.label = "h"
     assert S.g.label == "g"
-    assert isinstance(S.indices(1), list) and S.index().name == "μ"
+    assert isinstance(S.indices(1), list) and S.index().label == "μ"
 
 
 def test_operator_labels():
@@ -411,7 +411,7 @@ def test_interior():
     rhs = b * interior(a, v).data.item() - a * interior(b, v).data.item()
     assert lhs.equals(rhs)
     R = M.riemann()
-    assert interior(R, v).equals(contract(R, v, "μ", v.names[0]))     # contract with X's first form index
+    assert interior(R, v).equals(contract(R, v, "μ", v.labels[0]))     # contract with X's first form index
     for bad in (lambda: interior(v, v), lambda: interior(df, df)):     # no form index / no row
         try:
             bad()
@@ -492,7 +492,7 @@ def test_index_lists_are_positions():
     S = tf.Manifold.sphere()
     R = S.riemann()                              # R(ρ↑ σ↓ μ ν)
     assert R.value_indices == [0, 1] and R.form_indices == [2, 3]
-    assert R.names == ["ρ", "σ", "μ", "ν"]       # the labels
+    assert R.labels == ["ρ", "σ", "μ", "ν"]       # the labels
 
 
 def test_volume_form():
@@ -670,10 +670,11 @@ def test_indices_are_immutable():
         except AttributeError:                                 # FrozenInstanceError is an AttributeError
             pass
     assert repr(S.g) == "g(μ↓ ν↓)"                             # the manifold's metric is untouched
-    try:
-        S.tensor(mu, data=[1, 0])                              # up, down or form not chosen: refused
-        assert False
-    except TypeError:
-        pass
-    assert repr(mu) == "Index(μ)" and repr(mu.up) == "μ↑" and repr(mu.form) == "μ"
+    assert S.tensor(mu, data=[1, 0]).equals(S.tensor(mu.up, data=[1, 0]))   # default: up value
+    assert repr(mu) == "μ↑" and repr(mu.down) == "μ↓" and repr(mu.form) == "μ"
+    assert mu.form.up == mu                                    # same label and space, any kind
+    nu = S.index("nu")
+    assert mu.up.matches(nu.up) and not mu.up.matches(nu.down)     # labels don't matter
+    assert mu.up.pairs_with(nu.form) and not mu.down.pairs_with(nu.form)
+    assert mu.form.type == "form" and mu.up.type == "value"
 

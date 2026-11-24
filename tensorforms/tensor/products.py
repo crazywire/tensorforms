@@ -20,23 +20,24 @@ from .tensor import Tensor
 
 def _rename_clashes(keep_names, indices):
     """B's indices, with any name already used by A replaced by a fresh one from the same space."""
-    used, out = set(keep_names) | {s.name for s in indices}, []
+    used, out = set(keep_names) | {s.label for s in indices}, []
     taken = set(keep_names)
     for s in indices:
-        n = s.name
+        n = s.label
         if n in taken:
             n = s.space.fresh_name(used)
             used.add(n)
         taken.add(n)
-        out.append(s.renamed(n))
+        out.append(s.relabel(n))
     return out
 
 
 def _check_pair(sa, sb):
+    if sa.pairs_with(sb):
+        return
     if sa.space is not sb.space:
-        raise TypeError(f"can't pair {sa.name} ({sa.space.name}) with {sb.name} ({sb.space.name}): different spaces")
-    if sa.variance == sb.variance:
-        raise TypeError(f"can't pair {sa.name} and {sb.name}: both {sa.variance}; raise or lower one first")
+        raise TypeError(f"can't pair {sa.label} ({sa.space.name}) with {sb.label} ({sb.space.name}): different spaces")
+    raise TypeError(f"can't pair {sa.label} and {sb.label}: both {sa.variance}; raise or lower one first")
 
 
 def _values_first(indices, n_a):
@@ -65,7 +66,7 @@ def _default_pair(A, B):
     if sa.space is sb.space and sa.is_up and not sb.is_up:
         raise TypeError(f"{A.declaration()} has no column and {B.declaration()} has no row: "
                         "nothing pairs (column × row); use otimes(A, B)")
-    raise TypeError(f"can't pair {sa.name} with {sb.name} (shape mismatch); "
+    raise TypeError(f"can't pair {sa.label} with {sb.label} (shape mismatch); "
                     "name the indices, use otimes(A, B), or raise or lower one first")
 
 
@@ -81,7 +82,7 @@ def contract(A, B, a=None, b=None):
     _check_pair(A.indices[i], B.indices[j])
     data = np.tensordot(A.data, B.data, axes=([i], [j]))
     keep_a = [s for k, s in enumerate(A.indices) if k != i]
-    keep_b = _rename_clashes([s.name for s in keep_a], [s for k, s in enumerate(B.indices) if k != j])
+    keep_b = _rename_clashes([s.label for s in keep_a], [s for k, s in enumerate(B.indices) if k != j])
     return _joined(A, data, keep_a + keep_b, len(keep_a), join(wrap(A.label), "", wrap(B.label)))
 
 
@@ -101,7 +102,7 @@ def interior(X, V):
 def otimes(A, B):
     """Tensor product A ⊗ B: pair nothing, keep every index.
     Result: value indices first, then A's form indices, then B's."""
-    keep_b = _rename_clashes(A.names, B.indices)
+    keep_b = _rename_clashes(A.labels, B.indices)
     return _joined(A, np.multiply.outer(A.data, B.data), A.indices + keep_b, len(A.indices),
                    join(wrap(A.label), "⊗", wrap(B.label)))
 
