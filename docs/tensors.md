@@ -20,8 +20,9 @@ Form indices are always down, so they need no arrow. The letters are labels; the
 meaning. Labels can be anything you choose; the ones the package hands out are Greek
 (μ ν λ κ ρ σ …), and `"mu"` works for μ. An index can also be given by number (0, 1, …).
 
-An index's **type** is (space, up/down, role). Adding needs matching types; pairing needs one
-up and one down.
+An index's **type** is value or form. Two rules use the rest too: indices **match**
+(`a.matches(b)`: same space, up/down and type, any label) to be added or averaged, and **pair**
+(`a.pairs_with(b)`: same space, one up and one down; a form index is down) to be contracted.
 
 The examples below use a sphere of radius r:
 
@@ -41,9 +42,9 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.data`, `X[i, j]` | the components (numpy, read-only) |
 | `X[i, j] = v` | change a component; copy on write, so no other tensor changes |
 | `X.value` | the components in sympy form: a scalar's expression, otherwise a sympy Array |
-| `X.names`, `X.types` | the indices' labels and types |
+| `X.labels` | the indices' labels |
 | `X.value_indices`, `X.form_indices` | positions of the value indices and of the form indices |
-| `X + Y`, `X - Y`, `-X` | index by index (types must match); a number counts as a scalar, and 0 as the zero tensor of any type |
+| `X + Y`, `X - Y`, `-X` | index by index (indices must match); a number counts as a scalar, and 0 as the zero tensor of any type |
 | `c * X`, `X / c` | c a number, an expression, or a scalar tensor; exact (`X / 2` is ½X, never 0.5X) |
 | `X.simplify()` | simplify every component (exact rewrites only) |
 | `X.is_zero()`, `X.equals(Y)` | sympy's answer: True (simplifies to 0), False (sympy proves nonzero), None (can't tell); never sampled |
@@ -53,9 +54,9 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.alt()`, `X.sym()` | antisymmetric / symmetric part (default: form indices) |
 | `X.tr(a, b)` | pair two indices and sum |
 | `X.lower(index)`, `X.raise_(index)` | g or g⁻¹ on a value index; exact inverses |
-| `X.as_form()`, `X.as_value()` | change the role: covector ↔ 1-form, same numbers |
+| `X.as_form()`, `X.as_value()` | change the type: covector ↔ 1-form, same numbers |
 | `X.star()` | Hodge star: k form indices become n − k, same amount (uses the metric) |
-| `X.inverse()` | for a matrix at each point (exactly two value indices, nothing else): the matrix inverse; the indices swap roles and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
+| `X.inverse()` | for a matrix at each point (exactly two value indices, nothing else): the matrix inverse; the indices swap places and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
 
 **Swaps.** Index order matters. T, S, U and V are short for swapping neighbouring indices,
 counted from 0 across all indices:

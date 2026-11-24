@@ -1,7 +1,7 @@
 """Tensors: data plus an ordered list of indices.
 
 Everything here acts on one tensor: describing it, adding and scaling, moving indices,
-changing roles, Alt/Sym, trace, and raising/lowering with the manifold's metric.
+changing value / form type, Alt/Sym, trace, and raising/lowering with the manifold's metric.
 Products of two tensors are in products.py.
 """
 import itertools
@@ -64,15 +64,15 @@ class Tensor:
         self.label = label
         for s in self.indices:
             if not s.chosen:
-                raise TypeError(f"say up, down or form for {s.name} ({s.name}.up, {s.name}.down, {s.name}.form)")
+                raise TypeError(f"say up, down or form for {s.label} ({s.label}.up, {s.label}.down, {s.label}.form)")
         if self._data.ndim != len(self.indices):
             raise ValueError(f"data has {self._data.ndim} axes but {len(self.indices)} indices were declared")
         for n, s in zip(self._data.shape, self.indices):
             if n != s.space.dim:
-                raise ValueError(f"index {s.name} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
-        names = self.names
-        if len(set(names)) != len(names):
-            raise ValueError(f"index names must be unique within a tensor: {names}")
+                raise ValueError(f"index {s.label} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
+        labels = self.labels
+        if len(set(labels)) != len(labels):
+            raise ValueError(f"index labels must be unique within a tensor: {labels}")
 
     def _new(self, data=None, indices=None, *, label):
         """A tensor on the same manifold; data and indices default to this tensor's.
@@ -93,18 +93,14 @@ class Tensor:
 
     # ---------- description ----------
     @property
-    def names(self):
-        return [s.name for s in self.indices]
+    def labels(self):
+        return [s.label for s in self.indices]
 
     @property
     def value(self):
         """The components in sympy form: a scalar's expression, otherwise a sympy Array
         (one axis per index). This is also what sympy sees when it is handed a tensor."""
         return self._data.item() if not self.indices else sp.Array(self._data.tolist())
-
-    @property
-    def types(self):
-        return [s.type for s in self.indices]
 
     @property
     def form_indices(self):
@@ -123,9 +119,9 @@ class Tensor:
                 raise IndexError(f"no index number {x}; this tensor has {len(self.indices)} indices")
             return x
         n = index_label(x)
-        if n not in self.names:
-            raise KeyError(f"no index named {n}; indices are {self.names}")
-        return self.names.index(n)
+        if n not in self.labels:
+            raise KeyError(f"no index named {n}; indices are {self.labels}")
+        return self.labels.index(n)
 
     def index(self, x):
         return self.indices[self.position(x)]
@@ -162,7 +158,8 @@ class Tensor:
 
     # ---------- arithmetic (needs matching types) ----------
     def _check_same_type(self, other):
-        if not isinstance(other, Tensor) or self.types != other.types:
+        if (not isinstance(other, Tensor) or len(self.indices) != len(other.indices)
+                or not all(a.matches(b) for a, b in zip(self.indices, other.indices))):
             raise TypeError(f"can only add matching types: {self.declaration()} vs "
                             f"{getattr(other, 'declaration', lambda: other)()}")
 
@@ -295,8 +292,8 @@ class Tensor:
         return self._new(indices=[s.renamed(mapping[k]) if k in mapping else s for k, s in enumerate(self.indices)],
                          label=self.label)
 
-    def _change_role(self, which, new_role, eligible, need):
-        """The chosen indices (default: every eligible one) get the new role; same numbers."""
+    def _change_type(self, which, new_type, eligible, need):
+        """The chosen indices (default: every eligible one) get the new type; same numbers."""
         if which:
             targets = {self.position(x) for x in which}
             bad = [self.indices[k] for k in sorted(targets) if not eligible(self.indices[k])]
@@ -304,24 +301,24 @@ class Tensor:
                 raise TypeError(f"needs {need}; got {bad}")
         else:
             targets = {k for k, s in enumerate(self.indices) if eligible(s)}
-        return self._new(indices=[s.with_role(new_role) if k in targets else s for k, s in enumerate(self.indices)],
+        return self._new(indices=[s.with_type(new_type) if k in targets else s for k, s in enumerate(self.indices)],
                          label=self.label)
 
     def as_form(self, *indices):
         """Down value indices → form indices (default: all). Covector (μ↓) → 1-form (μ). Same numbers."""
-        return self._change_role(indices, "form", lambda s: not s.is_up and not s.is_form, "down value indices")
+        return self._change_type(indices, "form", lambda s: not s.is_up and not s.is_form, "down value indices")
 
     def as_value(self, *indices):
         """Form indices → down value indices (default: all). 1-form (μ) → covector (μ↓). Same numbers."""
-        return self._change_role(indices, "value", lambda s: s.is_form, "form indices")
+        return self._change_type(indices, "value", lambda s: s.is_form, "form indices")
 
     # ---------- trace ----------
     def tr(self, a, b):
         """Pair two indices inside this tensor (one up, one down) and sum over them."""
         i, j = self.position(a), self.position(b)
         si, sj = self.indices[i], self.indices[j]
-        if si.space is not sj.space or si.variance == sj.variance:
-            raise TypeError(f"can't pair {si.name} and {sj.name}: need the same space, one up and one down")
+        if not si.pairs_with(sj):
+            raise TypeError(f"can't pair {si.label} and {sj.label}: need the same space, one up and one down")
         data = np.asarray(np.trace(self._data, axis1=i, axis2=j), dtype=object)
         label = f"tr({self.label})" if self.label else None
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.indices) if k not in (i, j)], label,
@@ -333,14 +330,14 @@ class Tensor:
         if index is None:                                   # the only index that can be flipped
             options = [k for k, s in enumerate(self.indices) if not s.is_form and s.variance != to]
             if len(options) != 1:
-                raise TypeError(f"say which index (candidates: {[self.names[k] for k in options]})")
+                raise TypeError(f"say which index (candidates: {[self.labels[k] for k in options]})")
             index = options[0]
         i = self.position(index)
         s = self.indices[i]
         if s.is_form or s.variance == to:
-            raise TypeError(f"can't make {s.name} {to}: it is a form index or already {to}")
+            raise TypeError(f"can't make {s.label} {to}: it is a form index or already {to}")
         data = np.moveaxis(np.tensordot(metric._data, self._data, axes=([1], [i])), 0, i)
-        flipped = Index(s.name, s.space, to, "value")
+        flipped = Index(s.label, s.space, to, "value")
         return self._new(data, self.indices[:i] + [flipped] + self.indices[i + 1:], label=self.label)
 
     def lower(self, index=None):
@@ -356,7 +353,7 @@ class Tensor:
     def inverse(self):
         """The inverse of a tensor that is a matrix at each point: exactly two value indices and
         nothing else (a linear map like A(ρ↑ σ↓), or a bilinear form like g(μ↓ ν↓)).
-        Numbers: the matrix inverse. Indices: the two swap roles and both arrows flip,
+        Numbers: the matrix inverse. Indices: the two swap places and both arrows flip,
         g(μ↓ ν↓) → g⁻¹(ν↑ μ↑), A(ρ↑ σ↓) → A⁻¹(σ↑ ρ↓).
         Refused for anything else: inverting is not linear, so it can't be done index by index
         over other (e.g. form) indices without depending on the coordinates. Also refused if it
@@ -368,11 +365,11 @@ class Tensor:
         try:                                                  # sympy does the checks, with our zero test
             inv = m.inv(iszerofunc=_is_zero)
         except NonSquareMatrixError:
-            raise ValueError(f"inverse: indices {so.name} and {si.name} have different sizes "
+            raise ValueError(f"inverse: indices {so.label} and {si.label} have different sizes "
                              f"({so.space.dim}, {si.space.dim}): not square") from None
         except NonInvertibleMatrixError:
             raise ValueError("inverse: not invertible (the determinant is 0)") from None
-        flip = lambda s: Index(s.name, s.space, "down" if s.is_up else "up", "value")
+        flip = lambda s: Index(s.label, s.space, "down" if s.is_up else "up", "value")
         return self._new(np.array(inv.tolist(), dtype=object), [flip(si), flip(so)],
                          label=f"{wrap(self.label)}⁻¹" if self.label else None)
 
@@ -404,9 +401,8 @@ class Tensor:
         pos = [self.position(s) for s in indices] if indices else self.form_indices
         if len(set(pos)) != len(pos):
             raise ValueError(f"Alt/Sym: an index is repeated in {list(indices)}")
-        types = {self.indices[p].type for p in pos}
-        if len(types) > 1:
-            raise TypeError("Alt/Sym need indices of the same type (space and up/down)")
+        if not all(self.indices[p].matches(self.indices[pos[0]]) for p in pos):
+            raise TypeError("Alt/Sym need indices that match (same space, up/down and type)")
         k = len(pos)
         out = 0
         for perm in itertools.permutations(range(k)):

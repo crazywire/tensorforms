@@ -27,7 +27,7 @@ metric yet; tensors, d and d∧ already work.
 | `M.one_form(data)` | (μ) |
 | `M.map(data)` | (μ↑ ν↓), a matrix |
 
-An index from `M.indices` has a label and a space; choose when you use it: `mu.up`, `mu.down`, `mu.form`.
+An index from `M.indices` has a label and a space; choose once, when you use it: `mu.up`, `mu.down` (value indices, ↑ and ↓) or `mu.form` (a form index: always down, so no arrow).
 
 ```python
 mu, nu = M.indices(2)
