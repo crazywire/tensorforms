@@ -42,8 +42,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.data`, `X[i, j]` | the components (numpy, read-only) |
 | `X[i, j] = v` | change a component; copy on write, so no other tensor changes |
 | `X.value` | the components in sympy form: a scalar's expression, otherwise a sympy Array |
-| `X.labels` | the indices' labels |
-| `X.value_indices`, `X.form_indices` | positions of the value indices and of the form indices |
+| `X.indices` | the indices, in order (a tuple): each has `label`, `variance`, `type` |
 | `X + Y`, `X - Y`, `-X` | index by index (indices must match); a number counts as a scalar, and 0 as the zero tensor of any type |
 | `c * X`, `X / c` | c a number, an expression, or a scalar tensor; exact (`X / 2` is ½X, never 0.5X) |
 | `X.simplify()` | simplify every component (exact rewrites only) |

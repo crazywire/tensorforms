@@ -60,14 +60,14 @@ class Tensor:
             self._data = data
             self._refs = _refs
         self._refs.add(self)                                 # every tensor using these numbers
-        self.indices = list(indices)
+        self.indices = tuple(indices)
         self.label = label
         if self._data.ndim != len(self.indices):
             raise ValueError(f"data has {self._data.ndim} axes but {len(self.indices)} indices were declared")
         for n, s in zip(self._data.shape, self.indices):
             if n != s.space.dim:
                 raise ValueError(f"index {s.label} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
-        labels = self.labels
+        labels = self._labels()
         if len(set(labels)) != len(labels):
             raise ValueError(f"index labels must be unique within a tensor: {labels}")
 
@@ -90,23 +90,19 @@ class Tensor:
 
     # ---------- description ----------
     @property
-    def labels(self):
-        return [s.label for s in self.indices]
-
-    @property
     def value(self):
         """The components in sympy form: a scalar's expression, otherwise a sympy Array
         (one axis per index). This is also what sympy sees when it is handed a tensor."""
         return self._data.item() if not self.indices else sp.Array(self._data.tolist())
 
-    @property
-    def form_indices(self):
-        """Positions of the form indices."""
+    # private helpers: each rule written once (users read X.indices)
+    def _labels(self):
+        return [s.label for s in self.indices]
+
+    def _form_positions(self):
         return [k for k, s in enumerate(self.indices) if s.is_form]
 
-    @property
-    def value_indices(self):
-        """Positions of the value indices."""
+    def _value_positions(self):
         return [k for k, s in enumerate(self.indices) if not s.is_form]
 
     def position(self, x):
@@ -116,9 +112,9 @@ class Tensor:
                 raise IndexError(f"no index number {x}; this tensor has {len(self.indices)} indices")
             return x
         n = index_label(x)
-        if n not in self.labels:
-            raise KeyError(f"no index named {n}; indices are {self.labels}")
-        return self.labels.index(n)
+        if n not in self._labels():
+            raise KeyError(f"no index named {n}; indices are {self._labels()}")
+        return self._labels().index(n)
 
     def index(self, x):
         return self.indices[self.position(x)]
@@ -327,7 +323,7 @@ class Tensor:
         if index is None:                                   # the only index that can be flipped
             options = [k for k, s in enumerate(self.indices) if not s.is_form and s.variance != to]
             if len(options) != 1:
-                raise TypeError(f"say which index (candidates: {[self.labels[k] for k in options]})")
+                raise TypeError(f"say which index (candidates: {[self._labels()[k] for k in options]})")
             index = options[0]
         i = self.position(index)
         s = self.indices[i]
@@ -335,7 +331,7 @@ class Tensor:
             raise TypeError(f"can't make {s.label} {to}: it is a form index or already {to}")
         data = np.moveaxis(np.tensordot(metric._data, self._data, axes=([1], [i])), 0, i)
         flipped = Index(s.label, s.space, to, "value")
-        return self._new(data, self.indices[:i] + [flipped] + self.indices[i + 1:], label=self.label)
+        return self._new(data, (*self.indices[:i], flipped, *self.indices[i + 1:]), label=self.label)
 
     def lower(self, index=None):
         """g on one up value index: ↑ → ↓. Same physics; raise_ undoes it exactly.
@@ -379,7 +375,7 @@ class Tensor:
         M = self.manifold
         if not M.has_metric():
             raise TypeError("star needs a metric: the volume form and raising both use it")
-        forms = self.form_indices
+        forms = self._form_positions()
         k = len(forms)
         if k > M.dim:
             raise ValueError(f"star: {k} form indices but the space has only {M.dim} dimensions")
@@ -395,7 +391,7 @@ class Tensor:
 
     # ---------- symmetric and antisymmetric parts ----------
     def _average(self, indices, signed):
-        pos = [self.position(s) for s in indices] if indices else self.form_indices
+        pos = [self.position(s) for s in indices] if indices else self._form_positions()
         if len(set(pos)) != len(pos):
             raise ValueError(f"Alt/Sym: an index is repeated in {list(indices)}")
         if not all(self.indices[p].matches(self.indices[pos[0]]) for p in pos):

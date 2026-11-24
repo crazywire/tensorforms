@@ -27,7 +27,7 @@ def curvature_by_commutator(X):
 
 def wedge_nabla_by_definition(X):
     """∇∧ by definition: ∇ on every index, then (p+1)·Alt over all form indices."""
-    p = len(X.form_indices)
+    p = sum(s.is_form for s in X.indices)
     Y = nabla(X.alt())
     return Y if p == 0 else Y.alt() * (p + 1)
 
@@ -53,7 +53,7 @@ def test_sphere_curvature():
     R = S.riemann()
     block = R.data[:, :, 0, 1]                               # R_θφ = [0, sin²θ; −1, 0]
     assert is_zero(block[0, 1] - sp.sin(th) ** 2) and is_zero(block[1, 0] + 1)
-    assert S.ricci().equals(S.g.rename(dict(zip(S.g.labels, S.ricci().labels))))
+    assert S.ricci().equals(S.g.rename(dict(zip([s.label for s in S.g.indices], [s.label for s in S.ricci().indices]))))
     assert is_zero(S.ricci_scalar() - 2)
     assert is_zero(S.gaussian_curvature() - 1)
 
@@ -255,10 +255,10 @@ def test_names():
     S = tf.Manifold.sphere()
     R = S.riemann()
     assert [i.label for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
-    assert nabla(R).labels == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
+    assert [s.label for s in nabla(R).indices] == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
     assert R.tr("rho", "mu").equals(R.tr("ρ", "μ"))                # spelled-out Greek
     assert R.tr(0, 2).equals(R.tr("ρ", "μ"))                       # index numbers
-    assert R.rename({"mu": "kappa"}).labels == ["ρ", "σ", "κ", "ν"]
+    assert [s.label for s in R.rename({"mu": "kappa"}).indices] == ["ρ", "σ", "κ", "ν"]
 
 
 def test_scalar_multiplication():
@@ -327,7 +327,7 @@ def test_raise_lower_undo():
             continue
         raise AssertionError("expected a TypeError")
     F = wedge_nabla(v.lower().as_form())                       # bridge to a 1-form, then d∧
-    assert F.form_indices and not F.value_indices
+    assert all(s.is_form for s in F.indices)
     f = S.scalar(th ** 2)
     df = tf.d(f)                                                # a 1-form (μ)
     assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
@@ -411,7 +411,7 @@ def test_interior():
     rhs = b * interior(a, v).data.item() - a * interior(b, v).data.item()
     assert lhs.equals(rhs)
     R = M.riemann()
-    assert interior(R, v).equals(contract(R, v, "μ", v.labels[0]))     # contract with X's first form index
+    assert interior(R, v).equals(contract(R, v, "μ", v.indices[0].label))     # contract with X's first form index
     for bad in (lambda: interior(v, v), lambda: interior(df, df)):     # no form index / no row
         try:
             bad()
@@ -491,15 +491,15 @@ def test_contract_keeps_form_order_when_names_clash():
 def test_index_lists_are_positions():
     S = tf.Manifold.sphere()
     R = S.riemann()                              # R(ρ↑ σ↓ μ ν)
-    assert R.value_indices == [0, 1] and R.form_indices == [2, 3]
-    assert R.labels == ["ρ", "σ", "μ", "ν"]       # the labels
+    assert [s.is_form for s in R.indices] == [False, False, True, True]
+    assert [s.label for s in R.indices] == ["ρ", "σ", "μ", "ν"]       # the labels
 
 
 def test_volume_form():
     P = tf.Manifold.euclidean(coords="polar")
     r, _ = P.coords
     eps = P.volume_form()
-    assert eps.form_indices == [0, 1] and sp.simplify(eps.data[0, 1] - r) == 0 and eps.data[1, 0] == -eps.data[0, 1]
+    assert all(s.is_form for s in eps.indices) and sp.simplify(eps.data[0, 1] - r) == 0 and eps.data[1, 0] == -eps.data[0, 1]
     S = tf.Manifold.sphere()
     th, _ = S.coords
     rr = sp.Symbol("r", positive=True)

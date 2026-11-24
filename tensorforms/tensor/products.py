@@ -56,7 +56,7 @@ def _joined(A, data, indices, n_a, label):
 
 def _default_pair(A, B):
     """A's column (last value index, down) with B's row (first value index, up)."""
-    av, bv = A.value_indices, B.value_indices
+    av, bv = A._value_positions(), B._value_positions()
     if not (av and bv):
         raise TypeError("contract(A, B) needs value indices on both: one factor has none, "
                         "so nothing pairs; use otimes(A, B)")
@@ -90,11 +90,11 @@ def interior(X, V):
     """The interior product: X's first form index with V's row
     (its first value index, up). Like contract(X, V), but using X's first form index instead of
     its column. Everything else is carried along: value indices first, then X's form indices, then V's."""
-    if not X.form_indices:
+    if not X._form_positions():
         raise TypeError(f"interior needs a form index in X; {X.declaration()} has none")
-    if not V.value_indices or not V.index(V.value_indices[0]).is_up:
+    if not V._value_positions() or not V.index(V._value_positions()[0]).is_up:
         raise TypeError(f"interior needs a row (first value index, up) in V; got {V.declaration()}")
-    P = contract(X, V, X.form_indices[0], V.value_indices[0])
+    P = contract(X, V, X._form_positions()[0], V._value_positions()[0])
     label = f"ι({X.label},{V.label})" if X.label and V.label else None
     return P._new(label=label)
 
@@ -102,18 +102,18 @@ def interior(X, V):
 def otimes(A, B):
     """Tensor product A ⊗ B: pair nothing, keep every index.
     Result: value indices first, then A's form indices, then B's."""
-    keep_b = _rename_clashes(A.labels, B.indices)
-    return _joined(A, np.multiply.outer(A.data, B.data), A.indices + keep_b, len(A.indices),
+    keep_b = _rename_clashes(A._labels(), B.indices)
+    return _joined(A, np.multiply.outer(A.data, B.data), (*A.indices, *keep_b), len(A.indices),
                    join(wrap(A.label), "⊗", wrap(B.label)))
 
 
 def _wedge_like(A, B, pair, signed):
-    p, q = len(A.form_indices), len(B.form_indices)
+    p, q = len(A._form_positions()), len(B._form_positions())
     project = Tensor.alt if signed else Tensor.sym
     A2, B2 = project(A), project(B)              # each factor's own form indices first
     if pair is not None:
         P = contract(A2, B2, *pair)
-    elif not (A.value_indices and B.value_indices):
+    elif not (A._value_positions() and B._value_positions()):
         P = otimes(A2, B2)                       # a scalar-valued factor: nothing can pair
     else:
         P = contract(A2, B2)
