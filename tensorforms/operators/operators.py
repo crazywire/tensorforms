@@ -118,7 +118,7 @@ def _label(op, X):
 
 def _new_form_indices(X, count):
     """`count` fresh form indices, with names unused by X."""
-    M, used = X.manifold, X._labels()
+    M, used = X.manifold, X._index_labels()
     indices = []
     for _ in range(count):
         name = M.tangent.fresh_name(used)

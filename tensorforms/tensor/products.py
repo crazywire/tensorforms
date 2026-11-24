@@ -102,7 +102,7 @@ def interior(X, V):
 def otimes(A, B):
     """Tensor product A ⊗ B: pair nothing, keep every index.
     Result: value indices first, then A's form indices, then B's."""
-    keep_b = _rename_clashes(A._labels(), B.indices)
+    keep_b = _rename_clashes(A._index_labels(), B.indices)
     return _joined(A, np.multiply.outer(A.data, B.data), (*A.indices, *keep_b), len(A.indices),
                    join(wrap(A.label), "⊗", wrap(B.label)))
 

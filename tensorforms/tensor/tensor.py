@@ -67,7 +67,7 @@ class Tensor:
         for n, s in zip(self._data.shape, self.indices):
             if n != s.space.dim:
                 raise ValueError(f"index {s.label} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
-        labels = self._labels()
+        labels = self._index_labels()
         if len(set(labels)) != len(labels):
             raise ValueError(f"index labels must be unique within a tensor: {labels}")
 
@@ -96,7 +96,7 @@ class Tensor:
         return self._data.item() if not self.indices else sp.Array(self._data.tolist())
 
     # private helpers: each rule written once (users read X.indices)
-    def _labels(self):
+    def _index_labels(self):
         return [s.label for s in self.indices]
 
     def _form_positions(self):
@@ -112,9 +112,9 @@ class Tensor:
                 raise IndexError(f"no index number {x}; this tensor has {len(self.indices)} indices")
             return x
         n = index_label(x)
-        if n not in self._labels():
-            raise KeyError(f"no index named {n}; indices are {self._labels()}")
-        return self._labels().index(n)
+        if n not in self._index_labels():
+            raise KeyError(f"no index named {n}; indices are {self._index_labels()}")
+        return self._index_labels().index(n)
 
     def index(self, x):
         return self.indices[self.position(x)]
@@ -323,7 +323,7 @@ class Tensor:
         if index is None:                                   # the only index that can be flipped
             options = [k for k, s in enumerate(self.indices) if not s.is_form and s.variance != to]
             if len(options) != 1:
-                raise TypeError(f"say which index (candidates: {[self._labels()[k] for k in options]})")
+                raise TypeError(f"say which index (candidates: {[self._index_labels()[k] for k in options]})")
             index = options[0]
         i = self.position(index)
         s = self.indices[i]
