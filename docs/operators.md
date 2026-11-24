@@ -29,7 +29,7 @@ Details:
 `lie(v, X)`: v is a vector field, X any tensor on the same manifold. The result has X's indices.
 No metric is needed.
 
-L_v X = (dX)v − (dv) on each up index + (dv) on each down or form index
+L_v X = (dX)v − J on each up index + J on each down or form index,  with J = (dv).as_value()
 
 For example, checking whether a vector field is a symmetry of the metric (L_v g = 0):
 

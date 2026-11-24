@@ -95,7 +95,7 @@ def wedge_curvature(X):
 
 def lie(v, X):
     """Lie derivative of X along the vector field v. The result has X's indices; no metric needed.
-        L_v X = (dX)v − (dv) on each up index + (dv) on each down or form index"""
+        L_v X = (dX)v − J on each up index + J on each down or form index,  J = (dv).as_value()"""
     _check_tensor(v)
     _check_tensor(X)
     M = X.manifold
