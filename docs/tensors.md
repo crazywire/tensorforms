@@ -38,7 +38,8 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 | call | does |
 |---|---|
-| `X.data`, `X[i, j]` | the components (numpy) |
+| `X.data`, `X[i, j]` | the components (numpy, read-only) |
+| `X[i, j] = v` | change a component; copy on write, so no other tensor changes |
 | `X.value` | the components in sympy form: a scalar's expression, otherwise a sympy Array |
 | `X.names`, `X.types` | the slots' labels and types |
 | `X.value_slots`, `X.form_slots` | positions of the value slots and of the form slots |

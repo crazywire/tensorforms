@@ -8,6 +8,8 @@ import itertools
 import math
 
 import numpy as np
+import weakref
+
 import sympy as sp
 from sympy.matrices.exceptions import NonInvertibleMatrixError, NonSquareMatrixError
 from sympy.combinatorics import Permutation
@@ -46,15 +48,20 @@ class Tensor:
     # so θ * X and θ + s stay tensor arithmetic instead of sympy taking over.
     _op_priority = 20.0
 
-    def __init__(self, manifold, data, slots, label=None):
+    def __init__(self, manifold, data, slots, label=None, *, _refs=None):
         self.manifold = manifold
-        self._data = np.asarray(data, dtype=object).view()   # a view: the caller's array is untouched
-        self._data.flags.writeable = False                   # writes go through X[...] = v
+        if _refs is None:                                    # a new tensor: its own numbers
+            self._data = np.array(data, dtype=object)
+            self._refs = weakref.WeakSet()
+        else:                                                # made by _new: shares the numbers
+            self._data = data
+            self._refs = _refs
+        self._refs.add(self)                                 # every tensor using these numbers
         self.slots = list(slots)
         self.label = label
-        if self.data.ndim != len(self.slots):
-            raise ValueError(f"data has {self.data.ndim} axes but {len(self.slots)} slots were declared")
-        for n, s in zip(self.data.shape, self.slots):
+        if self._data.ndim != len(self.slots):
+            raise ValueError(f"data has {self._data.ndim} axes but {len(self.slots)} slots were declared")
+        for n, s in zip(self._data.shape, self.slots):
             if n != s.space.dim:
                 raise ValueError(f"slot {s.name} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
         names = self.names
@@ -63,11 +70,20 @@ class Tensor:
 
     def _new(self, data=None, slots=None, *, label):
         """A tensor on the same manifold; data and slots default to this tensor's.
-        The label must be given (label=self.label to keep it, label=None for none)."""
-        return Tensor(self.manifold,
-                      self.data if data is None else data,
+        The label must be given (label=self.label to keep it, label=None for none).
+        If the data is ours or a view of it, the new tensor shares it (copy on write)."""
+        if data is None:
+            data = self._data
+        shared = np.may_share_memory(data, self._data)       # "maybe" only costs a copy later
+        return Tensor(self.manifold, data,
                       self.slots if slots is None else slots,
-                      label)
+                      label, _refs=self._refs if shared else None)
+
+    def __copy__(self):
+        return self._new(label=self.label)
+
+    def __deepcopy__(self, memo):
+        return Tensor(self.manifold, self._data, self.slots, self.label)
 
     # ---------- description ----------
     @property
@@ -78,7 +94,7 @@ class Tensor:
     def value(self):
         """The components in sympy form: a scalar's expression, otherwise a sympy Array
         (one axis per slot). This is also what sympy sees when it is handed a tensor."""
-        return self.data.item() if not self.slots else sp.Array(self.data.tolist())
+        return self._data.item() if not self.slots else sp.Array(self._data.tolist())
 
     @property
     def types(self):
@@ -121,19 +137,22 @@ class Tensor:
 
     @property
     def data(self):
-        """The components (a numpy array). Read-only: change numbers with X[...] = v."""
-        return self._data
+        """The components: a read-only view (no copy). Change numbers with X[...] = v."""
+        view = self._data.view()
+        view.flags.writeable = False
+        return view
 
     def __getitem__(self, key):
-        return self._data[key]
+        return self.data[key]
 
     def __setitem__(self, key, value):
-        """Change components: X[0, 1] = 5. Every write makes a new array for this tensor, so no
-        other tensor that shares its numbers can change."""
-        data = self._data.copy()
-        data[key] = value
-        data.flags.writeable = False
-        self._data = data
+        """Change components: X[0, 1] = 5. Copy on write: if other tensors use these numbers,
+        this tensor takes its own copy first, so no other tensor changes."""
+        if len(self._refs) > 1:
+            self._refs.discard(self)
+            self._data = self._data.copy()
+            self._refs = weakref.WeakSet([self])
+        self._data[key] = value
 
     # ---------- arithmetic (needs matching types) ----------
     def _check_same_type(self, other):
@@ -159,7 +178,7 @@ class Tensor:
             return self._new(label=self.label)
         self._check_same_type(other)
         # brackets only where needed: A+(−B); A+B+C needs none
-        return self._new(self.data + other.data, label=join(self.label, "+", wrap(other.label)
+        return self._new(self._data + other._data, label=join(self.label, "+", wrap(other.label)
                                                               if other.label and other.label[0] == "−" else other.label))
 
     __radd__ = __add__                                        # 0 + X, 1 + s
@@ -169,21 +188,21 @@ class Tensor:
         if other is None:                                     # X − 0 is X
             return self._new(label=self.label)
         self._check_same_type(other)
-        return self._new(self.data - other.data, label=join(self.label, "−", wrap(other.label)))
+        return self._new(self._data - other._data, label=join(self.label, "−", wrap(other.label)))
 
     def __rsub__(self, other):                                # 0 − X is −X; 1 − s
         other = self._operand(other)
         return -self if other is None else other - self
 
     def __neg__(self):
-        return self._new(-self.data, label=negated(self.label))
+        return self._new(-self._data, label=negated(self.label))
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no slots)."""
         if not self.slots and isinstance(c, Tensor):         # scalar × tensor
             return c * self
         c, c_label = _as_scalar(c)
-        return self._new(self.data * c, label=scaled(c, c_label, self.label))
+        return self._new(self._data * c, label=scaled(c, c_label, self.label))
 
     __rmul__ = __mul__
 
@@ -193,7 +212,7 @@ class Tensor:
         if c == 0:
             raise ZeroDivisionError("division of a tensor by zero")
         label = f"{wrap(self.label)}/{c_label or wrap(sp.pretty(c, use_unicode=True))}" if self.label else None
-        return self._new(self.data / c, label=label)
+        return self._new(self._data / c, label=label)
 
     def __rtruediv__(self, c):
         """A number divided by a scalar is a scalar (2 / s); dividing by a tensor with slots is refused."""
@@ -210,12 +229,12 @@ class Tensor:
 
     def simplify(self):
         """Every component simplified (sympy: fu, then simplify; exact rewrites only)."""
-        return self._new(np.vectorize(simplify_expr, otypes=[object])(self.data), label=self.label)
+        return self._new(np.vectorize(simplify_expr, otypes=[object])(self._data), label=self.label)
 
     def is_zero(self):
         """True if every component is shown to be 0; False if one is shown not to be;
         None if that can't be decided exactly."""
-        answers = [_is_zero(e) for e in self.data.flat]
+        answers = [_is_zero(e) for e in self._data.flat]
         if all(a is True for a in answers):
             return True
         return False if any(a is False for a in answers) else None
@@ -226,7 +245,7 @@ class Tensor:
 
     # ---------- moving slots ----------
     def _transposed(self, order):
-        return self._new(np.transpose(self.data, order), [self.slots[i] for i in order], label=self.label)
+        return self._new(np.transpose(self._data, order), [self.slots[i] for i in order], label=self.label)
 
     def reorder(self, *slots):
         """Put every slot in the given order (labels or positions)."""
@@ -297,7 +316,7 @@ class Tensor:
         si, sj = self.slots[i], self.slots[j]
         if si.space is not sj.space or si.variance == sj.variance:
             raise TypeError(f"can't pair {si.name} and {sj.name}: need the same space, one up and one down")
-        data = np.asarray(np.trace(self.data, axis1=i, axis2=j), dtype=object)
+        data = np.asarray(np.trace(self._data, axis1=i, axis2=j), dtype=object)
         label = f"tr({self.label})" if self.label else None
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.slots) if k not in (i, j)], label)
 
@@ -313,7 +332,7 @@ class Tensor:
         s = self.slots[i]
         if s.is_form or s.variance == to:
             raise TypeError(f"can't make {s.name} {to}: it is a form slot or already {to}")
-        data = np.moveaxis(np.tensordot(metric.data, self.data, axes=([1], [i])), 0, i)
+        data = np.moveaxis(np.tensordot(metric._data, self._data, axes=([1], [i])), 0, i)
         flipped = Slot(s.name, s.space, to, "value")
         return self._new(data, self.slots[:i] + [flipped] + self.slots[i + 1:], label=self.label)
 
@@ -338,7 +357,7 @@ class Tensor:
         if len(self.slots) != 2 or any(s.is_form for s in self.slots):
             raise TypeError(f"inverse needs exactly two value slots and no others; got {self.declaration()}")
         so, si = self.slots
-        m = sp.Matrix(self.data.tolist())                     # rows: slot 0 (out), columns: slot 1 (in)
+        m = sp.Matrix(self._data.tolist())                     # rows: slot 0 (out), columns: slot 1 (in)
         try:                                                  # sympy does the checks, with our zero test
             inv = m.inv(iszerofunc=_is_zero)
         except NonSquareMatrixError:
@@ -387,7 +406,7 @@ class Tensor:
             axes = list(range(len(self.slots)))
             for src, dst in zip(perm, range(k)):
                 axes[pos[dst]] = pos[src]
-            term = np.transpose(self.data, axes)
+            term = np.transpose(self._data, axes)
             out = out + (Permutation(perm).signature() if signed else 1) * term
         label = f"{'Alt' if signed else 'Sym'}({self.label})" if self.label else None   # brackets already
         return self._new(out * sp.Rational(1, math.factorial(k)), label=label)

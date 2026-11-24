@@ -432,6 +432,31 @@ def test_minkowski_options():
     raise AssertionError("expected a ValueError")
 
 
+
+
+def test_copy_on_write():
+    S = tf.Manifold.sphere()
+    X = S.tensor(*S.g.slots, data=[[1, 2], [3, 4]])
+    Y = X.T()                                                  # shares X's numbers
+    Y[0, 1] = 99
+    assert X.data.tolist() == [[1, 2], [3, 4]] and Y.data.tolist() == [[1, 99], [2, 4]]
+    Z = S.tensor(*X.slots, data=X.data)                        # built from X.data: its own copy
+    X[1, 1] = 0
+    assert Z.data.tolist() == [[1, 2], [3, 4]]
+    g = S.g
+    g[0, 0] = 1                                                # your g, not the manifold's
+    assert S.g.data[0, 0] != 1
+    R = S.riemann()
+    R[0, 0, 0, 0] = 5
+    assert S.riemann().data[0, 0, 0, 0] == 0                   # the cached R is untouched
+    for write in (lambda: X.data.__setitem__((0, 0), 1),       # only X[...] = v writes
+                  lambda: X[0].__setitem__(0, 1)):
+        try:
+            write()
+            assert False
+        except ValueError:
+            pass
+
 if __name__ == "__main__":
     import time
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_")]

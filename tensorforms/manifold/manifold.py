@@ -3,7 +3,6 @@
 A bare manifold has no metric. M.metric(...) makes, checks and attaches one;
 connection and curvature are then computed when asked. Γ always comes from the metric.
 """
-import copy
 
 import numpy as np
 import sympy as sp
@@ -129,18 +128,18 @@ class Manifold:
         g, sig = build_metric(self, data, signature)
         self._g, self._ginv, self._signature = g, inverse_metric(g), sig
         self._cache.clear()
-        return copy.copy(g)
+        return g._new(label=g.label)
 
     @property
     def g(self):
         if self._g is None:
             raise AttributeError("this manifold has no metric yet: call M.metric(...)")
-        return copy.copy(self._g)
+        return self._g._new(label=self._g.label)
 
     @property
     def ginv(self):
         self.g                                                 # raises if there is no metric
-        return copy.copy(self._ginv)
+        return self._ginv._new(label=self._ginv.label)
 
     @property
     def signature(self):
@@ -161,12 +160,12 @@ class Manifold:
         return self._g is not None
 
     def _cached(self, key, compute):
-        """Compute once and keep it; hand out a copy so changing a label never changes the stored one.
-        The copy shares the numbers (nothing in the package edits them in place)."""
+        """Compute once and keep it; hand out a new tensor sharing the numbers (copy on write),
+        so changing yours never changes the stored one."""
         if key not in self._cache:
             self._cache[key] = compute()
         X = self._cache[key]
-        return copy.copy(X)
+        return X._new(label=X.label)
 
     def riemann(self):
         """The Riemann curvature R (ρ↑ σ↓ μ ν)."""
