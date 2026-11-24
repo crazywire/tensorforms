@@ -1,8 +1,8 @@
 """Indices: one per axis of a tensor.
 
-An index has a label and a space (owned by the manifold). Up, down or form is chosen once, when it
-is used: mu.up, mu.down (value indices), mu.form (a form index: always down, so no arrow).
-A tensor only holds chosen indices.
+An index has a label, a space (owned by the manifold), up/down and a type (value or form).
+It is an up value index unless you say otherwise: mu is mu.up; mu.down is a down value index;
+mu.form is a form index (always down, so no arrow).
 """
 
 from dataclasses import dataclass
@@ -14,50 +14,37 @@ ARROW = {"up": "↑", "down": "↓"}
 
 @dataclass(frozen=True, repr=False)
 class Index:
-    """A label in a space; once chosen, also up/down and value/form. Immutable: mu.up, renamed
-    and with_type give new indices."""
+    """A label in a space, up or down, value or form (default: up value). Immutable: .up, .down,
+    .form, renamed and with_type give new indices."""
     label: str
     space: object
-    variance: str = None   # "up" or "down"; None until chosen
-    type: str = None       # "value" or "form"; None until chosen
+    variance: str = "up"   # "up" or "down"
+    type: str = "value"    # "value" or "form"
 
     def __post_init__(self):
-        if (self.variance is None) != (self.type is None):
-            raise ValueError("choose both up/down and value/form, or neither")
-        if self.chosen:
-            if self.variance not in ("up", "down"):
-                raise ValueError("variance must be 'up' or 'down'")
-            if self.type not in ("value", "form"):
-                raise ValueError("type must be 'value' or 'form'")
-            if self.type == "form" and self.variance != "down":
-                raise ValueError("form indices are always down")
+        if self.variance not in ("up", "down"):
+            raise ValueError("variance must be 'up' or 'down'")
+        if self.type not in ("value", "form"):
+            raise ValueError("type must be 'value' or 'form'")
+        if self.type == "form" and self.variance != "down":
+            raise ValueError("form indices are always down")
         object.__setattr__(self, "label", index_label(self.label))   # "mu" → "μ", once, at creation
 
-    # ---------- choosing (once) ----------
-    def _choose(self, variance, type):
-        if self.chosen:
-            raise TypeError(f"{self!r} is already chosen; start from the label's index")
-        return Index(self.label, self.space, variance, type)
-
+    # ---------- the three kinds, same label and space ----------
     @property
     def up(self):
-        """An up value index (↑)."""
-        return self._choose("up", "value")
+        """An up value index (↑): the default."""
+        return Index(self.label, self.space, "up", "value")
 
     @property
     def down(self):
         """A down value index (↓)."""
-        return self._choose("down", "value")
+        return Index(self.label, self.space, "down", "value")
 
     @property
     def form(self):
         """A form index: always down, so it carries no arrow."""
-        return self._choose("down", "form")
-
-    @property
-    def chosen(self):
-        """True once up, down or form has been chosen (a tensor only holds chosen indices)."""
-        return self.variance is not None
+        return Index(self.label, self.space, "down", "form")
 
     # ---------- reading ----------
     @property
@@ -90,11 +77,7 @@ class Index:
         return Index(self.label, self.space, self.variance, type)
 
     def describe(self):
-        if not self.chosen:
-            return f"{self.label}: index in {self.space.name} (up, down or form not chosen)"
         return f"{self.label}: {self.variance} {self.type} index in {self.space.name}"
 
     def __repr__(self):
-        if not self.chosen:
-            return f"Index({self.label})"
         return self.label if self.is_form else f"{self.label}{ARROW[self.variance]}"

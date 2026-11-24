@@ -62,9 +62,6 @@ class Tensor:
         self._refs.add(self)                                 # every tensor using these numbers
         self.indices = list(indices)
         self.label = label
-        for s in self.indices:
-            if not s.chosen:
-                raise TypeError(f"say up, down or form for {s.label} ({s.label}.up, {s.label}.down, {s.label}.form)")
         if self._data.ndim != len(self.indices):
             raise ValueError(f"data has {self._data.ndim} axes but {len(self.indices)} indices were declared")
         for n, s in zip(self._data.shape, self.indices):

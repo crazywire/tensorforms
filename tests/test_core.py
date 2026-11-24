@@ -670,17 +670,9 @@ def test_indices_are_immutable():
         except AttributeError:                                 # FrozenInstanceError is an AttributeError
             pass
     assert repr(S.g) == "g(μ↓ ν↓)"                             # the manifold's metric is untouched
-    try:
-        S.tensor(mu, data=[1, 0])                              # up, down or form not chosen: refused
-        assert False
-    except TypeError:
-        pass
-    assert repr(mu) == "Index(μ)" and repr(mu.up) == "μ↑" and repr(mu.form) == "μ"
-    try:
-        mu.up.form                                             # choose once
-        assert False
-    except TypeError:
-        pass
+    assert S.tensor(mu, data=[1, 0]).equals(S.tensor(mu.up, data=[1, 0]))   # default: up value
+    assert repr(mu) == "μ↑" and repr(mu.down) == "μ↓" and repr(mu.form) == "μ"
+    assert mu.form.up == mu                                    # same label and space, any kind
     nu = S.index("nu")
     assert mu.up.matches(nu.up) and not mu.up.matches(nu.down)     # labels don't matter
     assert mu.up.pairs_with(nu.form) and not mu.down.pairs_with(nu.form)
