@@ -1,8 +1,8 @@
-"""Labels, for tensors and for slots. Display only; never used in calculations.
+"""Labels, for tensors and for indices. Display only; never used in calculations.
 
 Tensor labels: a result's label is the operation that made it (A+B, 3A, −A, R^US, AB, A∧B, …);
 if an input has no label, the result has none.
-Slot labels: whatever you choose; spelled-out Greek becomes the letter ("mu" → μ)."""
+Index labels: whatever you choose; spelled-out Greek becomes the letter ("mu" → μ)."""
 import re
 
 import sympy as sp
@@ -14,10 +14,10 @@ GREEK = {"alpha": "α", "beta": "β", "gamma": "γ", "delta": "δ", "epsilon": "
          "tau": "τ", "upsilon": "υ", "phi": "φ", "chi": "χ", "psi": "ψ", "omega": "ω"}
 
 
-def slot_label(x):
-    """A slot label as stored, from a string ("mu" → "μ"; anything else is kept), an Index or a Slot."""
-    from .slot import Index, Slot                # here, to avoid a circular import
-    if isinstance(x, (Slot, Index)):
+def index_label(x):
+    """An index label as stored, from a string ("mu" → "μ"; anything else is kept), an Index or a Index."""
+    from .index import Index                # here, to avoid a circular import
+    if isinstance(x, Index):
         return x.name
     name = str(x)
     return GREEK.get(name, name)

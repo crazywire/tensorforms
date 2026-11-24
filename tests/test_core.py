@@ -15,7 +15,7 @@ from tensorforms.symbolic.simplify import is_zero          # internal: for singl
 
 # ---- the definitions, used only to check the formulas the package uses ----
 def _first_form_position(X):
-    return next((i for i, s in enumerate(X.slots) if s.is_form), len(X.slots))
+    return next((i for i, s in enumerate(X.indices) if s.is_form), len(X.indices))
 
 
 def curvature_by_commutator(X):
@@ -26,8 +26,8 @@ def curvature_by_commutator(X):
 
 
 def wedge_nabla_by_definition(X):
-    """∇∧ by definition: ∇ on every slot, then (p+1)·Alt over all form slots."""
-    p = len(X.form_slots)
+    """∇∧ by definition: ∇ on every index, then (p+1)·Alt over all form indices."""
+    p = len(X.form_indices)
     Y = nabla(X.alt())
     return Y if p == 0 else Y.alt() * (p + 1)
 
@@ -78,7 +78,7 @@ def _sphere_fields():
 
 
 def test_curvature_operator_matches_its_definition():
-    S, v, w = _sphere_fields()                                # R on every slot == ∇ twice, antisymmetrized
+    S, v, w = _sphere_fields()                                # R on every index == ∇ twice, antisymmetrized
     assert curvature(v).equals(curvature_by_commutator(v))
     assert curvature(w).equals(curvature_by_commutator(w))
     assert curvature(w).is_zero() is None                    # w has unknown v1, v2: can't tell
@@ -93,7 +93,7 @@ def test_curl_needs_no_connection():
 
 
 def test_wedge_nabla_matches_its_definition():
-    S, v, w = _sphere_fields()                                # form-slot corrections cancel
+    S, v, w = _sphere_fields()                                # form-index corrections cancel
     assert wedge_nabla(v).equals(wedge_nabla_by_definition(v))
     assert wedge_nabla(w).equals(wedge_nabla_by_definition(w))
     X = nabla(v)                                              # a vector-valued 1-form
@@ -102,7 +102,7 @@ def test_wedge_nabla_matches_its_definition():
 
 def test_wedge_curvature():
     S, v, w = _sphere_fields()
-    assert wedge_curvature(w).is_zero()                       # 1-form: no value slots
+    assert wedge_curvature(w).is_zero()                       # 1-form: no value indices
     assert wedge_curvature(v).equals(curvature(v))            # vector: same as the commutator
     assert wedge_curvature(v).equals(wedge_curvature_by_definition(v))
     assert wedge_curvature(w).equals(wedge_curvature_by_definition(w))
@@ -189,10 +189,10 @@ def test_alt_sym_rules():
     X = S.tensor(a.form, b.form, data=[[th, ph], [1, th * ph]])
     assert X.alt().alt().equals(X.alt())                      # projections
     assert X.alt().sym().is_zero()                            # Sym Alt = 0
-    assert (X.alt() + X.sym()).equals(X)                      # two slots: X = Sym + Alt
-    assert X.alt(a).equals(X) and X.alt(a) is not X           # one slot: same numbers, a new tensor
+    assert (X.alt() + X.sym()).equals(X)                      # two indices: X = Sym + Alt
+    assert X.alt(a).equals(X) and X.alt(a) is not X           # one index: same numbers, a new tensor
     try:
-        X.alt(a, a)                                           # a repeated slot: refused
+        X.alt(a, a)                                           # a repeated index: refused
         assert False
     except ValueError:
         pass
@@ -226,7 +226,7 @@ def test_type_errors():
 
 def test_metric_checks():
     S = tf.Manifold.sphere(r=1)
-    for bad in (lambda: S.metric(S.ginv),                       # two up slots: that's g⁻¹
+    for bad in (lambda: S.metric(S.ginv),                       # two up indices: that's g⁻¹
                 lambda: S.metric([[1, 0], [0, 0]]),             # determinant 0
                 lambda: S.metric([[1, 1], [0, 1]])):            # not symmetric
         try:
@@ -234,7 +234,7 @@ def test_metric_checks():
         except (TypeError, ValueError):
             continue
         raise AssertionError("expected an error")
-    S.metric(S.g.simplify())                                    # a tensor with two down slots is fine
+    S.metric(S.g.simplify())                                    # a tensor with two down indices is fine
     assert is_zero(S.gaussian_curvature() - 1)
     assert tf.Manifold.schwarzschild().signature == "-+++"
 
@@ -255,9 +255,9 @@ def test_names():
     S = tf.Manifold.sphere()
     R = S.riemann()
     assert [i.name for i in S.indices(4)] == ["μ", "ν", "λ", "κ"]   # Greek for the tangent space
-    assert nabla(R).names == ["ρ", "σ", "λ", "μ", "ν"]              # new slot: first free Greek name
+    assert nabla(R).names == ["ρ", "σ", "λ", "μ", "ν"]              # new index: first free Greek name
     assert R.tr("rho", "mu").equals(R.tr("ρ", "μ"))                # spelled-out Greek
-    assert R.tr(0, 2).equals(R.tr("ρ", "μ"))                       # slot numbers
+    assert R.tr(0, 2).equals(R.tr("ρ", "μ"))                       # index numbers
     assert R.rename({"mu": "kappa"}).names == ["ρ", "σ", "κ", "ν"]
 
 
@@ -298,28 +298,28 @@ def test_contract_default_and_otimes():
     for bad in (lambda: contract(v, u),                          # column × column: mismatch
                 lambda: contract(v, w),                          # column × row: use otimes
                 lambda: contract(w, w),                          # row × row: mismatch
-                lambda: contract(alpha, v)):                     # form slots never pair by default
+                lambda: contract(alpha, v)):                     # form indices never pair by default
         try:
             bad()
         except TypeError:
             continue
         raise AssertionError("expected a TypeError")
-    T = otimes(v, u)                                             # v^μ u^ν: both slots kept
-    assert [s.name for s in T.slots] == ["μ", "ν"] and T.data[0, 1] == 1
+    T = otimes(v, u)                                             # v^μ u^ν: both indices kept
+    assert [s.name for s in T.indices] == ["μ", "ν"] and T.data[0, 1] == 1
 
 
 def test_raise_lower_undo():
     S = tf.Manifold.sphere(r=1)
     th = S.coords[0]
     v, w = S.vector([th, 1]), S.covector([1, th])
-    assert v.lower().slots[0].type == w.slots[0].type          # lowering a vector gives a covector
+    assert v.lower().indices[0].type == w.indices[0].type          # lowering a vector gives a covector
     assert v.lower().raise_().equals(v)                       # exact undo, both ways
     assert w.raise_().lower().equals(w)
     R = S.riemann()
-    Rl = R.lower("ρ")                                        # R_ρσμν: any value slot
-    assert Rl.slot("ρ").variance == "down" and Rl.raise_("ρ").equals(R)
+    Rl = R.lower("ρ")                                        # R_ρσμν: any value index
+    assert Rl.index("ρ").variance == "down" and Rl.raise_("ρ").equals(R)
     assert Rl.alt("ρ", "σ").equals(Rl)                          # pair symmetry shows up
-    for bad in (lambda: S.one_form([1, 0]).raise_(),           # form slots are never raised
+    for bad in (lambda: S.one_form([1, 0]).raise_(),           # form indices are never raised
                 lambda: R.lower("μ")):
         try:
             bad()
@@ -327,7 +327,7 @@ def test_raise_lower_undo():
             continue
         raise AssertionError("expected a TypeError")
     F = wedge_nabla(v.lower().as_form())                       # bridge to a 1-form, then d∧
-    assert F.form_slots and not F.value_slots
+    assert F.form_indices and not F.value_indices
     f = S.scalar(th ** 2)
     df = tf.d(f)                                                # a 1-form (μ)
     assert contract(df.as_value(), v).data.item() == 2 * th ** 2  # bridge back: df(v) = v^θ ∂_θ f
@@ -411,8 +411,8 @@ def test_interior():
     rhs = b * interior(a, v).data.item() - a * interior(b, v).data.item()
     assert lhs.equals(rhs)
     R = M.riemann()
-    assert interior(R, v).equals(contract(R, v, "μ", v.names[0]))     # contract with X's first form slot
-    for bad in (lambda: interior(v, v), lambda: interior(df, df)):     # no form slot / no row
+    assert interior(R, v).equals(contract(R, v, "μ", v.names[0]))     # contract with X's first form index
+    for bad in (lambda: interior(v, v), lambda: interior(df, df)):     # no form index / no row
         try:
             bad()
         except TypeError:
@@ -436,16 +436,16 @@ def test_minkowski_options():
 
 def test_copy_on_write():
     S = tf.Manifold.sphere()
-    X = S.tensor(*S.g.slots, data=[[1, 2], [3, 4]])
+    X = S.tensor(*S.g.indices, data=[[1, 2], [3, 4]])
     Y = X.T()                                                  # shares X's numbers
     Y[0, 1] = 99
     assert X.data.tolist() == [[1, 2], [3, 4]] and Y.data.tolist() == [[1, 99], [2, 4]]
-    Z = S.tensor(*X.slots, data=X.data)                        # built from X.data: its own copy
+    Z = S.tensor(*X.indices, data=X.data)                        # built from X.data: its own copy
     X[1, 1] = 0
     assert Z.data.tolist() == [[1, 2], [3, 4]]
     a = np.array([[1, 2], [3, 4]], dtype=object)
-    assert not np.may_share_memory(tf.Tensor(S, a, X.slots)._data, a)              # default: copies
-    assert np.may_share_memory(tf.Tensor(S, a, X.slots, copy=False)._data, a)      # copy=False: as is
+    assert not np.may_share_memory(tf.Tensor(S, a, X.indices)._data, a)              # default: copies
+    assert np.may_share_memory(tf.Tensor(S, a, X.indices, copy=False)._data, a)      # copy=False: as is
     g = S.g
     g[0, 0] = 1                                                # your g, not the manifold's
     assert S.g.data[0, 0] != 1
@@ -477,8 +477,8 @@ if __name__ == "__main__":
 
 
 def test_contract_keeps_form_order_when_names_clash():
-    # A's paired slot is a form slot named ν; B also has a form slot named ν.
-    # B's form slots must stay in B's order whatever they are called.
+    # A's paired index is a form index named ν; B also has a form index named ν.
+    # B's form indices must stay in B's order whatever they are called.
     S = tf.Manifold.sphere()
     mu, nu, la = S.indices(3)
     A = S.tensor(mu.up, nu.form, data=[[1, 2], [3, 4]])
@@ -488,10 +488,10 @@ def test_contract_keeps_form_order_when_names_clash():
     assert (clash.data == fresh.data).all()
 
 
-def test_slot_lists_are_positions():
+def test_index_lists_are_positions():
     S = tf.Manifold.sphere()
     R = S.riemann()                              # R(ρ↑ σ↓ μ ν)
-    assert R.value_slots == [0, 1] and R.form_slots == [2, 3]
+    assert R.value_indices == [0, 1] and R.form_indices == [2, 3]
     assert R.names == ["ρ", "σ", "μ", "ν"]       # the labels
 
 
@@ -499,7 +499,7 @@ def test_volume_form():
     P = tf.Manifold.euclidean(coords="polar")
     r, _ = P.coords
     eps = P.volume_form()
-    assert eps.form_slots == [0, 1] and sp.simplify(eps.data[0, 1] - r) == 0 and eps.data[1, 0] == -eps.data[0, 1]
+    assert eps.form_indices == [0, 1] and sp.simplify(eps.data[0, 1] - r) == 0 and eps.data[1, 0] == -eps.data[0, 1]
     S = tf.Manifold.sphere()
     th, _ = S.coords
     rr = sp.Symbol("r", positive=True)
@@ -520,7 +520,7 @@ def test_star_signs_and_curl():
     S = tf.Manifold.sphere()
     a, b, c = S.indices(3)
     try:
-        S.tensor(a.form, b.form, c.form, data=[[[0] * 2] * 2] * 2).star()  # 3 form slots in 2D: refused
+        S.tensor(a.form, b.form, c.form, data=[[[0] * 2] * 2] * 2).star()  # 3 form indices in 2D: refused
         assert False
     except ValueError:
         pass
@@ -580,12 +580,12 @@ def test_sympy_accepts_tensors():
     v = S.vector([1, 2])
     s = contract(v.lower(), v)                                  # a scalar
     assert sp.simplify(sp.diff(s, th) - sp.diff(s.data.item(), th)) == 0   # sympy takes it directly
-    assert sp.sympify(v) == sp.Array([1, 2])                    # one axis per slot
+    assert sp.sympify(v) == sp.Array([1, 2])                    # one axis per index
     for mixed in (th * s, th + s, th - s, sp.sin(th) * v, 2 / s, 0 / s):
         assert isinstance(mixed, tf.Tensor)                     # tensor arithmetic, whichever side
     try:
         2 / v
-        assert False, "dividing by a tensor with slots is refused"
+        assert False, "dividing by a tensor with indices is refused"
     except TypeError:
         pass
 
@@ -640,14 +640,14 @@ def test_inverse():
     S = tf.Manifold.sphere()
     th, _ = S.coords
     assert S.g.inverse().equals(S.ginv)                         # g⁻¹ is g's tensor inverse
-    assert [s.is_up for s in S.g.inverse().slots] == [True, True]  # arrows flip
+    assert [s.is_up for s in S.g.inverse().indices] == [True, True]  # arrows flip
     A = S.map([[1, sp.sin(th)], [0, 2]])
     assert contract(A, A.inverse()).equals(S.map([[1, 0], [0, 1]]))
     mu, nu, la = S.indices(3)
     F = S.tensor(mu.up, nu.down, la.form, data=[[[1, 0], [2, 1]], [[0, th], [1, 3]]])
     for bad in (lambda: S.map([[1, 1], [1, 1]]).inverse(),      # determinant 0
-                lambda: S.vector([1, 0]).inverse(),             # one slot
-                lambda: F.inverse(),                            # a form slot: not linear, so refused
+                lambda: S.vector([1, 0]).inverse(),             # one index
+                lambda: F.inverse(),                            # a form index: not linear, so refused
                 lambda: S.riemann().inverse(),
                 lambda: tf.Manifold(list(sp.symbols("x y", real=True))).metric([[1, 1], [1, 1]])):  # singular metric
         try:
@@ -657,12 +657,12 @@ def test_inverse():
             pass
 
 
-def test_slots_are_immutable():
+def test_indices_are_immutable():
     S = tf.Manifold.sphere()
     Y = S.g.T()
     mu = S.index()
-    for change in (lambda: setattr(Y.slots[0], "name", "α"),
-                   lambda: setattr(Y.slots[0], "variance", "up"),
+    for change in (lambda: setattr(Y.indices[0], "name", "α"),
+                   lambda: setattr(Y.indices[0], "variance", "up"),
                    lambda: setattr(mu, "name", "x")):
         try:
             change()
@@ -670,4 +670,10 @@ def test_slots_are_immutable():
         except AttributeError:                                 # FrozenInstanceError is an AttributeError
             pass
     assert repr(S.g) == "g(μ↓ ν↓)"                             # the manifold's metric is untouched
+    try:
+        S.tensor(mu, data=[1, 0])                              # up, down or form not chosen: refused
+        assert False
+    except TypeError:
+        pass
+    assert repr(mu) == "Index(μ)" and repr(mu.up) == "μ↑" and repr(mu.form) == "μ"
 

@@ -2,11 +2,11 @@
 
 ## The notation
 
-A tensor is a list of **slots**. Each slot is up (↑) or down (↓), and is either a **value**
-slot (part of what the tensor is) or a **form** slot (a step it takes). A value slot carries ↑ or
-↓; a form slot carries no arrow:
+A tensor is a list of **indices**. Each index is up (↑) or down (↓), and is either a **value**
+index (part of what the tensor is) or a **form** index (a step it takes). A value index carries ↑ or
+↓; a form index carries no arrow:
 
-| object | slots | reads as |
+| object | indices | reads as |
 |---|---|---|
 | vector | (μ↑) | a column |
 | covector | (μ↓) | a row |
@@ -16,11 +16,11 @@ slot (part of what the tensor is) or a **form** slot (a step it takes). A value 
 | R | (ρ↑ σ↓ μ ν) | a matrix-valued 2-form |
 | g | (μ↓ ν↓) | |
 
-Form slots are always down, so they need no arrow. The letters are labels; the arrows carry the
+Form indices are always down, so they need no arrow. The letters are labels; the arrows carry the
 meaning. Labels can be anything you choose; the ones the package hands out are Greek
-(μ ν λ κ ρ σ …), and `"mu"` works for μ. A slot can also be given by number (0, 1, …).
+(μ ν λ κ ρ σ …), and `"mu"` works for μ. An index can also be given by number (0, 1, …).
 
-A slot's **type** is (space, up/down, role). Adding needs matching types; pairing needs one
+An index's **type** is (space, up/down, role). Adding needs matching types; pairing needs one
 up and one down.
 
 The examples below use a sphere of radius r:
@@ -41,24 +41,24 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `X.data`, `X[i, j]` | the components (numpy, read-only) |
 | `X[i, j] = v` | change a component; copy on write, so no other tensor changes |
 | `X.value` | the components in sympy form: a scalar's expression, otherwise a sympy Array |
-| `X.names`, `X.types` | the slots' labels and types |
-| `X.value_slots`, `X.form_slots` | positions of the value slots and of the form slots |
-| `X + Y`, `X - Y`, `-X` | slot by slot (types must match); a number counts as a scalar, and 0 as the zero tensor of any type |
+| `X.names`, `X.types` | the indices' labels and types |
+| `X.value_indices`, `X.form_indices` | positions of the value indices and of the form indices |
+| `X + Y`, `X - Y`, `-X` | index by index (types must match); a number counts as a scalar, and 0 as the zero tensor of any type |
 | `c * X`, `X / c` | c a number, an expression, or a scalar tensor; exact (`X / 2` is ½X, never 0.5X) |
 | `X.simplify()` | simplify every component (exact rewrites only) |
 | `X.is_zero()`, `X.equals(Y)` | sympy's answer: True (simplifies to 0), False (sympy proves nonzero), None (can't tell); never sampled |
-| `sp.diff(s, θ)`, `sp.solve(s, r)`, … | sympy accepts tensors directly: a scalar as its expression, others as a sympy Array (one axis per slot) |
+| `sp.diff(s, θ)`, `sp.solve(s, r)`, … | sympy accepts tensors directly: a scalar as its expression, others as a sympy Array (one axis per index) |
 | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap positions 0–1, 1–2, 2–3, 3–4 |
-| `X.swap(a, b)`, `X.reorder(*slots)`, `X.rename({…})` | move or rename slots (by label or position) |
-| `X.alt()`, `X.sym()` | antisymmetric / symmetric part (default: form slots) |
-| `X.tr(a, b)` | pair two slots and sum |
-| `X.lower(slot)`, `X.raise_(slot)` | g or g⁻¹ on a value slot; exact inverses |
+| `X.swap(a, b)`, `X.reorder(*indices)`, `X.rename({…})` | move or rename indices (by label or position) |
+| `X.alt()`, `X.sym()` | antisymmetric / symmetric part (default: form indices) |
+| `X.tr(a, b)` | pair two indices and sum |
+| `X.lower(index)`, `X.raise_(index)` | g or g⁻¹ on a value index; exact inverses |
 | `X.as_form()`, `X.as_value()` | change the role: covector ↔ 1-form, same numbers |
-| `X.star()` | Hodge star: k form slots become n − k, same amount (uses the metric) |
-| `X.inverse()` | for a matrix at each point (exactly two value slots, nothing else): the matrix inverse; the slots swap roles and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
+| `X.star()` | Hodge star: k form indices become n − k, same amount (uses the metric) |
+| `X.inverse()` | for a matrix at each point (exactly two value indices, nothing else): the matrix inverse; the indices swap roles and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
 
-**Swaps.** Slot order matters. T, S, U and V are short for swapping neighbouring slots,
-counted from 0 across all slots:
+**Swaps.** Index order matters. T, S, U and V are short for swapping neighbouring indices,
+counted from 0 across all indices:
 
 | swap | short for | code |
 |---|---|---|
@@ -70,12 +70,12 @@ counted from 0 across all slots:
 Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`.
 
 X^US means apply U, then S: `X.U().S()`. For example, R(ρ↑ σ↓ μ ν) with S applied is
-(ρ↑ μ σ↓ ν): the second and third slots trade places. A result's label says how it was made:
+(ρ↑ μ σ↓ ν): the second and third indices trade places. A result's label says how it was made:
 R^US, −A, Alt(R), tr(R), …
 
 ### Example: Ricci from Riemann by a trace
 
-Ric = tr(R^S): swap R's second and third slots, then pair the first two.
+Ric = tr(R^S): swap R's second and third indices, then pair the first two.
 
 ```python
 R = S.riemann()                 # R(ρ↑ σ↓ μ ν)
@@ -90,9 +90,9 @@ tr(R^S)(σ↓ ν)
  [0 sin(theta)**2]]
 ```
 
-The trace leaves one value slot and one form slot; the numbers are the Ricci tensor.
+The trace leaves one value index and one form index; the numbers are the Ricci tensor.
 
-Raising and lowering never act on form slots; use `as_value()` first.
+Raising and lowering never act on form indices; use `as_value()` first.
 
 ### The Hodge star
 
@@ -102,9 +102,9 @@ number ↔ volume
 
 direction ↔ plane
 
-It raises X's k form slots and fills them, in order, into the volume form ε (n form slots),
-then divides by k! (each plane is stored k! times). What is left are n − k form slots. Value
-slots are carried along. For a 1-form α:
+It raises X's k form indices and fills them, in order, into the volume form ε (n form indices),
+then divides by k! (each plane is stored k! times). What is left are n − k form indices. Value
+indices are carried along. For a 1-form α:
 
 ⋆α = ι(ε, α raised)
 
@@ -143,23 +143,23 @@ has divergence 3, the same as tr(∇v).
 
 ## Products
 
-**AB is A's column with B's row**: A's last value slot (↓) pairs with B's first value slot (↑),
-as in matrix multiplication. Everything else is carried along: value slots first, then A's
-form slots, then B's.
+**AB is A's column with B's row**: A's last value index (↓) pairs with B's first value index (↑),
+as in matrix multiplication. Everything else is carried along: value indices first, then A's
+form indices, then B's.
 
 Rv: (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν)
 
-If the meeting slots are both up or both down, AB isn't defined (like column × column).
+If the meeting indices are both up or both down, AB isn't defined (like column × column).
 
-The wedge of A (p form slots) and B (q form slots), each first made antisymmetric:
+The wedge of A (p form indices) and B (q form indices), each first made antisymmetric:
 
 A∧B = k!/(p! q!) · Alt(AB),  k = p + q
 
 | call | is |
 |---|---|
 | `contract(A, B)` | AB; refuses if the pair doesn't exist |
-| `contract(A, B, a, b)` | pair the slots you name |
-| `interior(X, V)` | the interior product: like `contract(X, V)`, but X's first form slot with V's row |
+| `contract(A, B, a, b)` | pair the indices you name |
+| `interior(X, V)` | the interior product: like `contract(X, V)`, but X's first form index with V's row |
 | `otimes(A, B)` | A ⊗ B: pair nothing |
 | `wedge(A, B)`, `odot(A, B)` | A∧B, A⊙B |
 

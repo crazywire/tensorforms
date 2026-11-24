@@ -11,16 +11,16 @@
 
 
 Each takes one tensor and returns a new one, labelled by the operator (dX, ∇X, …).
-New form slots go first among the form slots. Γ and R come from the manifold; with no metric,
+New form indices go first among the form indices. Γ and R come from the manifold; with no metric,
 ∇ and ∇∧ act as d and d∧, and the two curvature operators are zero.
 
 Details:
 
-* Γ corrects up slots with +Γ from the left and down slots with −Γ from the right.
-* ∇∧ only corrects value slots: the corrections on form slots cancel, because Γ is symmetric in
-  its two lower slots (no torsion).
+* Γ corrects up indices with +Γ from the left and down indices with −Γ from the right.
+* ∇∧ only corrects value indices: the corrections on form indices cancel, because Γ is symmetric in
+  its two lower indices (no torsion).
 * d∧ multiplies by p + 1 after antisymmetrizing, and ∇∧∇∧ by C(p+2; 2, p), where p is the number
-  of form slots of X.
+  of form indices of X.
 * The two curvature operators never differentiate X; they only multiply by R.
 
 ### Example: how does e_θ change as you move on a sphere?
@@ -74,16 +74,16 @@ d∧α = 2 dx∧dy: the rotation has constant curl 2.
 ## Product rules
 
 A and B are any two tensors. **AB** is their product as defined in [tensors.md](tensors.md):
-A's column (last value slot, ↓) paired with B's row (first value slot, ↑), everything else
-carried along. **p** and **q** are the numbers of form slots of A and B.
+A's column (last value index, ↓) paired with B's row (first value index, ↑), everything else
+carried along. **p** and **q** are the numbers of form indices of A and B.
 
-**∇ (every slot).** Each term keeps all slots, but the new slot from ∇ must end up first among
-the form slots, so terms where it lands later are moved back with swaps. For example, with
+**∇ (every index).** Each term keeps all indices, but the new index from ∇ must end up first among
+the form indices, so terms where it lands later are moved back with swaps. For example, with
 R (ρ↑ σ↓ μ ν) and a vector v:
 
 ∇(Rv) = (∇R)v + (R∇v)^US
 
-In R∇v the new slot comes last (after μ ν), and US moves it to the front.
+In R∇v the new index comes last (after μ ν), and US moves it to the front.
 
 **∇∧ (wedged).** For a wedge product, swaps become signs:
 
@@ -100,9 +100,9 @@ of AB, which is a multiple of A∧B. So rewrite first, then use the rules above:
 
 ∇∧∇∧(AB) = p! q!/(p+q)! · ∇∧∇∧(A∧B)
 
-The factor is 1 when A or B has no form slots, so then AB = A∧B. Example, Rv (p = 2, q = 0):
+The factor is 1 when A or B has no form indices, so then AB = A∧B. Example, Rv (p = 2, q = 0):
 
 ∇∧(Rv) = (∇∧R)v + R∧(∇v) = R∧(∇v)
 
-using ∇∧R = 0 (the Bianchi identity) and ∇∧v = ∇v (v has no form slots). The sign is +
+using ∇∧R = 0 (the Bianchi identity) and ∇∧v = ∇v (v has no form indices). The sign is +
 because p = 2 is even.

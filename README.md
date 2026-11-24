@@ -5,8 +5,8 @@ in a matrix-style notation. Built on Python and sympy.
 
 ## What it does
 
-tensorforms treats a tensor as an object whose slots are typed. Each slot lives in the tangent
-space, is up (contravariant) or down (covariant), and is either a value slot or a form slot.
+tensorforms treats a tensor as an object whose indices are typed. Each index lives in the tangent
+space, is up (contravariant) or down (covariant), and is either a value index or a form index.
 
 With it you can compute the Levi-Civita connection Γ, the Riemann curvature R, the Ricci tensor
 Ric, the Ricci scalar R_s and the Einstein tensor G, using differential operators that act
@@ -14,11 +14,11 @@ on the tensors.
 
 ## Notation
 
-Each slot of a tensor is **up or down** (↑ / ↓: like a matrix's row and column index) and
-either a **value** slot (what the tensor is) or a **form** slot (a direction it acts on, like dx).
-A value slot carries ↑ or ↓; a form slot carries no arrow (form slots are always down):
+Each index of a tensor is **up or down** (↑ / ↓: like a matrix's row and column index) and
+either a **value** index (what the tensor is) or a **form** index (a direction it acts on, like dx).
+A value index carries ↑ or ↓; a form index carries no arrow (form indices are always down):
 
-| object | slots |
+| object | indices |
 |---|---|
 | vector | (μ↑) |
 | covector | (μ↓) |
@@ -56,16 +56,16 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | operation | function | description |
 |---|---|---|
 | AB | `contract(A, B)` | product: A's column with B's row |
-| | `contract(A, B, a, b)` | pair the slots you name |
-| | `interior(X, V)` | X's first form slot with V's row |
+| | `contract(A, B, a, b)` | pair the indices you name |
+| | `interior(X, V)` | X's first form index with V's row |
 | A ⊗ B | `otimes(A, B)` | tensor product |
 | A∧B, A⊙B | `wedge(A, B)`, `odot(A, B)` | wedge and symmetric products |
-| tr X | `X.tr(a, b)` | trace over two slots |
-| X^T, X^S, X^U, X^V | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap neighbouring slots |
+| tr X | `X.tr(a, b)` | trace over two indices |
+| X^T, X^S, X^U, X^V | `X.T()`, `X.S()`, `X.U()`, `X.V()` | swap neighbouring indices |
 | Alt X, Sym X | `X.alt()`, `X.sym()` | antisymmetric and symmetric parts |
-| | `X.lower(a)`, `X.raise_(a)` | lower or raise a value slot with g |
-| ⋆X | `X.star()` | Hodge star: k form slots become n − k (direction ↔ plane ↔ volume …) |
-| X⁻¹ | `X.inverse()` | inverse of a tensor with exactly two value slots (g⁻¹ = g's inverse) |
+| | `X.lower(a)`, `X.raise_(a)` | lower or raise a value index with g |
+| ⋆X | `X.star()` | Hodge star: k form indices become n − k (direction ↔ plane ↔ volume …) |
+| X⁻¹ | `X.inverse()` | inverse of a tensor with exactly two value indices (g⁻¹ = g's inverse) |
 
 ## Operators
 
@@ -114,7 +114,7 @@ took the traces.
 | | |
 |---|---|
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G, ready-made manifolds |
-| [Tensors](docs/tensors.md) | the notation (slots and arrows), one tensor, products |
+| [Tensors](docs/tensors.md) | the notation (indices and arrows), one tensor, products |
 | [Operators](docs/operators.md) | the six operators and their product rules |
 
 ## Examples

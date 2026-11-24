@@ -20,14 +20,14 @@ metric yet; tensors, d and d∧ already work.
 |---|---|
 | `M.indices(n, names=None)` | a list of n indices: μ, ν, λ, … (or the names you give) |
 | `M.index(name=None)` | one index |
-| `M.tensor(*slots, data=…, label=None)` | a tensor with the given slots |
-| `M.scalar(value)` | no slots |
+| `M.tensor(*indices, data=…, label=None)` | a tensor with the given indices |
+| `M.scalar(value)` | no indices |
 | `M.vector(data)` | (μ↑) |
 | `M.covector(data)` | (μ↓), a row |
 | `M.one_form(data)` | (μ) |
 | `M.map(data)` | (μ↑ ν↓), a matrix |
 
-An index gives the three kinds of slot: `mu.up`, `mu.down`, `mu.form`.
+An index from `M.indices` has a label and a space; choose when you use it: `mu.up`, `mu.down`, `mu.form`.
 
 ```python
 mu, nu = M.indices(2)

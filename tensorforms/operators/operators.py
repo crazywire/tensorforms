@@ -1,15 +1,15 @@
 """The operators, each written with the formula we proved (no torsion).
 
-                 every slot              wedged (form slots antisymmetrized)
+                 every index              wedged (form indices antisymmetrized)
     plain        d                       wedge_d          = d∧
-    once         nabla     = d + Γ       wedge_nabla      = d∧ + Γ∧  (value slots)
-    twice        curvature = R           wedge_curvature  = R∧       (value slots)
+    once         nabla     = d + Γ       wedge_nabla      = d∧ + Γ∧  (value indices)
+    twice        curvature = R           wedge_curvature  = R∧       (value indices)
 
 Γ and R always come from the manifold (no torsion: Γ is built from the metric).
-Corrections: + from the left on up slots, − from the right on down slots.
-nabla and curvature correct every slot. The wedged ones correct only value slots:
-the form-slot corrections cancel because Γ is S-symmetric.
-New form slots always go first among the form slots.
+Corrections: + from the left on up indices, − from the right on down indices.
+nabla and curvature correct every index. The wedged ones correct only value indices:
+the form-index corrections cancel because Γ is S-symmetric.
+New form indices always go first among the form indices.
 On a manifold with no metric: nabla is d, wedge_nabla is d∧, and both curvatures are zero.
 Results are labelled by the operation: dX, d∧X, ∇X, ∇∧X, ∇∧∇X, ∇∧∇∧X.
 """
@@ -19,77 +19,77 @@ import numpy as np
 import sympy as sp
 
 from ..tensor.labels import wrap
-from ..tensor.slot import Slot
+from ..tensor.index import Index
 from ..tensor.tensor import Tensor
 
 
 # ---------------------------------------------------------------- the operators
 def d(X):
-    """Plain d: one new form slot, first among the form slots. Needs only the coordinates."""
+    """Plain d: one new form index, first among the form indices. Needs only the coordinates."""
     _check_tensor(X)
-    pos, slots = _with_new_slots(X, 1)
-    return Tensor(X.manifold, _d(X, pos), slots, _label("d", X), copy=False)
+    pos, indices = _with_new_indices(X, 1)
+    return Tensor(X.manifold, _d(X, pos), indices, _label("d", X), copy=False)
 
 
 def wedge_d(X):
-    """Wedge d: d∧X. Antisymmetrize X's form slots, take d, then (p+1)·Alt. No Γ."""
+    """Wedge d: d∧X. Antisymmetrize X's form indices, take d, then (p+1)·Alt. No Γ."""
     _check_tensor(X)
-    p = len(X.form_slots)
+    p = len(X.form_indices)
     Xa = X.alt()
-    pos, slots = _with_new_slots(Xa, 1)
-    Y = _wedge_new(Tensor(X.manifold, _d(Xa, pos), slots, copy=False), p, 1)
+    pos, indices = _with_new_indices(Xa, 1)
+    Y = _wedge_new(Tensor(X.manifold, _d(Xa, pos), indices, copy=False), p, 1)
     return Y._new(label=_label("d∧", X))
 
 
 def nabla(X):
-    """Covariant derivative: ∇X = dX + Γ on every slot."""
+    """Covariant derivative: ∇X = dX + Γ on every index."""
     _check_tensor(X)
-    pos, slots = _with_new_slots(X, 1)
+    pos, indices = _with_new_indices(X, 1)
     data = _d(X, pos)
     G, _ = _geometry(X)
     if G is not None:
-        data = data + _act(G, X, slots)
-    return Tensor(X.manifold, data, slots, _label("∇", X), copy=False)
+        data = data + _act(G, X, indices)
+    return Tensor(X.manifold, data, indices, _label("∇", X), copy=False)
 
 
 def wedge_nabla(X):
-    """Wedge derivative: ∇∧X = d∧X + Γ∧ on value slots."""
+    """Wedge derivative: ∇∧X = d∧X + Γ∧ on value indices."""
     _check_tensor(X)
-    p = len(X.form_slots)
+    p = len(X.form_indices)
     Xa = X.alt()                                   # wedge factors are antisymmetric first
-    pos, slots = _with_new_slots(Xa, 1)
+    pos, indices = _with_new_indices(Xa, 1)
     data = _d(Xa, pos)
     G, _ = _geometry(X)
     if G is not None:
-        data = data + _act(G, Xa, slots, values_only=True)
-    Y = _wedge_new(Tensor(X.manifold, data, slots, copy=False), p, 1)
+        data = data + _act(G, Xa, indices, values_only=True)
+    Y = _wedge_new(Tensor(X.manifold, data, indices, copy=False), p, 1)
     return Y._new(label=_label("∇∧", X))
 
 
 def curvature(X):
-    """Curvature operator: ∇∧∇X = R on every slot. X is never differentiated."""
+    """Curvature operator: ∇∧∇X = R on every index. X is never differentiated."""
     _check_tensor(X)
-    pos, slots = _with_new_slots(X, 2)
+    pos, indices = _with_new_indices(X, 2)
     _, R = _geometry(X)
     if R is None:
-        data = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
+        data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
     else:
-        data = _act(R(), X, slots)
-    return Tensor(X.manifold, data, slots, _label("∇∧∇", X), copy=False)
+        data = _act(R(), X, indices)
+    return Tensor(X.manifold, data, indices, _label("∇∧∇", X), copy=False)
 
 
 def wedge_curvature(X):
-    """Wedge curvature: ∇∧∇∧X = R∧ on value slots. X is never differentiated."""
+    """Wedge curvature: ∇∧∇∧X = R∧ on value indices. X is never differentiated."""
     _check_tensor(X)
-    p = len(X.form_slots)
+    p = len(X.form_indices)
     Xa = X.alt()
-    pos, slots = _with_new_slots(Xa, 2)
+    pos, indices = _with_new_indices(Xa, 2)
     _, R = _geometry(X)
     if R is None:
-        data = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
+        data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
     else:
-        data = _act(R(), Xa, slots, values_only=True)
-    Y = _wedge_new(Tensor(X.manifold, data, slots, copy=False), p, 2)
+        data = _act(R(), Xa, indices, values_only=True)
+    Y = _wedge_new(Tensor(X.manifold, data, indices, copy=False), p, 2)
     return Y._new(label=_label("∇∧∇∧", X))
 
 
@@ -100,8 +100,8 @@ def _check_tensor(X):
 
 
 def _insert_position(X):
-    """Where new form slots go: first among the form slots."""
-    return next((i for i, s in enumerate(X.slots) if s.is_form), len(X.slots))
+    """Where new form indices go: first among the form indices."""
+    return next((i for i, s in enumerate(X.indices) if s.is_form), len(X.indices))
 
 
 def _geometry(X):
@@ -116,20 +116,20 @@ def _label(op, X):
     return f"{op}{wrap(X.label)}" if X.label else None
 
 
-def _new_form_slots(X, count):
-    """`count` fresh form slots, with names unused by X."""
+def _new_form_indices(X, count):
+    """`count` fresh form indices, with names unused by X."""
     M, used = X.manifold, list(X.names)
-    slots = []
+    indices = []
     for _ in range(count):
         name = M.tangent.fresh_name(used)
         used.append(name)
-        slots.append(Slot(name, M.tangent, "down", "form"))
-    return slots
+        indices.append(Index(name, M.tangent, "down", "form"))
+    return indices
 
 
-def _with_new_slots(X, count):
+def _with_new_indices(X, count):
     pos = _insert_position(X)
-    return pos, X.slots[:pos] + _new_form_slots(X, count) + X.slots[pos:]
+    return pos, X.indices[:pos] + _new_form_indices(X, count) + X.indices[pos:]
 
 
 def _d(X, pos):
@@ -139,34 +139,34 @@ def _d(X, pos):
     return np.moveaxis(D, -1, pos)
 
 
-def _act(C, X, slots, values_only=False):
-    """C (Γ or R) acts on each slot of X (numbers with numpy's tensordot, by position):
-        up slot s:    +C X   (C's down slot pairs with s; C's up slot takes s's place)
-        down slot s:  −X C   (s pairs with C's up slot; C's down slot takes s's place)
-    C's form slots become the new form slots, first among the form slots.
-    values_only: skip X's form slots (the wedged operators).
-    C must be (↑ ↓ forms…): a matrix (one up, one down value slot) with form slots, like Γ and R.
-    The result's order is X's slots, s replaced in place, with C's forms inserted first among
-    X's form slots (that is `slots`)."""
-    if (len(C.slots) < 2 or not C.slots[0].is_up or C.slots[1].is_up
-            or C.slots[0].is_form or C.slots[1].is_form or not all(s.is_form for s in C.slots[2:])):
+def _act(C, X, indices, values_only=False):
+    """C (Γ or R) acts on each index of X (numbers with numpy's tensordot, by position):
+        up index s:    +C X   (C's down index pairs with s; C's up index takes s's place)
+        down index s:  −X C   (s pairs with C's up index; C's down index takes s's place)
+    C's form indices become the new form indices, first among the form indices.
+    values_only: skip X's form indices (the wedged operators).
+    C must be (↑ ↓ forms…): a matrix (one up, one down value index) with form indices, like Γ and R.
+    The result's order is X's indices, s replaced in place, with C's forms inserted first among
+    X's form indices (that is `indices`)."""
+    if (len(C.indices) < 2 or not C.indices[0].is_up or C.indices[1].is_up
+            or C.indices[0].is_form or C.indices[1].is_form or not all(s.is_form for s in C.indices[2:])):
         raise TypeError(f"_act needs C shaped (↑ ↓ forms…) like Γ or R; got {C.declaration()}")
-    n, k = len(X.slots), len(C.slots) - 2                   # X's slots; C's form slots (the new ones)
-    pos = _insert_position(X)                               # where the new form slots go
-    total = np.zeros(tuple(s.space.dim for s in slots), dtype=object)
-    for j, s in enumerate(X.slots):
+    n, k = len(X.indices), len(C.indices) - 2                   # X's indices; C's form indices (the new ones)
+    pos = _insert_position(X)                               # where the new form indices go
+    total = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
+    for j, s in enumerate(X.indices):
         if values_only and s.is_form:
             continue
         if s.space is not X.manifold.tangent:
-            raise NotImplementedError(f"slot {s.name} is not in {X.manifold.tangent.name}")
-        rest = lambda t: t if t < j else t - 1             # X's slot t among X's other slots
+            raise NotImplementedError(f"index {s.name} is not in {X.manifold.tangent.name}")
+        rest = lambda t: t if t < j else t - 1             # X's index t among X's other indices
         if s.is_up:
-            # tensordot(C, X): [C's up, C's forms, X's other slots]
+            # tensordot(C, X): [C's up, C's forms, X's other indices]
             data, sign = np.tensordot(C.data, X.data, axes=([1], [j])), 1
             replaced, form = 0, lambda a: 1 + a
             other = lambda t: 1 + k + rest(t)
         else:
-            # tensordot(X, C): [X's other slots, C's down, C's forms]
+            # tensordot(X, C): [X's other indices, C's down, C's forms]
             data, sign = np.tensordot(X.data, C.data, axes=([j], [0])), -1
             replaced, form = n - 1, lambda a: n + a
             other = rest
@@ -177,7 +177,7 @@ def _act(C, X, slots, values_only=False):
 
 
 def _wedge_new(Y, p, new):
-    """Wedge `new` new form slots with X's p form slots: C(p+new; new, p) · Alt."""
+    """Wedge `new` new form indices with X's p form indices: C(p+new; new, p) · Alt."""
     if p == 0:
         return Y
     return Y.alt() * sp.Rational(math.factorial(p + new), math.factorial(new) * math.factorial(p))
