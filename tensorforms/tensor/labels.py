@@ -116,9 +116,33 @@ def negated(label):
     return Label(f"−{_operand(label, {'atom', 'post', 'pre', 'prod'})}", "sum", negates=label)
 
 
+_SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+def number(c):
+    """A number or expression as one line of text: r/2, sin(θ), θ², 2·θ, −1/2."""
+    text = sp.sstr(c)
+    text = re.sub(r"\*\*(\d+)", lambda m: m.group(1).translate(_SUPERSCRIPT), text)   # θ**2 → θ²
+    text = text.replace("**", "^").replace("*", "·").replace("-", "−")
+    return re.sub(r"[A-Za-z]+", lambda m: GREEK.get(m.group(0), m.group(0)), text)     # theta → θ
+
+
+def _top_level(text):
+    """The characters of text that are not inside brackets."""
+    depth, out = 0, []
+    for ch in text:
+        depth += ch == "("
+        if depth == 0:
+            out.append(ch)
+        depth -= ch == ")"
+    return "".join(out)
+
+
 def _number(c):
-    text = sp.pretty(c, use_unicode=True)
-    return text if isinstance(c, (sp.Integer, sp.Symbol)) else f"({text})"
+    """A number as a factor: bracketed only if it has an operator at the top level, (r/2)·A,
+    but sin(θ)·A and 3A."""
+    text = number(c)
+    return f"({text})" if any(ch in _top_level(text) for ch in "+−·/^") else text
 
 
 def scaled(c, c_label, label):

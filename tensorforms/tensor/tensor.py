@@ -15,7 +15,7 @@ from sympy.matrices.exceptions import NonInvertibleMatrixError, NonSquareMatrixE
 from sympy.combinatorics import Permutation
 
 from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
-from .labels import divided, func, index_label, negated, postfix, prefix, scaled, summed, swapped
+from .labels import divided, func, index_label, number, negated, postfix, prefix, scaled, summed, swapped
 from .index import Index
 
 
@@ -167,7 +167,7 @@ class Tensor:
             raise TypeError(f"can only add tensors and numbers, not {type(other).__name__}")
         if c == 0:
             return None
-        return Tensor(self.manifold, c, [], label=sp.pretty(c, use_unicode=True))
+        return Tensor(self.manifold, c, [], label=number(c))
 
     def __add__(self, other):
         other = self._operand(other)
@@ -215,7 +215,7 @@ class Tensor:
         n = _as_expr(c)
         if n is None:
             raise TypeError(f"can only divide a number or expression by a scalar, not {type(c).__name__}")
-        return Tensor(self.manifold, n, [], label=sp.pretty(n, use_unicode=True)) / self
+        return Tensor(self.manifold, n, [], label=number(n)) / self
 
     def _sympy_(self):
         """What sympy sees when it is handed a tensor: its value. So sp.simplify(s), sp.diff(s, θ) work."""

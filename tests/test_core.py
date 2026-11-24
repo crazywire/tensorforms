@@ -293,6 +293,12 @@ def test_labels():
                 "(R+B)/2": (R + B) / 2, "R∇v": contract(R, nabla(v))}
     for label, X in brackets.items():
         assert X.label == label, (label, X.label)
+    th = S.coords[0]
+    r = next(iter(S.g.data[0, 0].free_symbols - {th}))
+    numbers = {"g/(r/2)": S.g / (r / 2), "sin(θ)·g": sp.sin(th) * S.g, "θ²·g": th**2 * S.g,
+               "(2·θ)·g": (2 * th) * S.g, "g/sin(θ)": S.g / sp.sin(th)}
+    for label, X in numbers.items():
+        assert X.label == label, (label, X.label)                 # one line; brackets only with an operator
 
 
 def test_contract_default_and_otimes():
