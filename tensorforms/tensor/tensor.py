@@ -243,6 +243,45 @@ class Tensor:
         """Same three answers as is_zero, for X − Y."""
         return (self - other).is_zero()
 
+    # ---------- substituting and evaluating ----------
+    def _coordinate(self, x):
+        """A coordinate given as its symbol or its name ("theta" or θ), or None if x isn't one."""
+        for c in self.manifold.coords:
+            if x == c or (isinstance(x, str) and index_label(x) in (c.name, index_label(c.name))):
+                return c
+        return None
+
+    def subs(self, *args):
+        """Substitute for parameters in every component, as sympy's subs: X.subs(r, 1) or
+        X.subs({m: 1, q: 0}). The result is still a field. Coordinates are refused: replacing θ by a
+        number gives values at one point (use at), and by an expression is not a change of
+        coordinates (the components would also have to mix)."""
+        pairs = args[0].items() if len(args) == 1 and isinstance(args[0], dict) else [args]
+        coords = set(self.manifold.coords)
+        for old, _ in pairs:
+            if self._coordinate(old) or (not isinstance(old, str) and coords & sp.sympify(old).free_symbols):
+                raise ValueError(f"subs is for parameters; {old} involves a coordinate. For values at a point "
+                                 f"use X.at({{...}}); a change of coordinates is a different operation")
+        f = lambda e: sp.sympify(e).subs(*args)
+        return self._new(np.vectorize(f, otypes=[object])(self._data), label=None)
+
+    def at(self, point):
+        """The components at one point: X.at({θ: π/2, φ: 0}), every coordinate given (by symbol or
+        name). Plain values, not a tensor: a scalar's expression, otherwise a sympy Array (one axis
+        per index), so no derivative can be taken of it by mistake."""
+        values = {}
+        for k, v in point.items():
+            c = self._coordinate(k)
+            if c is None:
+                raise ValueError(f"at: {k} is not a coordinate of {self.manifold.name} {tuple(self.manifold.coords)}")
+            values[c] = v
+        missing = [c for c in self.manifold.coords if c not in values]
+        if missing:
+            raise ValueError(f"at: give every coordinate; missing {missing}")
+        f = lambda e: sp.sympify(e).subs(values)
+        data = np.vectorize(f, otypes=[object])(self._data)
+        return data.item() if not self.indices else sp.Array(data.tolist())
+
     # ---------- moving indices ----------
     def _transposed(self, order):
         return self._new(np.transpose(self._data, order), [self.indices[i] for i in order], label=self.label)

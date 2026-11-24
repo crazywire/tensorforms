@@ -701,3 +701,23 @@ def test_arithmetic_edges():
     except TypeError as e:
         assert "indices match" in str(e)
 
+
+def test_subs_and_at():
+    S = tf.Manifold.sphere()
+    th, ph = S.coords
+    r = next(iter(S.g.data[0, 0].free_symbols))
+    assert S.g.subs(r, 1).data.tolist() == [[1, 0], [0, sp.sin(th)**2]]    # a parameter: still a field
+    assert S.g.subs({r: 2}).data[0, 0] == 4
+    for bad in (lambda: S.g.subs(th, 0), lambda: S.g.subs({"theta": 0}),  # coordinates refused
+                lambda: S.g.subs(sp.sin(th), 1),
+                lambda: S.g.at({th: sp.pi / 2}),                           # every coordinate needed
+                lambda: S.g.at({r: 1, th: 0, ph: 0})):                     # r is not a coordinate
+        try:
+            bad()
+            assert False
+        except ValueError:
+            pass
+    G = S.g.at({th: sp.pi / 2, "phi": 0})                                  # plain values, not a tensor
+    assert isinstance(G, sp.Array) and G == sp.Array([[r**2, 0], [0, r**2]])
+    assert sp.simplify(S.ricci_scalar().at({th: 1, ph: 0}) - 2 / r**2) == 0
+
