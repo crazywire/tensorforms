@@ -67,6 +67,6 @@ def inverse_metric(g):
         G = g.inverse().simplify()
     except ValueError as e:
         raise ValueError(f"a metric must be invertible ({e})") from None
-    G = G._with_labels("μ", "ν")
+    G = G.relabel_indices({0: "μ", 1: "ν"})
     G.label = "g⁻¹"
     return G

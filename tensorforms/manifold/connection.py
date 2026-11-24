@@ -16,6 +16,6 @@ def levi_civita(g, ginv):
     X = D + D.S - D.S.T                                  # dg + dg^S − dg^ST
     G = sp.Rational(1, 2) * contract(ginv, X, 1, 0)
     G = G.as_form(2).simplify()                                # the step index becomes a form index
-    G = G._with_labels("ρ", "σ", "μ")
+    G = G.relabel_indices({0: "ρ", 1: "σ", 2: "μ"})
     G.label = "Γ"
     return G

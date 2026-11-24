@@ -50,7 +50,7 @@ S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 | `sp.diff(s, θ)`, `sp.solve(s, r)`, … | sympy accepts tensors directly: a scalar as its expression, others as a sympy Array (one axis per index) |
 | `X.T`, `X.S`, `X.U`, `X.V` | swap positions 0–1, 1–2, 2–3, 3–4 |
 | `X.swap(a, b)`, `X.reorder(*indices)` | move indices (by label or position) |
-| `S.tensor(*(i.relabel(…) …), data=X.data)` | new index labels: relabel the indices you want with `Index.relabel`, then build the tensor |
+| `X.relabel_indices({"μ": "α"})` | new labels for the indices you name (by label or position); numbers and the tensor's label stay |
 | `X.alt()`, `X.sym()` | antisymmetric / symmetric part (default: form indices) |
 | `X.tr(a, b)` | pair two indices and sum |
 | `X.lower(index)`, `X.raise_(index)` | g or g⁻¹ on a value index; exact inverses |
