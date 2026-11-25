@@ -17,11 +17,11 @@ class IndexMismatchError(TensorformsError, TypeError):
 
 
 class MissingMetricError(TensorformsError, AttributeError):
-    """The operation needs a metric and the manifold has none yet (call M.metric(...))."""
+    """The operation needs a metric and the manifold has none yet (make the manifold with metric=...)."""
 
 
 class InvalidMetricError(TensorformsError, ValueError):
-    """The metric given is rejected: wrong size, not shown symmetric, determinant 0, signature."""
+    """The metric given is rejected: wrong size, not shown symmetric, determinant 0."""
 
 
 class InvalidCoordinateError(TensorformsError, ValueError):

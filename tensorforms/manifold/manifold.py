@@ -1,7 +1,8 @@
 """The Manifold: coordinates, and everything that lives on them.
 
-A bare manifold has no metric. M.metric(...) makes, checks and attaches one;
-connection and curvature are then computed when asked. Γ always comes from the metric.
+The metric is given when the manifold is made and never changes, so nothing computed
+from it can go stale. Without one the manifold is bare: forms, d and d∧ still work.
+Connection and curvature are computed when asked; Γ always comes from the metric.
 """
 
 import numpy as np
@@ -18,17 +19,26 @@ from ..errors import MissingMetricError
 
 
 class Manifold:
-    def __init__(self, coords, name="M"):
+    def __init__(self, coords, label=None, metric=None):
+        """label: just a name for printing (optional).
+        metric: a matrix, or a tensor with two down value indices; checked here."""
         self.coords = list(coords)
         self.dim = len(self.coords)
-        self.name = name
-        self.tangent = Space(f"T{name}", self.dim, names=TANGENT_NAMES)      # value and form indices live here
-        self._g = self._ginv = self._signature = None
-        self._cache = {}        # Γ, R, Ric, R_s, G: computed once, cleared when the metric changes
+        self.label = label
+        self.tangent = Space(f"T{self}", self.dim, names=TANGENT_NAMES)      # value and form indices live here
+        self._g = self._ginv = None
+        self._cache = {}        # Γ, R, Ric, R_s, G: computed once
+        if metric is not None:
+            self._g = build_metric(self, metric)
+            self._ginv = inverse_metric(self._g)
 
     def __repr__(self):
         g = "with a metric" if self._g is not None else "no metric"
-        return f"Manifold {self.name}{tuple(self.coords)} ({g})"
+        return f"Manifold {self.label}{tuple(self.coords)} ({g})" if self.label else f"Manifold{tuple(self.coords)} ({g})"
+
+    def __str__(self):
+        """The label, or the coordinates if there is none: what messages call this manifold."""
+        return self.label or str(tuple(self.coords))
 
     # ---------- ready-made manifolds (class methods: Manifold.sphere(), …) ----------
     @classmethod
@@ -121,32 +131,16 @@ class Manifold:
         return Tensor(self, data, [a.up, b.down], label="A")
 
     # ---------- metric ----------
-    def metric(self, data=None, signature=None):
-        """Make, check and attach the metric; returns g.
-        data: a matrix (or a tensor with two down value indices). No data: unknown functions
-        g_ij(x), with the signature you declare (e.g. "-+++"). Calling it again replaces
-        the metric and clears everything computed from the old one."""
-        g, sig = build_metric(self, data, signature)
-        self._g, self._ginv, self._signature = g, inverse_metric(g), sig
-        self._cache.clear()
-        return g._new(label=g.label)
-
     @property
     def g(self):
         if self._g is None:
-            raise MissingMetricError("metric: this manifold has none yet; call M.metric(...)")
+            raise MissingMetricError("metric: this manifold has none yet; make the manifold with metric=...")
         return self._g._new(label=self._g.label)
 
     @property
     def ginv(self):
         self.g                                                 # raises if there is no metric
         return self._ginv._new(label=self._ginv.label)
-
-    @property
-    def signature(self):
-        """The metric's sign pattern, e.g. "-+++" (None if it couldn't be told)."""
-        self.g                                                 # raises if there is no metric
-        return self._signature
 
     # ---------- connection and curvature ----------
     def levi_civita(self):

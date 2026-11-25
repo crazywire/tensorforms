@@ -23,9 +23,9 @@ t, th, ph = sp.symbols("t theta phi", real=True)
 r = sp.Symbol("r", positive=True)
 m, q = sp.symbols("m q", positive=True)
 
-M = Manifold([t, r, th, ph], name="ReissnerNordstrom")
 f = 1 - 2 * m / r + q ** 2 / r ** 2
-M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
+M = Manifold([t, r, th, ph], label="ReissnerNordstrom",
+             metric=sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2))
 
 A = M.one_form([-q / r, 0, 0, 0])               # electric potential q/r
 F = A.wedge_d()                                  # field strength (μ ν)

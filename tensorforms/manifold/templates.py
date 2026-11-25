@@ -1,34 +1,45 @@
 """Metric shapes with unknown functions, for solving rather than using.
 
-Each takes a bare Manifold, attaches the metric, and returns the manifold.
+Each takes the coordinates and returns a new Manifold with that metric.
 """
+import itertools
+
+import numpy as np
 import sympy as sp
+
+from .manifold import Manifold
 from ..errors import InvalidCoordinateError
 
 
-def diagonal(M, prefix="f"):
+def general(coords, label=None):
+    """g_ij(x): every component an unknown function, symmetric."""
+    n = len(coords)
+    g = np.empty((n, n), dtype=object)
+    for a, b in itertools.combinations_with_replacement(range(n), 2):
+        g[a, b] = g[b, a] = sp.Function(f"g{a}{b}")(*coords)
+    return Manifold(coords, label, metric=g)
+
+
+def diagonal(coords, prefix="f", label=None):
     """diag(f0(x), f1(x), …): the simplest general metric."""
-    fs = [sp.Function(f"{prefix}{i}")(*M.coords) for i in range(M.dim)]
-    M.metric(sp.diag(*fs))
-    return M
+    fs = [sp.Function(f"{prefix}{i}")(*coords) for i in range(len(coords))]
+    return Manifold(coords, label, metric=sp.diag(*fs))
 
 
-def conformally_flat(M, signature=None):
-    """e^{2ω(x)} × (the flat metric of the given signature). ω is named so it can't be
-    confused with a coordinate φ."""
-    signature = signature or "+" * M.dim
-    omega = sp.Function("omega")(*M.coords)
-    signs = [1 if s == "+" else -1 for s in signature]
-    M.metric(sp.exp(2 * omega) * sp.diag(*signs), signature=signature)
-    return M
+def conformally_flat(coords, signs=None, label=None):
+    """e^{2ω(x)} × diag(signs): the flat metric scaled at every point. signs: e.g. [-1, 1, 1, 1]
+    (default all 1). ω is named so it can't be confused with a coordinate φ."""
+    signs = signs or [1] * len(coords)
+    omega = sp.Function("omega")(*coords)
+    return Manifold(coords, label, metric=sp.exp(2 * omega) * sp.diag(*signs))
 
 
-def static_spherical(M):
-    """−A(r) dt² + B(r) dr² + r² (dθ² + sin²θ dφ²). M must have coordinates (t, r, θ, φ).
+def static_spherical(coords, label=None):
+    """−A(r) dt² + B(r) dr² + r² (dθ² + sin²θ dφ²). Coordinates (t, r, θ, φ) in that order.
     Setting the Einstein tensor to zero and solving for A, B gives Schwarzschild."""
-    if M.dim != 4 or [str(c) for c in M.coords][1:3] != ["r", "theta"]:
-        raise InvalidCoordinateError(f"static_spherical: needs coordinates (t, r, θ, φ) in that order; got {tuple(M.coords)}")
-    t, r, th, ph = M.coords
+    coords = list(coords)
+    if len(coords) != 4 or [str(c) for c in coords][1:3] != ["r", "theta"]:
+        raise InvalidCoordinateError(f"static_spherical: needs coordinates (t, r, θ, φ) in that order; got {tuple(coords)}")
+    t, r, th, ph = coords
     A, B = sp.Function("A")(r), sp.Function("B")(r)
-    M.metric(sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
-    return M
+    return Manifold(coords, label, metric=sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2))

@@ -1,17 +1,17 @@
 # Manifold
 
-A manifold holds the coordinates, the tangent space and (once you give it one) the metric.
+A manifold holds the coordinates, the tangent space and (if you give one) the metric.
 
 ```python
 import sympy as sp
 from tensorforms import Manifold
 
 th, ph = sp.symbols("theta phi", real=True)
-M = Manifold([th, ph], name="S2")
+M = Manifold([th, ph], label="S2")
 ```
 
-`Manifold(coords, name="M")`: a manifold with these coordinates (sympy symbols), no metric yet.
-Tensors, d, d∧ and the Lie derivative work without one.
+`Manifold(coords, label=None, metric=None)`: a manifold with these coordinates (sympy symbols). The label is only a name for printing.
+Tensors, d, d∧ and the Lie derivative work without a metric.
 
 ## Making tensors
 
@@ -36,16 +36,16 @@ v = M.vector([1, 0])
 
 ## The metric
 
-`M.metric(data)` makes the metric, checks it (right size; shown symmetric; refused if shown to have
-determinant 0) and attaches it. Calling it again replaces it. With no data, `M.metric(signature="-+++")` makes an unknown
-metric of functions g_ij(x), for solving.
+The metric is given when the manifold is made, `Manifold(coords, metric=data)`, and never changes.
+It is checked there (right size; shown symmetric; refused if shown to have determinant 0). `data` is a
+matrix or a tensor with two down value indices. Without a metric the manifold is bare: forms, d and d∧
+still work.
 
 
 | | |
 |---|---|
 | `M.g` | g (μ↓ ν↓) |
 | `M.ginv` | g⁻¹ (μ↑ ν↑), g's tensor inverse |
-| `M.signature` | e.g. `"++"`, `"-+++"` |
 
 ## Connection and curvature
 
@@ -66,8 +66,7 @@ Computed from g (Levi-Civita, no torsion):
 
 ```python
 r = sp.Symbol("r", positive=True)
-S = Manifold([th, ph], name="S2")
-S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
+S = Manifold([th, ph], label="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 G = S.levi_civita()
 print(G.data[0])        # Γ^θ
@@ -137,14 +136,15 @@ dΩ² = dθ² + sin²θ dφ². For `Manifold.flrw`, a is an unknown a(t) by defa
 
 ### Templates
 
-Metrics with unknown functions, for solving: plain functions in `tf.templates`. Each takes a
-bare manifold, attaches the metric, and returns it.
+Metrics with unknown functions, for solving: plain functions in `tf.templates`. Each takes the
+coordinates and returns a new manifold with that metric.
 
 | call | metric |
 |---|---|
-| `tf.templates.diagonal(M)` | diag(f0(x), f1(x), …) |
-| `tf.templates.conformally_flat(M, signature=None)` | e^{2ω(x)} × the flat metric |
-| `tf.templates.static_spherical(M)` | −A(r)dt² + B(r)dr² + r²dΩ², coordinates (t, r, θ, φ) |
+| `tf.templates.general(coords)` | g_ij(x), every component unknown |
+| `tf.templates.diagonal(coords)` | diag(f0(x), f1(x), …) |
+| `tf.templates.conformally_flat(coords, signs=None)` | e^{2ω(x)} × diag(signs), e.g. signs `[-1, 1, 1, 1]` |
+| `tf.templates.static_spherical(coords)` | −A(r)dt² + B(r)dr² + r²dΩ², coordinates (t, r, θ, φ) |
 
 ### Example: the Friedmann equation
 
