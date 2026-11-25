@@ -224,7 +224,7 @@ def test_type_errors():
 def test_metric_checks():
     S = tf.Manifold.sphere(r=1)
     th, ph = S.coords
-    for bad in (lambda: Manifold([th, ph], metric=S.g),                  # a tensor: give its components
+    for bad in (lambda: Manifold([th, ph], metric=S.ginv),               # two up indices: that's g⁻¹
                 lambda: Manifold([th, ph], metric=[[1, 0], [0, 0]]),     # determinant 0
                 lambda: Manifold([th, ph], metric=[[1, 1], [0, 1]])):    # not symmetric
         try:
@@ -232,7 +232,7 @@ def test_metric_checks():
         except (TypeError, ValueError):
             continue
         raise AssertionError("expected an error")
-    S2 = Manifold([th, ph], metric=S.g.data)                    # another manifold's components
+    S2 = Manifold([th, ph], metric=S.g.simplify())              # a tensor with two down indices is fine
     assert is_zero(S2.gaussian_curvature() - 1)
 
 

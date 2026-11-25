@@ -37,8 +37,8 @@ v = M.vector([1, 0])
 ## The metric
 
 The metric is given when the manifold is made, `Manifold(coords, metric=data)`, and never changes.
-It is checked there (right size; shown symmetric; refused if shown to have determinant 0). `data` is the
-components, as nested lists or a matrix (`S.g.data` reuses another manifold's). Without a metric the manifold is bare: forms, d and d∧
+It is checked there (right size; shown symmetric; refused if shown to have determinant 0). `data` is a
+matrix or a tensor with two down value indices. Without a metric the manifold is bare: forms, d and d∧
 still work.
 
 
