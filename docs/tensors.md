@@ -30,8 +30,7 @@ import sympy as sp
 from tensorforms import Manifold
 r = sp.Symbol("r", positive=True)
 th, ph = sp.symbols("theta phi", real=True)
-S = Manifold([th, ph], name="S2")
-S.metric([[r**2, 0], [0, r**2 * sp.sin(th)**2]])
+S = Manifold([th, ph], name="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 ```
 
 ## One tensor

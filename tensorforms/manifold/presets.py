@@ -49,9 +49,7 @@ def euclidean(n=None, coords="cartesian"):
         raise ValueError(f"euclidean: n must be a whole number, at least 1; got {n!r}")
     n = 3 if (n is None and coords.lower() == "cartesian") else n
     xs, diag = _space(n, coords)
-    M = Manifold(xs, name=f"E{len(xs)}")
-    M.metric(sp.diag(*diag), signature="+" * len(xs))
-    return M
+    return Manifold(xs, name=f"E{len(xs)}", metric=sp.diag(*diag), signature="+" * len(xs))
 
 
 def minkowski(n=None, coords="cartesian"):
@@ -64,9 +62,7 @@ def minkowski(n=None, coords="cartesian"):
         space_n = 3
     xs, diag = _space(space_n, coords)
     t = sp.Symbol("t", real=True)
-    M = Manifold([t] + xs, name="Minkowski")
-    M.metric(sp.diag(-1, *diag), signature="-" + "+" * len(xs))
-    return M
+    return Manifold([t] + xs, name="Minkowski", metric=sp.diag(-1, *diag), signature="-" + "+" * len(xs))
 
 
 def cylinder(r=None):
@@ -74,9 +70,7 @@ def cylinder(r=None):
     r = _radius(r, "r")
     ph = sp.Symbol("phi", real=True)
     z = sp.Symbol("z", real=True)
-    M = Manifold([ph, z], name="Cyl")
-    M.metric(sp.diag(r ** 2, 1), signature="++")
-    return M
+    return Manifold([ph, z], name="Cyl", metric=sp.diag(r ** 2, 1), signature="++")
 
 
 # --- curved, Riemannian (+ + +) ---
@@ -85,27 +79,21 @@ def sphere(r=None):
     """Round sphere. r=None keeps the radius symbolic (K = 1/r²)."""
     r = _radius(r, "r")
     th, ph = sp.symbols("theta phi", real=True)
-    M = Manifold([th, ph], name="S2")
-    M.metric(sp.diag(r ** 2, r ** 2 * sp.sin(th) ** 2), signature="++")
-    return M
+    return Manifold([th, ph], name="S2", metric=sp.diag(r ** 2, r ** 2 * sp.sin(th) ** 2), signature="++")
 
 
 def torus(R=None, r=None):
     """Torus: θ around the tube, φ around the hole. K > 0 outside, K < 0 inside."""
     R, r = _radius(R, "R"), _radius(r, "r")
     th, ph = sp.symbols("theta phi", real=True)
-    M = Manifold([th, ph], name="T2")
-    M.metric(sp.diag(r ** 2, (R + r * sp.cos(th)) ** 2), signature="++")
-    return M
+    return Manifold([th, ph], name="T2", metric=sp.diag(r ** 2, (R + r * sp.cos(th)) ** 2), signature="++")
 
 
 def hyperbolic_plane():
     """Upper half-plane, y > 0: K = −1 everywhere."""
     x = sp.Symbol("x", real=True)
     y = sp.Symbol("y", positive=True)
-    M = Manifold([x, y], name="H2")
-    M.metric(sp.diag(1 / y ** 2, 1 / y ** 2), signature="++")
-    return M
+    return Manifold([x, y], name="H2", metric=sp.diag(1 / y ** 2, 1 / y ** 2), signature="++")
 
 
 # --- curved, Lorentzian (− + + +) ---
@@ -117,9 +105,7 @@ def schwarzschild(m=None):
     t, th, ph = sp.symbols("t theta phi", real=True)
     r = sp.Symbol("r", positive=True)
     f = 1 - 2 * m / r
-    M = Manifold([t, r, th, ph], name="Schwarzschild")
-    M.metric(sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
-    return M
+    return Manifold([t, r, th, ph], name="Schwarzschild", metric=sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
 
 
 def flrw(a=None, k=0):
@@ -146,10 +132,8 @@ def flrw(a=None, k=0):
             raise InvalidCoordinateError(f"flrw: a uses a symbol {wrong[0].name!r} that isn't the manifold's coordinate "
                              f"(different assumptions); use sp.Symbol(\"t\", real=True) or pass a function, "
                              f"a=lambda t: ...")
-    M = Manifold(coords, name="FLRW")
     g = sp.diag(-1, a ** 2 / (1 - k * r ** 2), a ** 2 * r ** 2, a ** 2 * r ** 2 * sp.sin(th) ** 2)
-    M.metric(g, signature="-+++")
-    return M
+    return Manifold(coords, name="FLRW", metric=g, signature="-+++")
 
 
 def de_sitter(H=None):
@@ -157,6 +141,4 @@ def de_sitter(H=None):
     H = sp.Symbol("H", positive=True) if H is None else sp.sympify(H)
     t, x, y, z = sp.symbols("t x y z", real=True)
     e = sp.exp(2 * H * t)
-    M = Manifold([t, x, y, z], name="deSitter")
-    M.metric(sp.diag(-1, e, e, e), signature="-+++")
-    return M
+    return Manifold([t, x, y, z], name="deSitter", metric=sp.diag(-1, e, e, e), signature="-+++")

@@ -115,8 +115,7 @@ def test_scalar_has_no_curvature():
 
 def test_bianchi_in_3d():
     x, y, z = sp.symbols("x y z", real=True)
-    M = Manifold([x, y, z])
-    M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
+    M = Manifold([x, y, z], metric=sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     assert M.riemann().wedge_nabla().is_zero()               # ∇∧R = 0
     u = M.vector([y, x * z, 1])
     assert u.curvature().equals(curvature_by_commutator(u))
@@ -162,8 +161,7 @@ def test_connection_is_s_symmetric():
 def test_gamma_and_riemann_match_index_formulas():
     """Γ and R are computed with the derivatives; check them against the index formulas."""
     x, y, z = sp.symbols("x y z", real=True)
-    M = Manifold([x, y, z])
-    M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
+    M = Manifold([x, y, z], metric=sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     X, n = M.coords, 3
     g, gi = M.g.data, M.ginv.data
     G, R = M.levi_civita().data, M.riemann().data
@@ -225,16 +223,19 @@ def test_type_errors():
 
 def test_metric_checks():
     S = tf.Manifold.sphere(r=1)
-    for bad in (lambda: S.metric(S.ginv),                       # two up indices: that's g⁻¹
-                lambda: S.metric([[1, 0], [0, 0]]),             # determinant 0
-                lambda: S.metric([[1, 1], [0, 1]])):            # not symmetric
+    th, ph = S.coords
+    for bad in (lambda: Manifold([th, ph], metric=S.ginv),               # two up indices: that's g⁻¹
+                lambda: Manifold([th, ph], metric=[[1, 0], [0, 0]]),     # determinant 0
+                lambda: Manifold([th, ph], metric=[[1, 1], [0, 1]]),     # not symmetric
+                lambda: Manifold([th, ph], metric=S.g, signature="+++"), # wrong number of signs
+                lambda: Manifold([th, ph], signature="++")):             # a signature needs a metric
         try:
             bad()
         except (TypeError, ValueError):
             continue
         raise AssertionError("expected an error")
-    S.metric(S.g.simplify())                                    # a tensor with two down indices is fine
-    assert is_zero(S.gaussian_curvature() - 1)
+    S2 = Manifold([th, ph], metric=S.g.simplify())              # a tensor with two down indices is fine
+    assert is_zero(S2.gaussian_curvature() - 1)
     assert tf.Manifold.schwarzschild().signature == "-+++"
 
 
@@ -382,7 +383,7 @@ def test_static_spherical_vacuum_gives_schwarzschild():
     t = sp.Symbol("t", real=True)
     r = sp.Symbol("r", positive=True)
     th, ph = sp.symbols("theta phi", real=True)
-    M = tf.templates.static_spherical(Manifold([t, r, th, ph]))
+    M = tf.templates.static_spherical([t, r, th, ph])
     G = M.einstein().data
     A, B = sp.Function("A")(r), sp.Function("B")(r)
     Bsol = sp.solve(G[1, 1], B)                              # G_rr = 0 is algebraic in B
@@ -393,7 +394,7 @@ def test_static_spherical_vacuum_gives_schwarzschild():
     assert is_zero(Aeq.subs(A, trial).doit())                # A = 1 − 2m/r solves it
     assert is_zero(sp.simplify(Bsol.subs(A, trial).doit() - 1 / trial))   # and B = 1/A
     try:
-        tf.templates.static_spherical(Manifold([t, th, r, ph]))  # wrong order: refused
+        tf.templates.static_spherical([t, th, r, ph])            # wrong order: refused
     except ValueError:
         return
     raise AssertionError("expected a ValueError")
@@ -401,8 +402,7 @@ def test_static_spherical_vacuum_gives_schwarzschild():
 
 def test_interior():
     x, y, z = sp.symbols("x y z", real=True)
-    M = Manifold([x, y, z])
-    M.metric(sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
+    M = Manifold([x, y, z], metric=sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     f = M.scalar(x * y ** 2 + sp.sin(z))
     v = M.vector([y, x * z, 1])
     df = f.d()
@@ -651,7 +651,7 @@ def test_inverse():
                 lambda: S.vector([1, 0]).inverse(),             # one index
                 lambda: F.inverse(),                            # a form index: not linear, so refused
                 lambda: S.riemann().inverse(),
-                lambda: tf.Manifold(list(sp.symbols("x y", real=True))).metric([[1, 1], [1, 1]])):  # singular metric
+                lambda: tf.Manifold(list(sp.symbols("x y", real=True)), metric=[[1, 1], [1, 1]])):  # singular metric
         try:
             bad()
             assert False, "should refuse"
@@ -765,7 +765,7 @@ def test_errors():
              (lambda: S.g.lie(S.covector([1, 0])), tf.IndexMismatchError),
              (lambda: bare.g, tf.MissingMetricError),
              (lambda: bare.one_form([1, 0]).star(), tf.MissingMetricError),
-             (lambda: bare.metric([[1, 2], [3, 4]]), tf.InvalidMetricError),
+             (lambda: tf.Manifold(bare.coords, metric=[[1, 2], [3, 4]]), tf.InvalidMetricError),
              (lambda: S.map([[1, 1], [1, 1]]).inverse(), tf.NonInvertibleError),
              (lambda: S.g.subs(th, 0), tf.InvalidCoordinateError),
              (lambda: tf.Manifold.euclidean(coords="polaar"), tf.InvalidCoordinateError)]
@@ -800,3 +800,11 @@ def test_input_checks():
         except kind as e:
             assert words in str(e), str(e)
 
+
+
+def test_templates_make_new_manifolds():
+    x, y = sp.symbols("x y", real=True)
+    M = tf.templates.general([x, y], signature="-+")
+    assert M.signature == "-+" and M.g[0, 1] == M.g[1, 0] == sp.Function("g01")(x, y)
+    assert tf.templates.diagonal([x, y]).g[1, 0] == 0
+    assert tf.templates.conformally_flat([x, y]).signature == "++"

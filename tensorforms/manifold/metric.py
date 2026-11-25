@@ -1,10 +1,8 @@
 """Building the metric: a plain tensor (μ↓ ν↓) that the manifold uses.
 
-M.metric(...) calls build_metric to make and check it, then attaches it with its
+Manifold(..., metric=...) calls build_metric to make and check it, and keeps it with its
 inverse g⁻¹ (the tensor inverse). Everything here is done with tensors.
 """
-import itertools
-
 import numpy as np
 import sympy as sp
 
@@ -29,22 +27,15 @@ def _infer_signature(G):
     return "".join(signs)
 
 
-def build_metric(M, data=None, signature=None):
+def build_metric(M, data, signature=None):
     """Make and check a metric tensor g (μ↓ ν↓). Returns (g, signature).
 
-    data: nested lists, a matrix, or a tensor with two down value indices.
-    No data: unknown functions g_ij(x). Their signature is only what you declare;
-    nothing about unknown functions can be checked."""
+    data: nested lists, a matrix, or a tensor with two down value indices. With unknown
+    functions nothing about the signature can be checked; it is only what you declare."""
     i, j = M.indices(2, names=("μ", "ν"))
     n = M.dim
-    if data is None:
-        signature = signature or "+" * n
-        if len(signature) != n:
-            raise InvalidMetricError(f"metric: signature {signature!r} has {len(signature)} signs but the manifold has {n} coordinates")
-        arr = np.empty((n, n), dtype=object)
-        for a, b in itertools.combinations_with_replacement(range(n), 2):
-            arr[a, b] = arr[b, a] = sp.Function(f"g{a}{b}")(*M.coords)
-        return Tensor(M, arr, [i.down, j.down], label="g", copy=False), signature
+    if signature is not None and len(signature) != n:
+        raise InvalidMetricError(f"metric: signature {signature!r} has {len(signature)} signs but the manifold has {n} coordinates")
     if isinstance(data, Tensor):
         if len(data.indices) != 2 or any(s.is_up or s.is_form for s in data.indices):
             raise InvalidMetricError(f"metric: needs two down value indices; got {data.declaration()} "
