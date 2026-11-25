@@ -127,7 +127,7 @@ def test_product_rule():
     S = tf.Manifold.sphere(r=1)
     th, ph = S.coords
     a, b = S.indices(2)
-    A = S.map([[th, ph], [th * ph, 1]], indices=(a, b))
+    A = S.tensor(a.up, b.down, data=[[th, ph], [th * ph, 1]])
     v = S.vector([sp.sin(th), ph], index=b)
     lhs = A.contract(v, b).nabla()
     rhs = A.nabla().contract(v, b) + A.contract(v.nabla(), b)
@@ -274,10 +274,11 @@ def test_scalar_multiplication():
 
 
 def test_labels():
-    """A label is just a name: given, or the manifold's. Computed results have none; changes that
+    """A label is just a name: given, or the manifold's own (g, Γ, R, …). Computed results have none; changes that
     keep the tensor (index order, index labels, arrows, form/value, simplify) keep the name."""
     S = tf.Manifold.sphere()
-    R, g, v = S.riemann(), S.g, S.vector([1, 0])
+    R, g, v = S.riemann(), S.g, S.vector([1, 0], label="v")
+    assert S.vector([1, 0]).label is None                       # no made-up label
     assert [S.levi_civita().label, R.label, S.ricci().label, g.label, S.ginv.label] == ["Γ", "R", "Ric", "g", "g⁻¹"]
     computed = (R.alt(), R.sym(), -R, R + R, 3 * R, R / 2, R.tr(0, 1), g.inverse(), v.star(),
                 R @ v, v.otimes(v), S.one_form([1, 0]).wedge(S.one_form([0, 1])))
@@ -640,11 +641,11 @@ def test_inverse():
     th, _ = S.coords
     assert S.g.inverse().equals(S.ginv)                         # g⁻¹ is g's tensor inverse
     assert [s.is_up for s in S.g.inverse().indices] == [True, True]  # arrows flip
-    A = S.map([[1, sp.sin(th)], [0, 2]])
-    assert (A @ A.inverse()).equals(S.map([[1, 0], [0, 1]]))
     mu, nu, la = S.indices(3)
+    A = S.tensor(mu.up, nu.down, data=[[1, sp.sin(th)], [0, 2]])
+    assert (A @ A.inverse()).equals(S.tensor(mu.up, nu.down, data=[[1, 0], [0, 1]]))
     F = S.tensor(mu.up, nu.down, la.form, data=[[[1, 0], [2, 1]], [[0, th], [1, 3]]])
-    for bad in (lambda: S.map([[1, 1], [1, 1]]).inverse(),      # determinant 0
+    for bad in (lambda: S.tensor(mu.up, nu.down, data=[[1, 1], [1, 1]]).inverse(),  # determinant 0
                 lambda: S.vector([1, 0]).inverse(),             # one index
                 lambda: F.inverse(),                            # a form index: not linear, so refused
                 lambda: S.riemann().inverse(),
@@ -756,6 +757,7 @@ def test_lie_derivative():
 def test_errors():
     S, S1 = tf.Manifold.sphere(), tf.Manifold.sphere(r=1)
     th = S.coords[0]
+    mu, nu = S.indices(2)
     bare = tf.Manifold(list(sp.symbols("x y")))
     cases = [(lambda: S.g + S1.g, tf.IndexMismatchError),                 # different manifolds
              (lambda: S.vector([1, 0]) @ S.vector([0, 1]), tf.IndexMismatchError),
@@ -763,7 +765,7 @@ def test_errors():
              (lambda: bare.g, tf.MissingMetricError),
              (lambda: bare.one_form([1, 0]).star(), tf.MissingMetricError),
              (lambda: tf.Manifold(bare.coords, metric=[[1, 2], [3, 4]]), tf.InvalidMetricError),
-             (lambda: S.map([[1, 1], [1, 1]]).inverse(), tf.NonInvertibleError),
+             (lambda: S.tensor(mu.up, nu.down, data=[[1, 1], [1, 1]]).inverse(), tf.NonInvertibleError),
              (lambda: S.g.subs(th, 0), tf.InvalidCoordinateError),
              (lambda: tf.Manifold.euclidean(coords="polaar"), tf.InvalidCoordinateError)]
     for make, kind in cases:

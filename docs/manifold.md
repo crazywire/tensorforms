@@ -20,11 +20,10 @@ Tensors, d, d∧ and the Lie derivative work without a metric.
 | `M.indices(n, names=None)` | a list of n indices: μ, ν, λ, … (or the names you give) |
 | `M.index(name=None)` | one index |
 | `M.tensor(*indices, data=…, label=None)` | a tensor with the given indices |
-| `M.scalar(value)` | no indices |
-| `M.vector(data)` | (μ↑) |
-| `M.covector(data)` | (μ↓), a row |
-| `M.one_form(data)` | (μ) |
-| `M.map(data)` | (μ↑ ν↓), a matrix |
+| `M.scalar(value, label=None)` | no indices |
+| `M.vector(data, index=None, label=None)` | (μ↑) |
+| `M.covector(data, index=None, label=None)` | (μ↓), a row |
+| `M.one_form(data, index=None, label=None)` | (μ) |
 
 An index from `M.indices` is an up value index (↑) unless you say otherwise: `mu` is `mu.up`; `mu.down` is a down value index (↓); `mu.form` is a form index (always down, so no arrow).
 

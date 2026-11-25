@@ -109,26 +109,22 @@ class Manifold:
     def tensor(self, *indices, data, label=None):
         return Tensor(self, data, indices, label)
 
-    def scalar(self, value):
-        return Tensor(self, np.array(sp.sympify(value), dtype=object), [], copy=False)
+    def scalar(self, value, label=None):
+        return Tensor(self, np.array(sp.sympify(value), dtype=object), [], label, copy=False)
 
-    def vector(self, data, index=None):
+    def vector(self, data, index=None, label=None):
         a = index or self.index()
-        return Tensor(self, data, [a.up], label="v")
+        return Tensor(self, data, [a.up], label)
 
-    def covector(self, data, index=None):
+    def covector(self, data, index=None, label=None):
         """A row (μ↓): a down value index. Pairs with vectors by default; lower(v) gives one."""
         a = index or self.index()
-        return Tensor(self, data, [a.down], label="w")
+        return Tensor(self, data, [a.down], label)
 
-    def one_form(self, data, index=None):
+    def one_form(self, data, index=None, label=None):
         """A 1-form (μ): one form index. For d∧ and wedge; d of a function gives one."""
         a = index or self.index()
-        return Tensor(self, data, [a.form], label="α")
-
-    def map(self, data, indices=None):
-        a, b = indices or self.indices(2)
-        return Tensor(self, data, [a.up, b.down], label="A")
+        return Tensor(self, data, [a.form], label)
 
     # ---------- metric ----------
     @property
