@@ -804,3 +804,4 @@ def test_templates_make_new_manifolds():
     M = tf.templates.general([x, y])
     assert M.g[0, 1] == M.g[1, 0] == sp.Function("g01")(x, y)
     assert tf.templates.diagonal([x, y]).g[1, 0] == 0
+    assert tf.templates.conformally_flat([x, y], [-1, 1]).g[0, 0] == -sp.exp(2 * sp.Function("omega")(x, y))
