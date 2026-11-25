@@ -26,15 +26,6 @@ def diagonal(coords, prefix="f", name="M"):
     return Manifold(coords, name, metric=sp.diag(*fs))
 
 
-def conformally_flat(coords, signature=None, name="M"):
-    """e^{2ω(x)} × (the flat metric of the given signature). ω is named so it can't be
-    confused with a coordinate φ."""
-    signature = signature or "+" * len(coords)
-    omega = sp.Function("omega")(*coords)
-    signs = [1 if s == "+" else -1 for s in signature]
-    return Manifold(coords, name, metric=sp.exp(2 * omega) * sp.diag(*signs))
-
-
 def static_spherical(coords, name="M"):
     """−A(r) dt² + B(r) dr² + r² (dθ² + sin²θ dφ²). Coordinates (t, r, θ, φ) in that order.
     Setting the Einstein tensor to zero and solving for A, B gives Schwarzschild."""

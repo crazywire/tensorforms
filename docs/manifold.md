@@ -143,7 +143,6 @@ coordinates and returns a new manifold with that metric.
 |---|---|
 | `tf.templates.general(coords)` | g_ij(x), every component unknown |
 | `tf.templates.diagonal(coords)` | diag(f0(x), f1(x), …) |
-| `tf.templates.conformally_flat(coords, signature=None)` | e^{2ω(x)} × the flat metric |
 | `tf.templates.static_spherical(coords)` | −A(r)dt² + B(r)dr² + r²dΩ², coordinates (t, r, θ, φ) |
 
 ### Example: the Friedmann equation
