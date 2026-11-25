@@ -33,7 +33,7 @@ def inverse_metric(g):
     """g⁻¹ (μ↑ ν↑): the tensor inverse of g. Refused if g is shown to have determinant 0."""
     try:
         G = g.inverse().simplify()
-    except ValueError as e:
+    except ValueError:
         raise InvalidMetricError("metric: not invertible (the determinant is 0)") from None
     G = G.relabel_indices({0: "μ", 1: "ν"})
     G.label = "g⁻¹"
