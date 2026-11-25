@@ -818,3 +818,10 @@ def test_manifold_label_is_optional():
         M.scalar(1) + N.scalar(1)
     except tf.IndexMismatchError as e:
         assert "(x, y) and (x, y)" in str(e)
+
+
+def test_describe():
+    S = tf.Manifold.sphere()
+    assert S.g.describe().splitlines()[0] == "g on S2"
+    x, y = sp.symbols("x y", real=True)
+    assert Manifold([x, y]).vector([1, 0]).describe().splitlines()[0] == "Tensor on (x, y)"
