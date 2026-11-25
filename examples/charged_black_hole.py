@@ -24,7 +24,7 @@ r = sp.Symbol("r", positive=True)
 m, q = sp.symbols("m q", positive=True)
 
 f = 1 - 2 * m / r + q ** 2 / r ** 2
-M = Manifold([t, r, th, ph], name="ReissnerNordstrom",
+M = Manifold([t, r, th, ph], label="ReissnerNordstrom",
              metric=sp.diag(-f, 1 / f, r ** 2, r ** 2 * sp.sin(th) ** 2))
 
 A = M.one_form([-q / r, 0, 0, 0])               # electric potential q/r

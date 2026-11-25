@@ -805,3 +805,14 @@ def test_templates_make_new_manifolds():
     assert M.g[0, 1] == M.g[1, 0] == sp.Function("g01")(x, y)
     assert tf.templates.diagonal([x, y]).g[1, 0] == 0
     assert tf.templates.conformally_flat([x, y], [-1, 1]).g[0, 0] == -sp.exp(2 * sp.Function("omega")(x, y))
+
+
+def test_manifold_label_is_optional():
+    x, y = sp.symbols("x y", real=True)
+    M, N = Manifold([x, y]), Manifold([x, y])
+    assert M.label is None and str(M) == "(x, y)" and repr(M) == "Manifold(x, y) (no metric)"
+    assert str(tf.Manifold.sphere()) == "S2"
+    try:
+        M.scalar(1) + N.scalar(1)
+    except tf.IndexMismatchError as e:
+        assert "(x, y) and (x, y)" in str(e)

@@ -51,7 +51,7 @@ True
 import sympy as sp
 from tensorforms import Manifold
 th, ph = sp.symbols("theta phi", real=True)
-S = Manifold([th, ph], name="S2", metric=[[1, 0], [0, sp.sin(th)**2]])
+S = Manifold([th, ph], label="S2", metric=[[1, 0], [0, sp.sin(th)**2]])
 
 e_theta = S.vector([1, 0])
 print(e_theta.d().data)

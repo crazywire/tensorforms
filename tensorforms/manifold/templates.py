@@ -11,30 +11,30 @@ from .manifold import Manifold
 from ..errors import InvalidCoordinateError
 
 
-def general(coords, name="M"):
+def general(coords, label=None):
     """g_ij(x): every component an unknown function, symmetric."""
     n = len(coords)
     g = np.empty((n, n), dtype=object)
     for a, b in itertools.combinations_with_replacement(range(n), 2):
         g[a, b] = g[b, a] = sp.Function(f"g{a}{b}")(*coords)
-    return Manifold(coords, name, metric=g)
+    return Manifold(coords, label, metric=g)
 
 
-def diagonal(coords, prefix="f", name="M"):
+def diagonal(coords, prefix="f", label=None):
     """diag(f0(x), f1(x), …): the simplest general metric."""
     fs = [sp.Function(f"{prefix}{i}")(*coords) for i in range(len(coords))]
-    return Manifold(coords, name, metric=sp.diag(*fs))
+    return Manifold(coords, label, metric=sp.diag(*fs))
 
 
-def conformally_flat(coords, signs=None, name="M"):
+def conformally_flat(coords, signs=None, label=None):
     """e^{2ω(x)} × diag(signs): the flat metric scaled at every point. signs: e.g. [-1, 1, 1, 1]
     (default all 1). ω is named so it can't be confused with a coordinate φ."""
     signs = signs or [1] * len(coords)
     omega = sp.Function("omega")(*coords)
-    return Manifold(coords, name, metric=sp.exp(2 * omega) * sp.diag(*signs))
+    return Manifold(coords, label, metric=sp.exp(2 * omega) * sp.diag(*signs))
 
 
-def static_spherical(coords, name="M"):
+def static_spherical(coords, label=None):
     """−A(r) dt² + B(r) dr² + r² (dθ² + sin²θ dφ²). Coordinates (t, r, θ, φ) in that order.
     Setting the Einstein tensor to zero and solving for A, B gives Schwarzschild."""
     coords = list(coords)
@@ -42,4 +42,4 @@ def static_spherical(coords, name="M"):
         raise InvalidCoordinateError(f"static_spherical: needs coordinates (t, r, θ, φ) in that order; got {tuple(coords)}")
     t, r, th, ph = coords
     A, B = sp.Function("A")(r), sp.Function("B")(r)
-    return Manifold(coords, name, metric=sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2))
+    return Manifold(coords, label, metric=sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2))

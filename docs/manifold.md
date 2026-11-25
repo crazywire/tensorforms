@@ -1,17 +1,17 @@
 # Manifold
 
-A manifold holds the coordinates, the tangent space and (once you give it one) the metric.
+A manifold holds the coordinates, the tangent space and (if you give one) the metric.
 
 ```python
 import sympy as sp
 from tensorforms import Manifold
 
 th, ph = sp.symbols("theta phi", real=True)
-M = Manifold([th, ph], name="S2")
+M = Manifold([th, ph], label="S2")
 ```
 
-`Manifold(coords, name="M")`: a manifold with these coordinates (sympy symbols), no metric yet.
-Tensors, d, d∧ and the Lie derivative work without one.
+`Manifold(coords, label=None, metric=None)`: a manifold with these coordinates (sympy symbols). The label is only a name for printing.
+Tensors, d, d∧ and the Lie derivative work without a metric.
 
 ## Making tensors
 
@@ -66,7 +66,7 @@ Computed from g (Levi-Civita, no torsion):
 
 ```python
 r = sp.Symbol("r", positive=True)
-S = Manifold([th, ph], name="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]])
+S = Manifold([th, ph], label="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 G = S.levi_civita()
 print(G.data[0])        # Γ^θ

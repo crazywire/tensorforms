@@ -187,7 +187,7 @@ class Tensor(Derivatives, Products):
         if not self.matches(other):
             if other.manifold is not self.manifold:
                 raise IndexMismatchError(f"+: the tensors are on different manifolds "
-                                         f"({self.manifold.name} and {other.manifold.name})")
+                                         f"({self.manifold} and {other.manifold})")
             raise IndexMismatchError(f"+: indices don't match ({self.declaration()} vs {other.declaration()})")
         return self._new(self._data + other._data, label=None)
 
@@ -200,7 +200,7 @@ class Tensor(Derivatives, Products):
         if not self.matches(other):
             if other.manifold is not self.manifold:
                 raise IndexMismatchError(f"−: the tensors are on different manifolds "
-                                         f"({self.manifold.name} and {other.manifold.name})")
+                                         f"({self.manifold} and {other.manifold})")
             raise IndexMismatchError(f"−: indices don't match ({self.declaration()} vs {other.declaration()})")
         return self._new(self._data - other._data, label=None)
 
@@ -294,7 +294,7 @@ class Tensor(Derivatives, Products):
         for k, v in point.items():
             c = self._coordinate(k)
             if c is None:
-                raise InvalidCoordinateError(f"at: {k} is not a coordinate of {self.manifold.name} {tuple(self.manifold.coords)}")
+                raise InvalidCoordinateError(f"at: {k} is not one of the coordinates {tuple(self.manifold.coords)}")
             values[c] = v
         missing = [c for c in self.manifold.coords if c not in values]
         if missing:

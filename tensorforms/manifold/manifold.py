@@ -19,12 +19,13 @@ from ..errors import MissingMetricError
 
 
 class Manifold:
-    def __init__(self, coords, name="M", metric=None):
-        """metric: a matrix, or a tensor with two down value indices; checked here."""
+    def __init__(self, coords, label=None, metric=None):
+        """label: just a name for printing (optional).
+        metric: a matrix, or a tensor with two down value indices; checked here."""
         self.coords = list(coords)
         self.dim = len(self.coords)
-        self.name = name
-        self.tangent = Space(f"T{name}", self.dim, names=TANGENT_NAMES)      # value and form indices live here
+        self.label = label
+        self.tangent = Space(f"T{self}", self.dim, names=TANGENT_NAMES)      # value and form indices live here
         self._g = self._ginv = None
         self._cache = {}        # Γ, R, Ric, R_s, G: computed once
         if metric is not None:
@@ -33,7 +34,11 @@ class Manifold:
 
     def __repr__(self):
         g = "with a metric" if self._g is not None else "no metric"
-        return f"Manifold {self.name}{tuple(self.coords)} ({g})"
+        return f"Manifold {self.label}{tuple(self.coords)} ({g})" if self.label else f"Manifold{tuple(self.coords)} ({g})"
+
+    def __str__(self):
+        """The label, or the coordinates if there is none: what messages call this manifold."""
+        return self.label or str(tuple(self.coords))
 
     # ---------- ready-made manifolds (class methods: Manifold.sphere(), …) ----------
     @classmethod

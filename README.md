@@ -78,7 +78,7 @@ from tensorforms import Manifold
 r = sp.Symbol("r", positive=True)
 th, ph = sp.symbols("theta phi", real=True)
 
-S = Manifold([th, ph], name="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]])
+S = Manifold([th, ph], label="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]])
 
 print(S.ricci().data)
 print(S.ricci_scalar().value)          # a scalar tensor; .value gives its expression
