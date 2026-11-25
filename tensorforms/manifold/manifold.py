@@ -13,21 +13,34 @@ from ..tensor.tensor import Tensor
 from .connection import levi_civita
 from .curvature import einstein, ricci, riemann, ricci_scalar
 from .metric import build_metric, inverse_metric
-from .space import TANGENT_NAMES, Space
+from .space import Space
+from ..tensor.labels import GREEK_LETTERS, LATIN_LETTERS
 from .volume import volume_form
-from ..errors import MissingMetricError
+from ..errors import InvalidCoordinateError, MissingMetricError
 
 
 class Manifold:
-    def __init__(self, coords, label=None, metric=None):
+    def __init__(self, coords, label=None, metric=None, ambient=None, map=None):
         """label: just a name for printing (optional).
-        metric: a matrix, or a tensor with two down value indices; checked here."""
+        metric: a matrix, or a tensor with two down value indices; checked here.
+        ambient, map: for a submanifold, the manifold it sits in and every ambient coordinate
+        written in this one's coordinates, e.g. {x: cos(u), y: sin(u)}. The metric then comes
+        from the ambient's (pulled back); C.map is the map as a tensor and C.map.d() is J."""
         self.coords = list(coords)
         self.dim = len(self.coords)
         self.label = label
-        self.tangent = Space(f"T{self}", self.dim, names=TANGENT_NAMES)      # value and form indices live here
+        self.tangent = Space(f"T{self}", self.dim)      # value and form indices live here
         self._g = self._ginv = None
         self._cache = {}        # Γ, R, Ric, R_s, G: computed once
+        self.ambient, self.map = ambient, None
+        if (ambient is None) != (map is None):
+            raise TypeError("Manifold: ambient and map go together")
+        if ambient is not None:
+            if metric is not None:
+                raise TypeError("Manifold: a submanifold's metric comes from its ambient manifold; don't give one")
+            self.map = _map_tensor(self, ambient, map)
+            if ambient.has_metric():
+                metric = ambient.g.pullback(self).simplify()    # substituting leaves e.g. sin² + cos²
         if metric is not None:
             self._g = build_metric(self, metric)
             self._ginv = inverse_metric(self._g)
@@ -98,12 +111,12 @@ class Manifold:
     # ---------- indices and names ----------
     def indices(self, n, names=None):
         """A list of n indices in the tangent space (always a list, even for n = 1)."""
-        names = list(names) if names else self.tangent.names[:n]
+        names = list(names) if names else GREEK_LETTERS[:n]
         return [Index(nm, self.tangent) for nm in names]
 
     def index(self, name=None):
         """One index in the tangent space."""
-        return Index(name or self.tangent.names[0], self.tangent)
+        return Index(name or GREEK_LETTERS[0], self.tangent)
 
     # ---------- tensors ----------
     def tensor(self, *indices, data, label=None):
@@ -181,3 +194,17 @@ class Manifold:
 
     def einstein(self):
         return self._cached("G", lambda: einstein(self.ricci(), self.ricci_scalar(), self.g))
+
+
+def _map_tensor(C, P, map):
+    """The map as a tensor on C: one up index in P's tangent space (so a Latin label)."""
+    if not isinstance(map, dict):
+        raise TypeError(f"Manifold: map must be a dictionary {{ambient coordinate: expression}}; got {type(map).__name__}")
+    if set(map) != set(P.coords):
+        raise InvalidCoordinateError(f"map: must give every ambient coordinate {tuple(P.coords)}; got {tuple(map)}")
+    data = [sp.sympify(map[x]) for x in P.coords]
+    stray = {s for e in data for s in e.free_symbols} & (set(P.coords) - set(C.coords))
+    if stray:
+        raise InvalidCoordinateError(f"map: uses {sorted(stray, key=str)}, ambient coordinates that aren't among {tuple(C.coords)}")
+    a = Index(LATIN_LETTERS[0], P.tangent)
+    return Tensor(C, data, [a.up])

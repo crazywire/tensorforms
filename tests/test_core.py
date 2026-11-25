@@ -818,3 +818,33 @@ def test_manifold_label_is_optional():
         M.scalar(1) + N.scalar(1)
     except tf.IndexMismatchError as e:
         assert "(x, y) and (x, y)" in str(e)
+
+
+def test_submanifold():
+    x, y = sp.symbols("x y", real=True)
+    u = sp.Symbol("u", real=True)
+    P = Manifold([x, y], metric=sp.eye(2))
+    C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})
+    assert C.g.data.tolist() == [[1]]                                    # du²
+    assert repr(C.map) == "Tensor(a↑)" and repr(C.map.d()) == "Tensor(a↑ μ)"   # Latin: the ambient's directions
+    assert C.map.d().data.tolist() == [[-sp.sin(u)], [sp.cos(u)]]        # J
+    assert is_zero(P.one_form([-y, x]).pullback(C)[0] - 1)               # −y dx + x dy → du
+    E = tf.Manifold.euclidean(coords="spherical")
+    r, th, ph = E.coords
+    S = Manifold([th, ph], ambient=E, map={r: 1, th: th, ph: ph})       # a coordinate held fixed
+    assert S.g.data.tolist() == [[1, 0], [0, sp.sin(th) ** 2]] and is_zero(S.gaussian_curvature() - 1)
+    B = Manifold([x, y])                                                 # no metric: pullback still works
+    assert not Manifold([u], ambient=B, map={x: u, y: u ** 2}).has_metric()
+    cases = [(lambda: Manifold([u], ambient=P, map={x: 0, y: 0}), tf.InvalidMetricError),    # collapses
+             (lambda: Manifold([u], ambient=P, map={x: u}), tf.InvalidCoordinateError),       # y missing
+             (lambda: Manifold([u], ambient=P, map={x: u, y: x}), tf.InvalidCoordinateError), # uses x
+             (lambda: Manifold([u], ambient=P), TypeError),
+             (lambda: Manifold([u], ambient=P, map={x: u, y: u}, metric=[[1]]), TypeError),
+             (lambda: P.vector([1, 0]).pullback(C), tf.IndexMismatchError),                  # up index
+             (lambda: B.scalar(1).pullback(C), tf.IndexMismatchError)]                       # wrong ambient
+    for make, kind in cases:
+        try:
+            make()
+            assert False, kind
+        except kind:
+            pass

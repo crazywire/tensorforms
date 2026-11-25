@@ -75,7 +75,7 @@ class Tensor(Derivatives, Products):
             raise ValueError(f"Tensor: data has {self._data.ndim} axes but {len(self.indices)} indices were declared")
         for n, s in zip(self._data.shape, self.indices):
             if n != s.space.dim:
-                raise ValueError(f"Tensor: index {s.label} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
+                raise ValueError(f"Tensor: index {s.label} lives in {s.space.label} (size {s.space.dim}) but its axis has size {n}")
         labels = self._index_labels()
         if len(set(labels)) != len(labels):
             raise ValueError(f"Tensor: index labels must be unique; got {labels}")
@@ -302,6 +302,26 @@ class Tensor(Derivatives, Products):
         f = lambda e: sp.sympify(e).subs(values)
         data = np.vectorize(f, otypes=[object])(self._data)
         return data.item() if not self.indices else sp.Array(data.tolist())
+
+    def pullback(self, C):
+        """This tensor carried onto the submanifold C: substitute C's map into the components,
+        then multiply each index by J = C.map.d(). Only down and form indices carry over (an up
+        index may point off C). Each index keeps its label, arrow and type; only its space changes."""
+        P = self.manifold
+        if getattr(C, "ambient", None) is not P:
+            raise IndexMismatchError(f"pullback: {C} doesn't sit in {P}")
+        for s in self.indices:
+            if s.is_up:
+                raise IndexMismatchError(f"pullback: {s.label} is an up index; only down and form indices carry over")
+            if s.space is not P.tangent:
+                raise NotImplementedError(f"pullback: index {s.label} is not in {P.tangent.label}")
+        at = dict(zip(P.coords, C.map.data))
+        data = np.vectorize(lambda e: sp.sympify(e).subs(at, simultaneous=True), otypes=[object])(self._data)
+        J = C.map.d().data                                    # J[a, i] = ∂x^a/∂u^i
+        for k in range(data.ndim):                            # each index: contract with J's a, keep its position
+            data = np.moveaxis(np.tensordot(data, J, axes=([k], [0])), -1, k)
+        indices = [Index(s.label, C.tangent, s.variance, s.type) for s in self.indices]
+        return type(self)(C, data, indices, copy=False)
 
     # ---------- moving indices ----------
     def _transposed(self, order):

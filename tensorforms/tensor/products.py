@@ -14,17 +14,18 @@ import math
 
 import numpy as np
 import sympy as sp
+from .labels import _new_label
 from ..errors import IndexMismatchError
 
 
-def _rename_clashes(keep_names, indices):
-    """B's indices, with any name already used by A replaced by a fresh one from the same space."""
+def _rename_clashes(manifold, keep_names, indices):
+    """B's indices, with any label already used by A replaced by a new one (labels._new_label)."""
     used, out = set(keep_names) | {s.label for s in indices}, []
     taken = set(keep_names)
     for s in indices:
         n = s.label
         if n in taken:
-            n = s.space.fresh_name(used)
+            n = _new_label(s.space, manifold, used)
             used.add(n)
         taken.add(n)
         out.append(s.relabel(n))
@@ -77,7 +78,7 @@ def _contract(A, B, a, b):
     _check_pair(A.indices[i], B.indices[j])
     data = np.tensordot(A.data, B.data, axes=([i], [j]))
     keep_a = [s for k, s in enumerate(A.indices) if k != i]
-    keep_b = _rename_clashes([s.label for s in keep_a], [s for k, s in enumerate(B.indices) if k != j])
+    keep_b = _rename_clashes(A.manifold, [s.label for s in keep_a], [s for k, s in enumerate(B.indices) if k != j])
     return _joined(A, data, keep_a + keep_b, len(keep_a), None)
 
 
@@ -131,7 +132,7 @@ class Products:
         """Tensor product A ⊗ B: pair nothing, keep every index.
         Result: value indices first, then A's form indices, then B's."""
         other = _other(self, other, "otimes")
-        keep_b = _rename_clashes(self._index_labels(), other.indices)
+        keep_b = _rename_clashes(self.manifold, self._index_labels(), other.indices)
         return _joined(self, np.multiply.outer(self.data, other.data), (*self.indices, *keep_b),
                        len(self.indices), None)
 

@@ -47,6 +47,7 @@ S = Manifold([th, ph], label="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]]
 | `X.simplify()` | simplify every component (exact rewrites only) |
 | `X.subs(r, 1)`, `X.subs({m: 1})` | substitute for parameters in every component (still a field); coordinates are refused |
 | `X.at({θ: π/2, φ: 0})` | the components at a point (every coordinate given): plain values, not a tensor |
+| `X.pullback(C)` | X carried onto a submanifold C of X's manifold; down and form indices only |
 | `X.is_zero()`, `X.equals(Y)` | sympy's answer: True (simplifies to 0), False (sympy proves nonzero), None (can't tell); never sampled |
 | `sp.diff(s, θ)`, `sp.solve(s, r)`, … | sympy accepts tensors directly: a scalar as its expression, others as a sympy Array (one axis per index) |
 | `X.T`, `X.S`, `X.U`, `X.V` | swap positions 0–1, 1–2, 2–3, 3–4 |
