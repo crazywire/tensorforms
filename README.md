@@ -69,19 +69,6 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 | ∇∧∇∧ = R∧ | `X.wedge_curvature()` | exterior covariant derivative squared |
 | L_v | `X.lie(v)` | Lie derivative along a vector field v (no metric needed) |
 
-## Errors
-
-Every error the package raises itself is a `TensorformsError`; each also inherits the matching
-built-in (`TypeError`, `ValueError`, …).
-
-| exception | raised when |
-|---|---|
-| `IndexMismatchError` | the indices don't fit the operation (adding or pairing indices that don't match, raising a form index, `lie` with a non-vector, tensors on different manifolds) |
-| `MissingMetricError` | the operation needs a metric and the manifold has none yet |
-| `InvalidMetricError` | the metric given is rejected (size, not symmetric, determinant 0, signature) |
-| `InvalidCoordinateError` | a coordinate used where it can't be (`subs`, `at`, unknown coordinate system) |
-| `NonInvertibleError` | `inverse()` of a singular or non-square matrix |
-
 ## Example: the curvature of a sphere of radius r
 
 ```python
