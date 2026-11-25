@@ -134,7 +134,7 @@ class Tensor(Derivatives, Products):
         return "(" + " ".join(repr(s) for s in self.indices) + ")"
 
     def describe(self):
-        head = f"{self.label or 'Tensor'} on {self.manifold.name}"
+        head = f"{self.label or 'Tensor'} on {self.manifold}"
         return "\n".join([head] + ["  " + s.describe() for s in self.indices])
 
     def __repr__(self):
