@@ -3,6 +3,7 @@
 Each takes a bare Manifold, attaches the metric, and returns the manifold.
 """
 import sympy as sp
+from ..errors import InvalidCoordinateError
 
 
 def diagonal(M, prefix="f"):
@@ -26,7 +27,7 @@ def static_spherical(M):
     """−A(r) dt² + B(r) dr² + r² (dθ² + sin²θ dφ²). M must have coordinates (t, r, θ, φ).
     Setting the Einstein tensor to zero and solving for A, B gives Schwarzschild."""
     if M.dim != 4 or [str(c) for c in M.coords][1:3] != ["r", "theta"]:
-        raise ValueError(f"static_spherical needs coordinates (t, r, θ, φ) in that order; got {tuple(M.coords)}")
+        raise InvalidCoordinateError(f"static_spherical needs coordinates (t, r, θ, φ) in that order; got {tuple(M.coords)}")
     t, r, th, ph = M.coords
     A, B = sp.Function("A")(r), sp.Function("B")(r)
     M.metric(sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")

@@ -20,6 +20,7 @@ import numpy as np
 import sympy as sp
 
 from .index import Index
+from ..errors import IndexMismatchError
 
 
 # ---------------------------------------------------------------- the derivatives
@@ -89,7 +90,7 @@ class Derivatives:
         M = self.manifold
         if (not isinstance(v, type(self)) or v.manifold is not M or len(v.indices) != 1
                 or not v.indices[0].is_up or v.indices[0].is_form or v.indices[0].space is not M.tangent):
-            raise TypeError("lie needs a vector field v (one up value index, same manifold); "
+            raise IndexMismatchError("lie needs a vector field v (one up value index, same manifold); "
                             f"got {getattr(v, 'declaration', lambda: v)()}")
         # (dX)v: d's new form index (first among the form indices) paired with v; the order is kept
         data = np.tensordot(v.data, self.d().data, axes=([0], [_insert_position(self)]))

@@ -6,6 +6,7 @@ and the Cartesian coordinates are real."""
 import sympy as sp
 
 from .manifold import Manifold
+from ..errors import InvalidCoordinateError
 
 
 def _radius(value, name):
@@ -21,10 +22,10 @@ def _space(n, coords):
     """Coordinates and metric of flat space with n dimensions in the given coordinates."""
     coords = coords.lower()
     if coords != "cartesian" and coords not in _SPACE_DIM:
-        raise ValueError(f"unknown coordinates {coords!r}: use cartesian, polar, spherical or cylindrical")
+        raise InvalidCoordinateError(f"unknown coordinates {coords!r}: use cartesian, polar, spherical or cylindrical")
     if coords in _SPACE_DIM:
         if n is not None and n != _SPACE_DIM[coords]:
-            raise ValueError(f"{coords} coordinates are {_SPACE_DIM[coords]}D in space, not {n}D")
+            raise InvalidCoordinateError(f"{coords} coordinates are {_SPACE_DIM[coords]}D in space, not {n}D")
         n = _SPACE_DIM[coords]
     r = sp.Symbol("r", positive=True)
     th, ph = sp.symbols("theta phi", real=True)
@@ -134,7 +135,7 @@ def flrw(a=None, k=0):
         names = {c.name: c for c in coords}
         wrong = [s for s in a.free_symbols if s.name in names and s != names[s.name]]
         if wrong:
-            raise ValueError(f"a uses a symbol named {wrong[0].name!r} that is not the manifold's coordinate "
+            raise InvalidCoordinateError(f"a uses a symbol named {wrong[0].name!r} that is not the manifold's coordinate "
                              f"(declared with different assumptions). Use sp.Symbol(\"t\", real=True), "
                              f"or pass a function: flrw(a=lambda t: ...)")
     M = Manifold(coords, name="FLRW")

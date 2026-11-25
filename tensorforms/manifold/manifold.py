@@ -14,6 +14,7 @@ from .curvature import einstein, ricci, riemann, ricci_scalar
 from .metric import build_metric, inverse_metric
 from .space import TANGENT_NAMES, Space
 from .volume import volume_form
+from ..errors import MissingMetricError
 
 
 class Manifold:
@@ -133,7 +134,7 @@ class Manifold:
     @property
     def g(self):
         if self._g is None:
-            raise AttributeError("this manifold has no metric yet: call M.metric(...)")
+            raise MissingMetricError("this manifold has no metric yet: call M.metric(...)")
         return self._g._new(label=self._g.label)
 
     @property
