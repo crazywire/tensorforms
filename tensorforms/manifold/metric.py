@@ -12,14 +12,12 @@ from ..errors import InvalidMetricError
 def build_metric(M, data):
     """Make and check a metric tensor g (μ↓ ν↓).
 
-    data: nested lists, a matrix, or a tensor with two down value indices."""
+    data: the components, as nested lists or a matrix. Not a tensor: tensors live on a
+    manifold, and this one is still being made (another tensor's numbers are X.data)."""
     i, j = M.indices(2, names=("μ", "ν"))
     n = M.dim
     if isinstance(data, Tensor):
-        if len(data.indices) != 2 or any(s.is_up or s.is_form for s in data.indices):
-            raise InvalidMetricError(f"metric: needs two down value indices; got {data.declaration()} "
-                                     "(g⁻¹ has two up indices)")
-        data = data.data
+        raise TypeError("metric: give the components, not a tensor; use X.data for a tensor's numbers")
     arr = np.asarray(data, dtype=object)
     if arr.shape != (n, n):
         raise InvalidMetricError(f"metric: must be {n}×{n} on this manifold; got {arr.shape}")

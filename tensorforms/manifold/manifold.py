@@ -21,7 +21,7 @@ from ..errors import MissingMetricError
 class Manifold:
     def __init__(self, coords, label=None, metric=None):
         """label: just a name for printing (optional).
-        metric: a matrix, or a tensor with two down value indices; checked here."""
+        metric: the components, as nested lists or a matrix; checked here."""
         self.coords = list(coords)
         self.dim = len(self.coords)
         self.label = label
