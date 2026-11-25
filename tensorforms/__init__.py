@@ -5,9 +5,14 @@
     tensor/      Index, Tensor: everything you do to a tensor is a method on it (X.tr, X.nabla,
                  X.lie(v), A @ B, A.otimes(B), …); products.py and derivatives.py hold the code
     symbolic/    simplification helpers
+    errors.py    the exceptions (all subclass TensorformsError)
 """
 from .manifold import Manifold, Space, templates
 from .tensor import Index, Tensor
+from .errors import (TensorformsError, IndexMismatchError, MissingMetricError, InvalidMetricError,
+                     InvalidCoordinateError, NonInvertibleError)
 
-__all__ = ["Manifold", "Index", "Space", "Tensor", "templates"]
+__all__ = ["Manifold", "Index", "Space", "Tensor", "templates",
+           "TensorformsError", "IndexMismatchError", "MissingMetricError", "InvalidMetricError",
+           "InvalidCoordinateError", "NonInvertibleError"]
 __version__ = "0.1.0"

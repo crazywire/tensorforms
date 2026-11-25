@@ -9,6 +9,7 @@ import numpy as np
 import sympy as sp
 
 from ..tensor.tensor import Tensor
+from ..errors import InvalidMetricError
 
 
 def _infer_signature(G):
@@ -39,25 +40,25 @@ def build_metric(M, data=None, signature=None):
     if data is None:
         signature = signature or "+" * n
         if len(signature) != n:
-            raise ValueError(f"signature {signature!r} has {len(signature)} signs but M has {n} coordinates")
+            raise InvalidMetricError(f"metric: signature {signature!r} has {len(signature)} signs but the manifold has {n} coordinates")
         arr = np.empty((n, n), dtype=object)
         for a, b in itertools.combinations_with_replacement(range(n), 2):
             arr[a, b] = arr[b, a] = sp.Function(f"g{a}{b}")(*M.coords)
         return Tensor(M, arr, [i.down, j.down], label="g", copy=False), signature
     if isinstance(data, Tensor):
         if len(data.indices) != 2 or any(s.is_up or s.is_form for s in data.indices):
-            raise TypeError(f"a metric has two down value indices; got {data.declaration()} "
-                            "(the inverse metric g⁻¹ has two up indices)")
+            raise InvalidMetricError(f"metric: needs two down value indices; got {data.declaration()} "
+                                     "(g⁻¹ has two up indices)")
         data = data.data
     arr = np.asarray(data, dtype=object)
     if arr.shape != (n, n):
-        raise ValueError(f"metric must be {n}×{n} on this manifold, got {arr.shape}")
+        raise InvalidMetricError(f"metric: must be {n}×{n} on this manifold; got {arr.shape}")
     G = Tensor(M, arr, [i.down, j.down], label="g")
     if G.equals(G.T) is not True:                          # refused unless shown symmetric
-        raise ValueError("a metric must be symmetric (g = gᵀ is not shown)")
+        raise InvalidMetricError("metric: not shown symmetric (g = gᵀ)")
     found = _infer_signature(G)
     if signature and found and signature != found:
-        raise ValueError(f"signature {signature!r} doesn't match the data ({found!r})")
+        raise InvalidMetricError(f"metric: signature {signature!r} doesn't match the data ({found!r})")
     return G, signature or found
 
 
@@ -66,7 +67,7 @@ def inverse_metric(g):
     try:
         G = g.inverse().simplify()
     except ValueError as e:
-        raise ValueError(f"a metric must be invertible ({e})") from None
+        raise InvalidMetricError("metric: not invertible (the determinant is 0)") from None
     G = G.relabel_indices({0: "μ", 1: "ν"})
     G.label = "g⁻¹"
     return G

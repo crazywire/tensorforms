@@ -14,6 +14,7 @@ from .curvature import einstein, ricci, riemann, ricci_scalar
 from .metric import build_metric, inverse_metric
 from .space import TANGENT_NAMES, Space
 from .volume import volume_form
+from ..errors import MissingMetricError
 
 
 class Manifold:
@@ -133,7 +134,7 @@ class Manifold:
     @property
     def g(self):
         if self._g is None:
-            raise AttributeError("this manifold has no metric yet: call M.metric(...)")
+            raise MissingMetricError("metric: this manifold has none yet; call M.metric(...)")
         return self._g._new(label=self._g.label)
 
     @property
@@ -180,7 +181,7 @@ class Manifold:
     def gaussian_curvature(self):
         """K = R_s / 2, a scalar tensor (2D surfaces only)."""
         if self.dim != 2:
-            raise ValueError("Gaussian curvature is for 2D surfaces")
+            raise ValueError("gaussian_curvature: only for 2D surfaces")
 
         def K():
             k = (self.ricci_scalar() / 2).simplify()

@@ -698,7 +698,7 @@ def test_arithmetic_edges():
         S.g + S.vector([1, 0])
         assert False
     except TypeError as e:
-        assert "indices match" in str(e)
+        assert "indices don't match" in str(e)
 
 
 def test_subs_and_at():
@@ -754,4 +754,31 @@ def test_lie_derivative():
         assert False
     except TypeError:
         pass
+
+
+def test_errors():
+    S, S1 = tf.Manifold.sphere(), tf.Manifold.sphere(r=1)
+    th = S.coords[0]
+    bare = tf.Manifold(list(sp.symbols("x y")))
+    cases = [(lambda: S.g + S1.g, tf.IndexMismatchError),                 # different manifolds
+             (lambda: S.vector([1, 0]) @ S.vector([0, 1]), tf.IndexMismatchError),
+             (lambda: S.g.lie(S.covector([1, 0])), tf.IndexMismatchError),
+             (lambda: bare.g, tf.MissingMetricError),
+             (lambda: bare.one_form([1, 0]).star(), tf.MissingMetricError),
+             (lambda: bare.metric([[1, 2], [3, 4]]), tf.InvalidMetricError),
+             (lambda: S.map([[1, 1], [1, 1]]).inverse(), tf.NonInvertibleError),
+             (lambda: S.g.subs(th, 0), tf.InvalidCoordinateError),
+             (lambda: tf.Manifold.euclidean(coords="polaar"), tf.InvalidCoordinateError)]
+    for make, kind in cases:
+        try:
+            make()
+            assert False, kind
+        except kind as e:
+            assert isinstance(e, tf.TensorformsError)
+    assert issubclass(tf.IndexMismatchError, TypeError) and issubclass(tf.NonInvertibleError, ValueError)
+    assert not hasattr(bare, "g")                                         # MissingMetricError is an AttributeError
+    try:
+        S.g + S1.g
+    except tf.IndexMismatchError as e:
+        assert "different manifolds" in str(e)
 
