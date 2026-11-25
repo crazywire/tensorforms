@@ -193,7 +193,7 @@ def test_alt_sym_rules():
     try:
         X.alt(a, a)                                           # a repeated index: refused
         assert False
-    except ValueError:
+    except tf.IndexMismatchError:
         pass
 
 
@@ -524,7 +524,7 @@ def test_star_signs_and_curl():
     try:
         S.tensor(a.form, b.form, c.form, data=[[[0] * 2] * 2] * 2).star()  # 3 form indices in 2D: refused
         assert False
-    except ValueError:
+    except tf.IndexMismatchError:
         pass
 
 
@@ -781,4 +781,22 @@ def test_errors():
         S.g + S1.g
     except tf.IndexMismatchError as e:
         assert "different manifolds" in str(e)
+
+
+def test_input_checks():
+    S = tf.Manifold.sphere()
+    th = S.coords[0]
+    cases = [(lambda: S.tensor("mu", data=[1, 0]), TypeError, "Index objects"),
+             (lambda: S.g.subs(), TypeError, "old, new"),
+             (lambda: S.g.subs(1, 2, 3), TypeError, "old, new"),
+             (lambda: S.g.at([th, 0]), TypeError, "dictionary"),
+             (lambda: tf.Manifold.minkowski(n=0), ValueError, "at least 2"),
+             (lambda: tf.Manifold.euclidean(n=0), ValueError, "at least 1"),
+             (lambda: tf.Manifold.flrw(k="x"), TypeError, "k must be")]
+    for make, kind, words in cases:
+        try:
+            make()
+            assert False, words
+        except kind as e:
+            assert words in str(e), str(e)
 
