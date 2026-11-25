@@ -21,7 +21,7 @@ class MissingMetricError(TensorformsError, AttributeError):
 
 
 class InvalidMetricError(TensorformsError, ValueError):
-    """The metric given is rejected: wrong size, not shown symmetric, determinant 0, signature."""
+    """The metric given is rejected: wrong size, not shown symmetric, determinant 0."""
 
 
 class InvalidCoordinateError(TensorformsError, ValueError):

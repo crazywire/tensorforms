@@ -11,14 +11,13 @@ from .manifold import Manifold
 from ..errors import InvalidCoordinateError
 
 
-def general(coords, signature=None, name="M"):
-    """g_ij(x): every component an unknown function, symmetric. The signature is only
-    what you declare (default all +); nothing about unknown functions can be checked."""
+def general(coords, name="M"):
+    """g_ij(x): every component an unknown function, symmetric."""
     n = len(coords)
     g = np.empty((n, n), dtype=object)
     for a, b in itertools.combinations_with_replacement(range(n), 2):
         g[a, b] = g[b, a] = sp.Function(f"g{a}{b}")(*coords)
-    return Manifold(coords, name, metric=g, signature=signature or "+" * n)
+    return Manifold(coords, name, metric=g)
 
 
 def diagonal(coords, prefix="f", name="M"):
@@ -33,7 +32,7 @@ def conformally_flat(coords, signature=None, name="M"):
     signature = signature or "+" * len(coords)
     omega = sp.Function("omega")(*coords)
     signs = [1 if s == "+" else -1 for s in signature]
-    return Manifold(coords, name, metric=sp.exp(2 * omega) * sp.diag(*signs), signature=signature)
+    return Manifold(coords, name, metric=sp.exp(2 * omega) * sp.diag(*signs))
 
 
 def static_spherical(coords, name="M"):
@@ -44,4 +43,4 @@ def static_spherical(coords, name="M"):
         raise InvalidCoordinateError(f"static_spherical: needs coordinates (t, r, θ, φ) in that order; got {tuple(coords)}")
     t, r, th, ph = coords
     A, B = sp.Function("A")(r), sp.Function("B")(r)
-    return Manifold(coords, name, metric=sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2), signature="-+++")
+    return Manifold(coords, name, metric=sp.diag(-A, B, r ** 2, r ** 2 * sp.sin(th) ** 2))

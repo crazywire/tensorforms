@@ -36,17 +36,16 @@ v = M.vector([1, 0])
 
 ## The metric
 
-The metric is given when the manifold is made, `Manifold(coords, metric=data, signature=None)`, and
-never changes. It is checked there (right size; shown symmetric; refused if shown to have determinant 0).
-`data` is a matrix or a tensor with two down value indices; the signature, e.g. `"-+++"`, is found from
-the metric when sympy can tell. Without a metric the manifold is bare: forms, d and d∧ still work.
+The metric is given when the manifold is made, `Manifold(coords, metric=data)`, and never changes.
+It is checked there (right size; shown symmetric; refused if shown to have determinant 0). `data` is a
+matrix or a tensor with two down value indices. Without a metric the manifold is bare: forms, d and d∧
+still work.
 
 
 | | |
 |---|---|
 | `M.g` | g (μ↓ ν↓) |
 | `M.ginv` | g⁻¹ (μ↑ ν↑), g's tensor inverse |
-| `M.signature` | e.g. `"++"`, `"-+++"` |
 
 ## Connection and curvature
 
@@ -142,7 +141,7 @@ coordinates and returns a new manifold with that metric.
 
 | call | metric |
 |---|---|
-| `tf.templates.general(coords, signature=None)` | g_ij(x), every component unknown |
+| `tf.templates.general(coords)` | g_ij(x), every component unknown |
 | `tf.templates.diagonal(coords)` | diag(f0(x), f1(x), …) |
 | `tf.templates.conformally_flat(coords, signature=None)` | e^{2ω(x)} × the flat metric |
 | `tf.templates.static_spherical(coords)` | −A(r)dt² + B(r)dr² + r²dΩ², coordinates (t, r, θ, φ) |

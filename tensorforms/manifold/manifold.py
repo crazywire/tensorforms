@@ -19,20 +19,17 @@ from ..errors import MissingMetricError
 
 
 class Manifold:
-    def __init__(self, coords, name="M", metric=None, signature=None):
-        """metric: a matrix, or a tensor with two down value indices; checked here.
-        signature: e.g. "-+++"; found from the metric when sympy can tell."""
+    def __init__(self, coords, name="M", metric=None):
+        """metric: a matrix, or a tensor with two down value indices; checked here."""
         self.coords = list(coords)
         self.dim = len(self.coords)
         self.name = name
         self.tangent = Space(f"T{name}", self.dim, names=TANGENT_NAMES)      # value and form indices live here
-        self._g = self._ginv = self._signature = None
+        self._g = self._ginv = None
         self._cache = {}        # Γ, R, Ric, R_s, G: computed once
         if metric is not None:
-            self._g, self._signature = build_metric(self, metric, signature)
+            self._g = build_metric(self, metric)
             self._ginv = inverse_metric(self._g)
-        elif signature is not None:
-            raise ValueError("Manifold: a signature needs a metric")
 
     def __repr__(self):
         g = "with a metric" if self._g is not None else "no metric"
@@ -139,12 +136,6 @@ class Manifold:
     def ginv(self):
         self.g                                                 # raises if there is no metric
         return self._ginv._new(label=self._ginv.label)
-
-    @property
-    def signature(self):
-        """The metric's sign pattern, e.g. "-+++" (None if it couldn't be told)."""
-        self.g                                                 # raises if there is no metric
-        return self._signature
 
     # ---------- connection and curvature ----------
     def levi_civita(self):

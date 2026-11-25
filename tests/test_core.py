@@ -226,9 +226,7 @@ def test_metric_checks():
     th, ph = S.coords
     for bad in (lambda: Manifold([th, ph], metric=S.ginv),               # two up indices: that's g⁻¹
                 lambda: Manifold([th, ph], metric=[[1, 0], [0, 0]]),     # determinant 0
-                lambda: Manifold([th, ph], metric=[[1, 1], [0, 1]]),     # not symmetric
-                lambda: Manifold([th, ph], metric=S.g, signature="+++"), # wrong number of signs
-                lambda: Manifold([th, ph], signature="++")):             # a signature needs a metric
+                lambda: Manifold([th, ph], metric=[[1, 1], [0, 1]])):    # not symmetric
         try:
             bad()
         except (TypeError, ValueError):
@@ -236,7 +234,6 @@ def test_metric_checks():
         raise AssertionError("expected an error")
     S2 = Manifold([th, ph], metric=S.g.simplify())              # a tensor with two down indices is fine
     assert is_zero(S2.gaussian_curvature() - 1)
-    assert tf.Manifold.schwarzschild().signature == "-+++"
 
 
 def test_bare_manifold_has_no_metric():
@@ -423,10 +420,10 @@ def test_interior():
 
 
 def test_minkowski_options():
-    assert tf.Manifold.minkowski().signature == "-+++" and tf.Manifold.minkowski().dim == 4
+    assert tf.Manifold.minkowski().dim == 4
     S = tf.Manifold.minkowski(coords="spherical")                  # −dt² + dr² + r²dΩ²
     assert S.dim == 4 and S.riemann().is_zero() and S.levi_civita().is_zero() is False
-    assert tf.Manifold.minkowski(3, "polar").signature == "-++"
+    assert tf.Manifold.minkowski(3, "polar").g[0, 0] == -1
     try:
         tf.Manifold.minkowski(5, "spherical")
     except ValueError:
@@ -804,7 +801,7 @@ def test_input_checks():
 
 def test_templates_make_new_manifolds():
     x, y = sp.symbols("x y", real=True)
-    M = tf.templates.general([x, y], signature="-+")
-    assert M.signature == "-+" and M.g[0, 1] == M.g[1, 0] == sp.Function("g01")(x, y)
+    M = tf.templates.general([x, y])
+    assert M.g[0, 1] == M.g[1, 0] == sp.Function("g01")(x, y)
     assert tf.templates.diagonal([x, y]).g[1, 0] == 0
-    assert tf.templates.conformally_flat([x, y]).signature == "++"
+    assert tf.templates.conformally_flat([x, y], "-+").g[0, 0] == -sp.exp(2 * sp.Function("omega")(x, y))
