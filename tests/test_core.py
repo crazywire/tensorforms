@@ -848,3 +848,8 @@ def test_submanifold():
             assert False, kind
         except kind:
             pass
+def test_describe():
+    S = tf.Manifold.sphere()
+    assert S.g.describe().splitlines()[0] == "g on S2"
+    x, y = sp.symbols("x y", real=True)
+    assert Manifold([x, y]).vector([1, 0]).describe().splitlines()[0] == "Tensor on (x, y)"
