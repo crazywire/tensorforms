@@ -1,5 +1,10 @@
 """The package's exceptions. Each also inherits the matching built-in, so `except TypeError`,
-`except ValueError` and `hasattr(M, "g")` keep working; `except TensorformsError` catches them all."""
+`except ValueError` and `hasattr(M, "g")` keep working; `except TensorformsError` catches them all.
+
+The rule: these classes mean something about the maths or the data went wrong (indices that don't
+fit, a missing or invalid metric, a coordinate where it can't be, a singular matrix). A call that
+is itself wrong (not a tensor, no index with that label, a malformed Index, X / 0) raises the
+plain built-in: TypeError, KeyError, IndexError, ValueError, ZeroDivisionError."""
 
 
 class TensorformsError(Exception):

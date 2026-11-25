@@ -45,6 +45,8 @@ def _space(n, coords):
 def euclidean(n=None, coords="cartesian"):
     """Flat space. coords: "cartesian" (any n, default 3), "polar" (2D),
     "spherical" (3D) or "cylindrical" (3D); any capitalisation."""
+    if n is not None and (not isinstance(n, int) or n < 1):
+        raise ValueError(f"euclidean: n must be a whole number, at least 1; got {n!r}")
     n = 3 if (n is None and coords.lower() == "cartesian") else n
     xs, diag = _space(n, coords)
     M = Manifold(xs, name=f"E{len(xs)}")
@@ -55,6 +57,8 @@ def euclidean(n=None, coords="cartesian"):
 def minkowski(n=None, coords="cartesian"):
     """Flat spacetime: −dt² plus flat space in the given coordinates. n is the spacetime
     dimension (default 4); coords as for euclidean (polar: 3D, spherical and cylindrical: 4D)."""
+    if n is not None and (not isinstance(n, int) or n < 2):
+        raise ValueError(f"minkowski: n must be a whole number, at least 2 (time and one space dimension); got {n!r}")
     space_n = None if n is None else n - 1
     if space_n is None and coords.lower() == "cartesian":
         space_n = 3
@@ -123,6 +127,10 @@ def flrw(a=None, k=0):
     a: None (an unknown function a(t)), a function of t (e.g. lambda t: t**Rational(2, 3)),
     or an expression in the preset's t, which is sp.Symbol("t", real=True).
     For k = +1 the signature −+++ holds for r < 1."""
+    try:
+        k = sp.sympify(k, strict=True)
+    except sp.SympifyError:
+        raise TypeError(f"flrw: k must be a number or an expression (0, 1 or −1); got {k!r}") from None
     t, th, ph = sp.symbols("t theta phi", real=True)
     r = sp.Symbol("r", positive=True)
     coords = [t, r, th, ph]

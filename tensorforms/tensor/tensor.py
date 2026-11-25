@@ -68,6 +68,9 @@ class Tensor(Derivatives, Products):
         self._refs.add(self)                                 # every tensor using these numbers
         self.indices = tuple(indices)
         self.label = label
+        for s in self.indices:
+            if not isinstance(s, Index):
+                raise TypeError(f"Tensor: indices must be Index objects (from M.indices); got {s!r}")
         if self._data.ndim != len(self.indices):
             raise ValueError(f"Tensor: data has {self._data.ndim} axes but {len(self.indices)} indices were declared")
         for n, s in zip(self._data.shape, self.indices):
@@ -267,7 +270,12 @@ class Tensor(Derivatives, Products):
         X.subs({m: 1, q: 0}). The result is still a field. Coordinates are refused: replacing θ by a
         number gives values at one point (use at), and by an expression is not a change of
         coordinates (the components would also have to mix)."""
-        pairs = args[0].items() if len(args) == 1 and isinstance(args[0], dict) else [args]
+        if len(args) == 1 and isinstance(args[0], dict):
+            pairs = args[0].items()
+        elif len(args) == 2:
+            pairs = [args]
+        else:
+            raise TypeError("subs: give old, new or a dictionary {old: new}")
         coords = set(self.manifold.coords)
         for old, _ in pairs:
             if self._coordinate(old) or (not isinstance(old, str) and coords & sp.sympify(old).free_symbols):
@@ -280,6 +288,8 @@ class Tensor(Derivatives, Products):
         """The components at one point: X.at({θ: π/2, φ: 0}), every coordinate given (by symbol or
         name). Plain values, not a tensor: a scalar's expression, otherwise a sympy Array (one axis
         per index), so no derivative can be taken of it by mistake."""
+        if not isinstance(point, dict):
+            raise TypeError(f"at: give a dictionary {{coordinate: value}}; got {type(point).__name__}")
         values = {}
         for k, v in point.items():
             c = self._coordinate(k)
@@ -437,7 +447,7 @@ class Tensor(Derivatives, Products):
         forms = self._form_positions()
         k = len(forms)
         if k > M.dim:
-            raise ValueError(f"star: {k} form indices but the space has only {M.dim} dimensions")
+            raise IndexMismatchError(f"star: {k} form indices but the space has only {M.dim} dimensions")
         X = self.as_value(*forms) if k else self
         for p in forms:
             X = X.raise_(p)
@@ -452,7 +462,7 @@ class Tensor(Derivatives, Products):
     def _average(self, indices, signed):
         pos = [self.position(s) for s in indices] if indices else self._form_positions()
         if len(set(pos)) != len(pos):
-            raise ValueError(f"alt/sym: an index is repeated in {list(indices)}")
+            raise IndexMismatchError(f"alt/sym: an index is repeated in {list(indices)}")
         if not all(self.indices[p].matches(self.indices[pos[0]]) for p in pos):
             raise IndexMismatchError("alt/sym: the indices must match (same space, up/down and type)")
         k = len(pos)
