@@ -90,6 +90,34 @@ the stored one).
 Γ is returned as a tensor so you can multiply, wedge and d it, but it isn't tensorial: ∇Γ is
 computed if you ask, and has no meaning.
 
+## Submanifolds
+
+A manifold that sits inside another: give the ambient manifold and the map, every ambient
+coordinate written in the new coordinates.
+
+```python
+x, y = sp.symbols("x y", real=True)
+u = sp.Symbol("u", real=True)
+P = Manifold([x, y], label="P", metric=[[1, 0], [0, 1]])
+C = Manifold([u], label="C", ambient=P, map={x: sp.cos(u), y: sp.sin(u)})   # the unit circle
+C.g                                   # [[1]]: du², from P's metric
+P.one_form([-y, x]).pullback(C).simplify()   # [1]: −y dx + x dy on the circle is du
+```
+
+A coordinate held fixed is the same thing: the sphere r = 1 in spherical coordinates is
+`Manifold([th, ph], ambient=E, map={r: 1, th: th, ph: ph})`.
+
+| | |
+|---|---|
+| `C.ambient` | the manifold C sits in |
+| `C.map` | the map as a tensor on C, (a↑): its index counts the ambient's directions |
+| `C.map.d()` | J (a↑ μ), the derivatives of the map |
+| `X.pullback(C)` | X carried onto C: substitute the map, multiply each index by J; down and form indices only |
+
+The metric comes from the ambient's, so a submanifold is not given one. A map that collapses a
+dimension is refused (its metric has determinant 0). Index labels: Greek in a manifold's own
+tangent space, Latin in any other, so the map's index is a.
+
 ## Ready-made manifolds
 
 Class methods on Manifold that return a manifold with its metric attached, e.g.

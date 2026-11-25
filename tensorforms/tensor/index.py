@@ -74,7 +74,7 @@ class Index:
         return Index(label, self.space, self.variance, self.type)
 
     def describe(self):
-        return f"{self.label}: {self.variance} {self.type} index in {self.space.name}"
+        return f"{self.label}: {self.variance} {self.type} index in {self.space.label}"
 
     def __repr__(self):
         return self.label if self.is_form else f"{self.label}{ARROW[self.variance]}"

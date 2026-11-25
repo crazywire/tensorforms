@@ -20,6 +20,7 @@ import numpy as np
 import sympy as sp
 
 from .index import Index
+from .labels import _new_label
 from ..errors import IndexMismatchError
 
 
@@ -97,7 +98,7 @@ class Derivatives:
         J = v.d().as_value().data                                   # J[a, c] = ∂_c v^a
         for i, s in enumerate(self.indices):
             if s.space is not M.tangent:
-                raise NotImplementedError(f"lie: index {s.label} is not in {M.tangent.name}; only tangent-space indices are supported")
+                raise NotImplementedError(f"lie: index {s.label} is not in {M.tangent.label}; only tangent-space indices are supported")
             if s.is_up:                       # −J^a_c X^{…c…}: J's a takes index i's place
                 data = data - np.moveaxis(np.tensordot(J, self.data, axes=([1], [i])), 0, i)
             else:                             # +X_{…c…} J^c_b: J's b takes index i's place
@@ -125,7 +126,7 @@ def _new_form_indices(X, count):
     M, used = X.manifold, X._index_labels()
     indices = []
     for _ in range(count):
-        name = M.tangent.fresh_name(used)
+        name = _new_label(M.tangent, M, used)
         used.append(name)
         indices.append(Index(name, M.tangent, "down", "form"))
     return indices
@@ -162,7 +163,7 @@ def _act(C, X, indices, values_only=False):
         if values_only and s.is_form:
             continue
         if s.space is not X.manifold.tangent:
-            raise NotImplementedError(f"derivative: index {s.label} is not in {X.manifold.tangent.name}; only tangent-space indices are supported")
+            raise NotImplementedError(f"derivative: index {s.label} is not in {X.manifold.tangent.label}; only tangent-space indices are supported")
         rest = lambda t: t if t < j else t - 1             # X's index t among X's other indices
         if s.is_up:
             # tensordot(C, X): [C's up, C's forms, X's other indices]
