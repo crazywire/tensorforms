@@ -698,7 +698,7 @@ def test_arithmetic_edges():
         S.g + S.vector([1, 0])
         assert False
     except TypeError as e:
-        assert "indices match" in str(e)
+        assert "indices don't match" in str(e)
 
 
 def test_subs_and_at():

@@ -34,8 +34,8 @@ def _as_expr(x):
 
 def _as_scalar(c):
     """c as an exact scalar: a number, an expression or a scalar tensor."""
-    not_scalar = ("a tensor can only be scaled by a number, an expression or a scalar tensor "
-                  "(for products of tensors: contract, otimes, wedge)")
+    not_scalar = ("scale: only by a number, an expression or a scalar tensor; "
+                  "for products of tensors use @, contract, otimes or wedge")
     if isinstance(c, Tensor):
         if c.indices:
             raise TypeError(not_scalar)
@@ -69,13 +69,13 @@ class Tensor(Derivatives, Products):
         self.indices = tuple(indices)
         self.label = label
         if self._data.ndim != len(self.indices):
-            raise ValueError(f"data has {self._data.ndim} axes but {len(self.indices)} indices were declared")
+            raise ValueError(f"Tensor: data has {self._data.ndim} axes but {len(self.indices)} indices were declared")
         for n, s in zip(self._data.shape, self.indices):
             if n != s.space.dim:
-                raise ValueError(f"index {s.label} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
+                raise ValueError(f"Tensor: index {s.label} lives in {s.space.name} (size {s.space.dim}) but its axis has size {n}")
         labels = self._index_labels()
         if len(set(labels)) != len(labels):
-            raise ValueError(f"index labels must be unique within a tensor: {labels}")
+            raise ValueError(f"Tensor: index labels must be unique; got {labels}")
 
     def _new(self, data=None, indices=None, *, label):
         """A tensor on the same manifold; data and indices default to this tensor's.
@@ -115,11 +115,11 @@ class Tensor(Derivatives, Products):
         """Where an index is: given by label ("μ", "mu", or an Index) or by number (0, 1, …)."""
         if isinstance(x, int) and not isinstance(x, bool):
             if not 0 <= x < len(self.indices):
-                raise IndexError(f"no index number {x}; this tensor has {len(self.indices)} indices")
+                raise IndexError(f"index: no number {x}; this tensor has {len(self.indices)} indices")
             return x
         n, labels = index_label(x), self._index_labels()
         if n not in labels:
-            raise KeyError(f"no index labelled {n}; labels are {labels}")
+            raise KeyError(f"index: no label {n}; labels are {labels}")
         return labels.index(n)
 
     def index(self, x):
@@ -172,7 +172,7 @@ class Tensor(Derivatives, Products):
             return other
         c = _as_expr(other)
         if c is None:
-            raise TypeError(f"can only add tensors and numbers, not {type(other).__name__}")
+            raise TypeError(f"+/−: needs a tensor or a number, not {type(other).__name__}")
         if _is_zero(c) is True:
             return None
         return Tensor(self.manifold, c, [], label=None)
@@ -183,10 +183,9 @@ class Tensor(Derivatives, Products):
             return self._new(label=self.label)
         if not self.matches(other):
             if other.manifold is not self.manifold:
-                raise IndexMismatchError(f"these tensors are on different manifolds ({self.manifold.name} and "
-                                         f"{other.manifold.name}): their indices live in different spaces")
-            raise IndexMismatchError(f"can only add tensors whose indices match: {self.declaration()} vs "
-                                     f"{other.declaration()}")
+                raise IndexMismatchError(f"+: the tensors are on different manifolds "
+                                         f"({self.manifold.name} and {other.manifold.name})")
+            raise IndexMismatchError(f"+: indices don't match ({self.declaration()} vs {other.declaration()})")
         return self._new(self._data + other._data, label=None)
 
     __radd__ = __add__                                        # 0 + X, 1 + s
@@ -197,10 +196,9 @@ class Tensor(Derivatives, Products):
             return self._new(label=self.label)
         if not self.matches(other):
             if other.manifold is not self.manifold:
-                raise IndexMismatchError(f"these tensors are on different manifolds ({self.manifold.name} and "
-                                         f"{other.manifold.name}): their indices live in different spaces")
-            raise IndexMismatchError(f"can only subtract tensors whose indices match: {self.declaration()} vs "
-                                     f"{other.declaration()}")
+                raise IndexMismatchError(f"−: the tensors are on different manifolds "
+                                         f"({self.manifold.name} and {other.manifold.name})")
+            raise IndexMismatchError(f"−: indices don't match ({self.declaration()} vs {other.declaration()})")
         return self._new(self._data - other._data, label=None)
 
     def __rsub__(self, other):                                # 0 − X is −X; 1 − s
@@ -224,16 +222,16 @@ class Tensor(Derivatives, Products):
         Refused if sympy shows the divisor is 0."""
         c = _as_scalar(c)
         if _is_zero(c) is True:
-            raise ZeroDivisionError("division of a tensor by zero")
+            raise ZeroDivisionError("/: division by zero")
         return self._new(self._data / c, label=None)
 
     def __rtruediv__(self, c):
         """A number divided by a scalar is a scalar (2 / s); dividing by a tensor with indices is refused."""
         if self.indices:
-            raise TypeError("can't divide by a tensor with indices (an inverse is a different operation)")
+            raise TypeError("/: can't divide by a tensor with indices; for an inverse use X.inverse()")
         n = _as_expr(c)
         if n is None:
-            raise TypeError(f"can only divide a number or expression by a scalar, not {type(c).__name__}")
+            raise TypeError(f"/: only a number or an expression can be divided by a scalar, not {type(c).__name__}")
         return Tensor(self.manifold, n, [], label=None) / self
 
     def _sympy_(self):
@@ -273,8 +271,8 @@ class Tensor(Derivatives, Products):
         coords = set(self.manifold.coords)
         for old, _ in pairs:
             if self._coordinate(old) or (not isinstance(old, str) and coords & sp.sympify(old).free_symbols):
-                raise InvalidCoordinateError(f"subs is for parameters; {old} involves a coordinate. For values at a point "
-                                 f"use X.at({{...}}); a change of coordinates is a different operation")
+                raise InvalidCoordinateError(f"subs: {old} involves a coordinate; subs is for parameters "
+                                             f"(for values at a point use X.at({{...}}))")
         f = lambda e: sp.sympify(e).subs(*args)
         return self._new(np.vectorize(f, otypes=[object])(self._data), label=None)
 
@@ -290,7 +288,7 @@ class Tensor(Derivatives, Products):
             values[c] = v
         missing = [c for c in self.manifold.coords if c not in values]
         if missing:
-            raise InvalidCoordinateError(f"at: give every coordinate; missing {missing}")
+            raise InvalidCoordinateError(f"at: every coordinate is needed; missing {missing}")
         f = lambda e: sp.sympify(e).subs(values)
         data = np.vectorize(f, otypes=[object])(self._data)
         return data.item() if not self.indices else sp.Array(data.tolist())
@@ -303,7 +301,7 @@ class Tensor(Derivatives, Products):
         """Put every index in the given order (labels or positions)."""
         order = [self.position(s) for s in indices]
         if sorted(order) != list(range(len(self.indices))):
-            raise ValueError("reorder needs every index exactly once")
+            raise ValueError("reorder: needs every index exactly once")
         return self._transposed(order)
 
     def swap(self, a, b):
@@ -348,7 +346,7 @@ class Tensor(Derivatives, Products):
             targets = {self.position(x) for x in which}
             bad = [self.indices[k] for k in sorted(targets) if not eligible(self.indices[k])]
             if bad:
-                raise IndexMismatchError(f"needs {need}; got {bad}")
+                raise IndexMismatchError(f"{need}; got {bad}")
         else:
             targets = {k for k, s in enumerate(self.indices) if eligible(s)}
         return self._new(indices=[change(s) if k in targets else s for k, s in enumerate(self.indices)],
@@ -356,11 +354,11 @@ class Tensor(Derivatives, Products):
 
     def as_form(self, *indices):
         """Down value indices → form indices (default: all). Covector (μ↓) → 1-form (μ). Same numbers."""
-        return self._change_type(indices, lambda s: s.form, lambda s: s.is_down and not s.is_form, "down value indices")
+        return self._change_type(indices, lambda s: s.form, lambda s: s.is_down and not s.is_form, "as_form: needs down value indices")
 
     def as_value(self, *indices):
         """Form indices → down value indices (default: all). 1-form (μ) → covector (μ↓). Same numbers."""
-        return self._change_type(indices, lambda s: s.down, lambda s: s.is_form, "form indices")
+        return self._change_type(indices, lambda s: s.down, lambda s: s.is_form, "as_value: needs form indices")
 
     # ---------- trace ----------
     def tr(self, a, b):
@@ -368,7 +366,7 @@ class Tensor(Derivatives, Products):
         i, j = self.position(a), self.position(b)
         si, sj = self.indices[i], self.indices[j]
         if not si.pairs_with(sj):
-            raise IndexMismatchError(f"can't pair {si.label} and {sj.label}: need the same space, one up and one down")
+            raise IndexMismatchError(f"tr: {si.label} and {sj.label} don't pair (need the same space, one up and one down)")
         data = np.asarray(np.trace(self._data, axis1=i, axis2=j), dtype=object)
         label = None
         return Tensor(self.manifold, data, [s for k, s in enumerate(self.indices) if k not in (i, j)], label,
@@ -377,15 +375,20 @@ class Tensor(Derivatives, Products):
     # ---------- raising and lowering (needs the manifold's metric) ----------
     def _flip(self, index, to, metric):
         """Make one value index point `to` (up or down), multiplying by `metric` along it."""
+        name = "lower" if to == "down" else "raise_"
         if index is None:                                   # the only index that can be flipped
             options = [k for k, s in enumerate(self.indices) if not s.is_form and s.variance != to]
-            if len(options) != 1:
-                raise IndexMismatchError(f"say which index (candidates: {[self._index_labels()[k] for k in options]})")
+            if not options:
+                frm = "up" if to == "down" else "down"
+                raise IndexMismatchError(f"{name}: no {frm} value index in {self.declaration()}")
+            if len(options) > 1:
+                raise IndexMismatchError(f"{name}: say which index; candidates "
+                                         f"{[self._index_labels()[k] for k in options]}")
             index = options[0]
         i = self.position(index)
         s = self.indices[i]
         if s.is_form or s.variance == to:
-            raise IndexMismatchError(f"can't make {s.label} {to}: it is a form index or already {to}")
+            raise IndexMismatchError(f"{name}: can't make {s.label} {to}; it is a form index or already {to}")
         data = np.moveaxis(np.tensordot(metric._data, self._data, axes=([1], [i])), 0, i)
         flipped = Index(s.label, s.space, to, "value")
         return self._new(data, (*self.indices[:i], flipped, *self.indices[i + 1:]), label=self.label)
@@ -409,14 +412,14 @@ class Tensor(Derivatives, Products):
         over other (e.g. form) indices without depending on the coordinates. Also refused if it
         isn't square or the determinant is 0 (sympy checks; the messages are ours)."""
         if len(self.indices) != 2 or any(s.is_form for s in self.indices):
-            raise IndexMismatchError(f"inverse needs exactly two value indices and no others; got {self.declaration()}")
+            raise IndexMismatchError(f"inverse: needs exactly two value indices and no others; got {self.declaration()}")
         so, si = self.indices
         m = sp.Matrix(self._data.tolist())                     # rows: index 0 (out), columns: index 1 (in)
         try:                                                  # sympy does the checks, with our zero test
             inv = m.inv(iszerofunc=_is_zero)
         except NonSquareMatrixError:
-            raise NonInvertibleError(f"inverse: indices {so.label} and {si.label} have different sizes "
-                             f"({so.space.dim}, {si.space.dim}): not square") from None
+            raise NonInvertibleError(f"inverse: not square ({so.label} has size {so.space.dim}, "
+                                     f"{si.label} has size {si.space.dim})") from None
         except NonInvertibleMatrixError:
             raise NonInvertibleError("inverse: not invertible (the determinant is 0)") from None
         flip = lambda s: Index(s.label, s.space, "down" if s.is_up else "up", "value")
@@ -430,7 +433,7 @@ class Tensor(Derivatives, Products):
         Value indices are carried along. Uses the metric and the coordinate order (orientation)."""
         M = self.manifold
         if not M.has_metric():
-            raise MissingMetricError("star needs a metric: the volume form and raising both use it")
+            raise MissingMetricError("star: needs a metric (for the volume form and raising)")
         forms = self._form_positions()
         k = len(forms)
         if k > M.dim:
@@ -449,9 +452,9 @@ class Tensor(Derivatives, Products):
     def _average(self, indices, signed):
         pos = [self.position(s) for s in indices] if indices else self._form_positions()
         if len(set(pos)) != len(pos):
-            raise ValueError(f"Alt/Sym: an index is repeated in {list(indices)}")
+            raise ValueError(f"alt/sym: an index is repeated in {list(indices)}")
         if not all(self.indices[p].matches(self.indices[pos[0]]) for p in pos):
-            raise IndexMismatchError("Alt/Sym need indices that match (same space, up/down and type)")
+            raise IndexMismatchError("alt/sym: the indices must match (same space, up/down and type)")
         k = len(pos)
         out = 0
         for perm in itertools.permutations(range(k)):

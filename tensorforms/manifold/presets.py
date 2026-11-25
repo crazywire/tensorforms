@@ -22,10 +22,10 @@ def _space(n, coords):
     """Coordinates and metric of flat space with n dimensions in the given coordinates."""
     coords = coords.lower()
     if coords != "cartesian" and coords not in _SPACE_DIM:
-        raise InvalidCoordinateError(f"unknown coordinates {coords!r}: use cartesian, polar, spherical or cylindrical")
+        raise InvalidCoordinateError(f"coordinates: unknown {coords!r}; use cartesian, polar, spherical or cylindrical")
     if coords in _SPACE_DIM:
         if n is not None and n != _SPACE_DIM[coords]:
-            raise InvalidCoordinateError(f"{coords} coordinates are {_SPACE_DIM[coords]}D in space, not {n}D")
+            raise InvalidCoordinateError(f"coordinates: {coords} is {_SPACE_DIM[coords]}D in space, not {n}D")
         n = _SPACE_DIM[coords]
     r = sp.Symbol("r", positive=True)
     th, ph = sp.symbols("theta phi", real=True)
@@ -135,9 +135,9 @@ def flrw(a=None, k=0):
         names = {c.name: c for c in coords}
         wrong = [s for s in a.free_symbols if s.name in names and s != names[s.name]]
         if wrong:
-            raise InvalidCoordinateError(f"a uses a symbol named {wrong[0].name!r} that is not the manifold's coordinate "
-                             f"(declared with different assumptions). Use sp.Symbol(\"t\", real=True), "
-                             f"or pass a function: flrw(a=lambda t: ...)")
+            raise InvalidCoordinateError(f"flrw: a uses a symbol {wrong[0].name!r} that isn't the manifold's coordinate "
+                             f"(different assumptions); use sp.Symbol(\"t\", real=True) or pass a function, "
+                             f"a=lambda t: ...")
     M = Manifold(coords, name="FLRW")
     g = sp.diag(-1, a ** 2 / (1 - k * r ** 2), a ** 2 * r ** 2, a ** 2 * r ** 2 * sp.sin(th) ** 2)
     M.metric(g, signature="-+++")

@@ -90,14 +90,14 @@ class Derivatives:
         M = self.manifold
         if (not isinstance(v, type(self)) or v.manifold is not M or len(v.indices) != 1
                 or not v.indices[0].is_up or v.indices[0].is_form or v.indices[0].space is not M.tangent):
-            raise IndexMismatchError("lie needs a vector field v (one up value index, same manifold); "
+            raise IndexMismatchError("lie: v must be a vector field (one up value index, same manifold); "
                             f"got {getattr(v, 'declaration', lambda: v)()}")
         # (dX)v: d's new form index (first among the form indices) paired with v; the order is kept
         data = np.tensordot(v.data, self.d().data, axes=([0], [_insert_position(self)]))
         J = v.d().as_value().data                                   # J[a, c] = ∂_c v^a
         for i, s in enumerate(self.indices):
             if s.space is not M.tangent:
-                raise NotImplementedError(f"index {s.label} is not in {M.tangent.name}")
+                raise NotImplementedError(f"lie: index {s.label} is not in {M.tangent.name}; only tangent-space indices are supported")
             if s.is_up:                       # −J^a_c X^{…c…}: J's a takes index i's place
                 data = data - np.moveaxis(np.tensordot(J, self.data, axes=([1], [i])), 0, i)
             else:                             # +X_{…c…} J^c_b: J's b takes index i's place
@@ -154,7 +154,7 @@ def _act(C, X, indices, values_only=False):
     X's form indices (that is `indices`)."""
     if (len(C.indices) < 2 or not C.indices[0].is_up or C.indices[1].is_up
             or C.indices[0].is_form or C.indices[1].is_form or not all(s.is_form for s in C.indices[2:])):
-        raise TypeError(f"_act needs C shaped (↑ ↓ forms…) like Γ or R; got {C.declaration()}")
+        raise TypeError(f"_act: C must be shaped (↑ ↓ forms…) like Γ or R; got {C.declaration()}")
     n, k = len(X.indices), len(C.indices) - 2                   # X's indices; C's form indices (the new ones)
     pos = _insert_position(X)                               # where the new form indices go
     total = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
@@ -162,7 +162,7 @@ def _act(C, X, indices, values_only=False):
         if values_only and s.is_form:
             continue
         if s.space is not X.manifold.tangent:
-            raise NotImplementedError(f"index {s.label} is not in {X.manifold.tangent.name}")
+            raise NotImplementedError(f"derivative: index {s.label} is not in {X.manifold.tangent.name}; only tangent-space indices are supported")
         rest = lambda t: t if t < j else t - 1             # X's index t among X's other indices
         if s.is_up:
             # tensordot(C, X): [C's up, C's forms, X's other indices]

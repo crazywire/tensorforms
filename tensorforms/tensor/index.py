@@ -23,11 +23,11 @@ class Index:
 
     def __post_init__(self):
         if self.variance not in ("up", "down"):
-            raise ValueError("variance must be 'up' or 'down'")
+            raise ValueError("Index: variance must be 'up' or 'down'")
         if self.type not in ("value", "form"):
-            raise ValueError("type must be 'value' or 'form'")
+            raise ValueError("Index: type must be 'value' or 'form'")
         if self.type == "form" and self.variance != "down":
-            raise ValueError("form indices are always down")
+            raise ValueError("Index: form indices are always down")
         object.__setattr__(self, "label", index_label(self.label))   # "mu" → "μ", once, at creation
 
     # ---------- the three kinds, same label and space ----------

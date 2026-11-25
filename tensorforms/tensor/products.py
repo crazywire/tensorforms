@@ -35,9 +35,9 @@ def _check_pair(sa, sb):
     if sa.pairs_with(sb):
         return
     if sa.space is not sb.space:
-        raise IndexMismatchError(f"can't pair {sa.label} with {sb.label}: different spaces (different manifolds, "
-                                 f"or not the tangent space)")
-    raise IndexMismatchError(f"can't pair {sa.label} and {sb.label}: both {sa.variance}; raise or lower one first")
+        raise IndexMismatchError(f"pair: {sa.label} and {sb.label} are in different spaces "
+                                 f"(different manifolds, or not the tangent space)")
+    raise IndexMismatchError(f"pair: {sa.label} and {sb.label} are both {sa.variance}; raise or lower one first")
 
 
 def _values_first(indices, n_a):
@@ -58,16 +58,16 @@ def _default_pair(A, B):
     """A's column (last value index, down) with B's row (first value index, up)."""
     av, bv = A._value_positions(), B._value_positions()
     if not (av and bv):
-        raise IndexMismatchError("A @ B needs value indices on both: one factor has none, "
-                        "so nothing pairs; use A.otimes(B)")
+        raise IndexMismatchError("@: a factor has no value indices, so nothing pairs; "
+                                 "use A.otimes(B)")
     sa, sb = A.index(av[-1]), B.index(bv[0])
     if sa.space is sb.space and not sa.is_up and sb.is_up:
         return av[-1], bv[0]
     if sa.space is sb.space and sa.is_up and not sb.is_up:
-        raise IndexMismatchError(f"{A.declaration()} has no column and {B.declaration()} has no row: "
-                        "nothing pairs (column × row); use A.otimes(B)")
-    raise IndexMismatchError(f"can't pair {sa.label} with {sb.label} (shape mismatch); "
-                    "name the indices (A.contract(B, a, b)), use A.otimes(B), or raise or lower one first")
+        raise IndexMismatchError(f"@: {A.declaration()} has no column and {B.declaration()} "
+                                 "has no row; use A.otimes(B)")
+    raise IndexMismatchError(f"@: {sa.label} and {sb.label} don't pair; name the indices "
+                             "(A.contract(B, a, b)), use A.otimes(B), or raise or lower one")
 
 
 def _contract(A, B, a, b):
@@ -83,8 +83,8 @@ def _contract(A, B, a, b):
 
 def _other(A, other, what):
     if not isinstance(other, type(A)):
-        raise TypeError(f"{what} needs another tensor, not {type(other).__name__} "
-                        "(to scale by a number, use *)")
+        raise TypeError(f"{what}: needs another tensor, not {type(other).__name__}; "
+                        "to scale by a number, use *")
     return other
 
 
@@ -122,9 +122,9 @@ class Products:
         Like A @ B, but using the first form index instead of the column."""
         V = _other(self, V, "interior")
         if not self._form_positions():
-            raise IndexMismatchError(f"interior needs a form index; {self.declaration()} has none")
+            raise IndexMismatchError(f"interior: {self.declaration()} has no form index")
         if not V._value_positions() or not V.index(V._value_positions()[0]).is_up:
-            raise IndexMismatchError(f"interior needs a row (first value index, up) in V; got {V.declaration()}")
+            raise IndexMismatchError(f"interior: V needs a row (first value index, up); got {V.declaration()}")
         return _contract(self, V, self._form_positions()[0], V._value_positions()[0])
 
     def otimes(self, other):
