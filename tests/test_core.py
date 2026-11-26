@@ -890,3 +890,30 @@ def test_integrate():
         except kind:
             pass
     assert dx.wedge(dy).integrate({x: (0, 2), y: (0, 3)}) == 6
+
+
+def test_change_of_coordinates():
+    x, y = sp.symbols("x y", real=True)
+    rho, phi = sp.Symbol("rho", positive=True), sp.Symbol("phi", real=True)
+    P = Manifold([x, y], metric=sp.eye(2))
+    D = Manifold([rho, phi], ambient=P, map={x: rho * sp.cos(phi), y: rho * sp.sin(phi)})   # the plane, polar
+    assert D.g.data.tolist() == [[1, 0], [0, rho ** 2]]
+    ex = D.pullback(P.vector([1, 0])).simplify()                       # ∂_x in polar: up index, uses J⁻¹
+    assert ex.data.tolist() == [sp.cos(phi), -sp.sin(phi) / rho]
+    v = P.vector([x, y ** 2])
+    assert is_zero((D.pullback(v).lower() @ D.pullback(v)).value - D.pullback(v.lower() @ v).value)   # length² kept
+    u = sp.Symbol("u", real=True)
+    C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})
+    try:
+        C.pullback(P.vector([1, 0]))                                   # smaller: up indices still refused
+        assert False
+    except tf.IndexMismatchError:
+        pass
+    a, b = sp.symbols("a b", real=True)
+    B = Manifold([x, y])                                               # no metric, so the map isn't refused at creation
+    flat = Manifold([a, b], ambient=B, map={x: a + b, y: a + b})       # J has determinant 0
+    try:
+        flat.pullback(B.vector([1, 0]))
+        assert False
+    except tf.NonInvertibleError:
+        pass
