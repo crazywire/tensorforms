@@ -451,10 +451,7 @@ class Tensor(Derivatives, Products):
         Refused for anything else: inverting is not linear, so it can't be done index by index
         over other (e.g. form) indices without depending on the coordinates. Also refused if it
         isn't square or the determinant is 0 (sympy checks; the messages are ours)."""
-        if len(self.indices) != 2 or any(s.is_form for s in self.indices):
-            raise IndexMismatchError(f"inverse: needs exactly two value indices and no others; got {self.declaration()}")
-        so, si = self.indices
-        m = sp.Matrix(self._data.tolist())                     # rows: index 0 (out), columns: index 1 (in)
+        so, si, m = self._matrix("inverse")
         try:                                                  # sympy does the checks, with our zero test
             inv = m.inv(iszerofunc=_is_zero)
         except NonSquareMatrixError:
@@ -465,6 +462,23 @@ class Tensor(Derivatives, Products):
         flip = lambda s: Index(s.label, s.space, "down" if s.is_up else "up", "value")
         return self._new(np.array(inv.tolist(), dtype=object), [flip(si), flip(so)],
                          label=None)
+
+    def det(self):
+        """The determinant of a tensor that is a matrix at each point, as a scalar: accepts and
+        refuses exactly what inverse does (two value indices and nothing else, square)."""
+        so, si, m = self._matrix("det")
+        if so.space.dim != si.space.dim:
+            raise IndexMismatchError(f"det: not square ({so.label} has size {so.space.dim}, "
+                                     f"{si.label} has size {si.space.dim})")
+        return self.manifold.scalar(m.det())
+
+    def _matrix(self, name):
+        """The two value indices and the numbers as a sympy Matrix (rows: index 0, columns:
+        index 1), for inverse and det. Refused unless there are exactly two value indices."""
+        if len(self.indices) != 2 or any(s.is_form for s in self.indices):
+            raise IndexMismatchError(f"{name}: needs exactly two value indices and no others; got {self.declaration()}")
+        so, si = self.indices
+        return so, si, sp.Matrix(self._data.tolist())
 
     # ---------- Hodge star (needs the manifold's metric) ----------
     def star(self):

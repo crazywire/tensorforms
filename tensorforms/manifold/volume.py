@@ -8,7 +8,7 @@ def volume_form(M):
     w = M.scalar(M.coords[0]).d()                 # dx¹
     for c in M.coords[1:]:
         w = w.wedge(M.scalar(c).d())             # dx¹ ∧ dx² ∧ … ∧ dxⁿ
-    size = sp.sqrt(sp.Abs(sp.Matrix(M.g.data).det()))   # real size of a coordinate box
+    size = sp.sqrt(sp.Abs(M.g.det().value))      # real size of a coordinate box
     eps = (size * w).simplify()
     eps.label = "ε"
     return eps

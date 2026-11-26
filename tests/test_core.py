@@ -917,3 +917,21 @@ def test_change_of_coordinates():
         assert False
     except tf.NonInvertibleError:
         pass
+
+
+def test_det():
+    S = tf.Manifold.sphere()
+    th, _ = S.coords
+    r = sp.Symbol("r", positive=True)
+    assert is_zero(S.g.det().value - r ** 4 * sp.sin(th) ** 2)
+    assert is_zero((S.g.det() * S.ginv.det()).value - 1)                     # det g⁻¹ = 1/det g
+    mu, nu, la = S.indices(3)
+    A = S.tensor(mu.up, nu.down, data=[[1, sp.sin(th)], [0, 2]])
+    assert A.det().value == 2 and A.det().indices == ()
+    F = S.tensor(mu.up, nu.down, la.form, data=[[[1, 0], [2, 1]], [[0, th], [1, 3]]])
+    for bad in (lambda: S.vector([1, 0]).det(), lambda: F.det(), lambda: S.one_form([1, 0]).otimes(S.one_form([0, 1])).det()):
+        try:
+            bad()
+            assert False
+        except tf.IndexMismatchError:
+            pass
