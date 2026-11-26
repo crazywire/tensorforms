@@ -937,3 +937,18 @@ def test_det():
             assert False
         except tf.IndexMismatchError:
             pass
+
+
+def test_swaps_need_two_indices():
+    S = tf.Manifold.sphere()
+    for X, hint in ((S.vector([1, 0]), "lower"), (S.covector([1, 0]), "raise_"), (S.one_form([1, 0]), None)):
+        try:
+            X.T
+            assert False
+        except tf.IndexMismatchError as e:
+            assert str(e).startswith("T: swaps positions 0 and 1") and (hint is None or hint in str(e))
+    try:
+        S.g.S                                                   # two indices: no position 2
+        assert False
+    except tf.IndexMismatchError as e:
+        assert str(e).startswith("S: swaps positions 1 and 2")

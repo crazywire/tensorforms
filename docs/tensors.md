@@ -61,9 +61,12 @@ S = Manifold([th, ph], label="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]]
 | `X.inverse()` | for a matrix at each point (exactly two value indices, nothing else): the matrix inverse; the indices swap places and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
 | `X.det()` | for a square matrix at each point (exactly two indices, of any kind): the determinant, as a scalar |
 
-**Swaps.** T, S, U and V swap neighbouring indices, counted from 0 across all indices: each
-transposes the matrix in those two indices at every value of the others. They are properties
-(no brackets) and chain: `X.U.S` is X^US.
+**Swaps.** T, S, U and V swap neighbouring indices, counted from 0 across all indices. They
+only reorder: each index keeps its arrow and type. They are properties (no brackets) and chain:
+`X.U.S` is X^US.
+
+They never turn ↑ into ↓: making a column a row is `lower()`, which uses the metric, so a vector
+has no T. Matrix identities that rely on that, such as (AB)ᵀ = BᵀAᵀ, don't carry over.
 
 | swap | short for | code |
 |---|---|---|

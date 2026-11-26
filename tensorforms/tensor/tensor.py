@@ -351,27 +351,40 @@ class Tensor(Derivatives, Products):
         order[i], order[j] = order[j], order[i]
         return self._transposed(order)
 
-    # T, S, U, V: the notation's swaps of neighbouring indices. Each transposes the matrix in two
-    # neighbouring indices at every value of the others; they chain: R.U.S is R^US.
+    # T, S, U, V: the notation's swaps of neighbouring indices. They only reorder: each index keeps
+    # its arrow and type. They chain: R.U.S is R^US.
     @property
     def T(self):
-        """Transpose the matrix in indices 0 and 1, at every value of the others: swap(0, 1)."""
-        return self.swap(0, 1)
+        """Swap positions 0 and 1."""
+        return self._neighbour_swap("T", 0)
 
     @property
     def S(self):
-        """Transpose the matrix in indices 1 and 2, at every value of the others: swap(1, 2)."""
-        return self.swap(1, 2)
+        """Swap positions 1 and 2."""
+        return self._neighbour_swap("S", 1)
 
     @property
     def U(self):
-        """Transpose the matrix in indices 2 and 3, at every value of the others: swap(2, 3)."""
-        return self.swap(2, 3)
+        """Swap positions 2 and 3."""
+        return self._neighbour_swap("U", 2)
 
     @property
     def V(self):
-        """Transpose the matrix in indices 3 and 4, at every value of the others: swap(3, 4)."""
-        return self.swap(3, 4)
+        """Swap positions 3 and 4."""
+        return self._neighbour_swap("V", 3)
+
+    def _neighbour_swap(self, name, i):
+        """swap(i, i + 1), refused with the notation's name if there aren't two indices there.
+        A single index is never transposed: turning ↑ into ↓ is lower(), which uses the metric."""
+        n = len(self.indices)
+        if n < i + 2:
+            hint = ""
+            if n == 1 and not self.indices[0].is_form:
+                hint = ("; to make a column a row, lower it: X.lower()" if self.indices[0].is_up
+                        else "; to make a row a column, raise it: X.raise_()")
+            raise IndexMismatchError(f"{name}: swaps positions {i} and {i + 1}; {self.declaration()} has {n} "
+                                     f"{'index' if n == 1 else 'indices'}{hint}")
+        return self.swap(i, i + 1)
 
     def relabel_indices(self, mapping):
         """New index labels: {index (label or number): new label}, for the indices you name; the
