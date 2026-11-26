@@ -451,7 +451,10 @@ class Tensor(Derivatives, Products):
         Refused for anything else: inverting is not linear, so it can't be done index by index
         over other (e.g. form) indices without depending on the coordinates. Also refused if it
         isn't square or the determinant is 0 (sympy checks; the messages are ours)."""
-        so, si, m = self._matrix("inverse")
+        if len(self.indices) != 2 or any(s.is_form for s in self.indices):
+            raise IndexMismatchError(f"inverse: needs exactly two value indices and no others; got {self.declaration()}")
+        so, si = self.indices
+        m = sp.Matrix(self._data.tolist())                     # rows: index 0 (out), columns: index 1 (in)
         try:                                                  # sympy does the checks, with our zero test
             inv = m.inv(iszerofunc=_is_zero)
         except NonSquareMatrixError:
@@ -464,21 +467,14 @@ class Tensor(Derivatives, Products):
                          label=None)
 
     def det(self):
-        """The determinant of a tensor that is a matrix at each point, as a scalar: accepts and
-        refuses exactly what inverse does (two value indices and nothing else, square)."""
-        so, si, m = self._matrix("det")
-        if so.space.dim != si.space.dim:
-            raise IndexMismatchError(f"det: not square ({so.label} has size {so.space.dim}, "
-                                     f"{si.label} has size {si.space.dim})")
-        return self.manifold.scalar(m.det())
-
-    def _matrix(self, name):
-        """The two value indices and the numbers as a sympy Matrix (rows: index 0, columns:
-        index 1), for inverse and det. Refused unless there are exactly two value indices."""
-        if len(self.indices) != 2 or any(s.is_form for s in self.indices):
-            raise IndexMismatchError(f"{name}: needs exactly two value indices and no others; got {self.declaration()}")
-        so, si = self.indices
-        return so, si, sp.Matrix(self._data.tolist())
+        """The determinant of a tensor that is a square matrix at each point (exactly two
+        indices, of any kind), as a scalar."""
+        if len(self.indices) != 2:
+            raise IndexMismatchError(f"det: needs exactly two indices; got {self.declaration()}")
+        a, b = self.indices
+        if a.space.dim != b.space.dim:
+            raise IndexMismatchError(f"det: not square ({a.label} has size {a.space.dim}, {b.label} has size {b.space.dim})")
+        return self.manifold.scalar(sp.Matrix(self._data.tolist()).det())
 
     # ---------- Hodge star (needs the manifold's metric) ----------
     def star(self):
