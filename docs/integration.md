@@ -1,30 +1,31 @@
 # Integration
 
-Only forms integrate, and only over a region of the same dimension: a 1-form along a curve, a
-2-form over a surface, an n-form over an n-dimensional region.
-
-| call | gives |
+| call | description |
 |---|---|
-| `X.integrate({θ: (0, π), φ: (0, 2π)})` | ∫ X over a coordinate box, every coordinate given (by symbol or name) |
-| `C.pullback(X)` | X, a tensor on C's ambient manifold, carried onto the submanifold C |
-| `f.star()` | a scalar as a top form: f times the volume form |
-| `v.lower().as_form().star()` | a vector field's flux form |
+| `X.integrate({θ: (0, π), φ: (0, 2π)})` | ∫ X over the coordinate ranges |
+| `C.pullback(X)` | X carried onto the submanifold C |
 
-`integrate` needs one form index per coordinate, antisymmetric; the orientation is the
-coordinate order. It returns a plain value, or sympy's unevaluated `Integral` if sympy can't do
-it. `pullback` takes down and form indices only. Both star calls need a metric.
+Conventions:
+
+* `integrate` takes a form with one form index per coordinate, antisymmetric. Every coordinate
+  needs a range (by symbol or name); the orientation is the coordinate order.
+* `integrate` returns a plain value, or sympy's unevaluated `Integral` if sympy can't do it.
+* `pullback` takes a tensor on C's ambient manifold with down and form indices only. Each index
+  keeps its label and type.
 
 ## What to integrate
 
+A form is integrated over a region of its degree: a 1-form along a curve, a 2-form over a
+surface. A region smaller than the manifold is a [submanifold](manifold.md#submanifolds): pull
+back onto it, then integrate over its coordinates. Star (which needs a metric) gives the form
+for a scalar or a vector field:
+
 | you have | integrate | over |
 |---|---|---|
-| a form of the region's degree | the form | the region |
-| a scalar f (an amount: length, area, mass) | `f.star()` | the region |
+| a form | the form | a region of its degree |
+| a scalar f (length, area, mass, …) | `f.star()`, or `C.pullback(f).star()` on a submanifold C | the manifold, or C |
 | a vector field v, along a curve (work) | `v.lower().as_form()` | the curve |
 | a vector field v, through a surface (flux) | `v.lower().as_form().star()` | the surface |
-
-When the region is smaller than the manifold, make it a [submanifold](manifold.md#submanifolds)
-and pull back first; then integrate over its coordinates.
 
 ### Example: the area of a sphere
 

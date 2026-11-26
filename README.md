@@ -99,7 +99,7 @@ r**(-2)
 | [Manifold](docs/manifold.md) | coordinates, the metric, Γ, R, Ric, R_s, G, ready-made manifolds |
 | [Tensors](docs/tensors.md) | the notation, everything you can do with a tensor, products |
 | [Derivatives](docs/derivatives.md) | d, d∧, ∇, ∇∧, the curvature derivatives, the Lie derivative |
-| [Integration](docs/integration.md) | what integrates, star for scalars and flux, pullback onto submanifolds, Stokes |
+| [Integration](docs/integration.md) | integrate over coordinate ranges, pullback onto submanifolds |
 
 ## Examples
 
