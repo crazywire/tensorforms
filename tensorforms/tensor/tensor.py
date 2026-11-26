@@ -323,6 +323,35 @@ class Tensor(Derivatives, Products):
         indices = [Index(s.label, C.tangent, s.variance, s.type) for s in self.indices]
         return type(self)(C, data, indices, copy=False)
 
+    def integrate(self, ranges):
+        """∫ X over a coordinate box: X.integrate({θ: (0, π), φ: (0, 2π)}), every coordinate given
+        (by symbol or name). X must be a form of the manifold's degree: one form index per
+        coordinate, antisymmetric. Orientation: the coordinate order. Returns a plain value
+        (sympy's unevaluated Integral if it can't do it). A scalar f: integrate f times a volume
+        form. A lower degree: pull it back onto a submanifold of that dimension first."""
+        M, n = self.manifold, self.manifold.dim
+        if len(self.indices) != n or not all(s.is_form for s in self.indices):
+            raise IndexMismatchError(f"integrate: needs a form with {n} form indices, one per coordinate; "
+                                     f"got {self.declaration()} (a scalar f: integrate f * M.volume_form(); "
+                                     f"a lower degree: pull it back onto a submanifold first)")
+        if n > 1 and self.equals(self.alt()) is not True:
+            raise IndexMismatchError("integrate: not shown antisymmetric; X.alt() gives a form (and changes X)")
+        if not isinstance(ranges, dict):
+            raise TypeError(f"integrate: give a dictionary {{coordinate: (low, high)}}; got {type(ranges).__name__}")
+        limits = {}
+        for k, r in ranges.items():
+            c = self._coordinate(k)
+            if c is None:
+                raise InvalidCoordinateError(f"integrate: {k} is not one of the coordinates {tuple(M.coords)}")
+            if not isinstance(r, (tuple, list)) or len(r) != 2:
+                raise TypeError(f"integrate: the range for {c} must be (low, high); got {r!r}")
+            limits[c] = r
+        missing = [c for c in M.coords if c not in limits]
+        if missing:
+            raise InvalidCoordinateError(f"integrate: every coordinate needs a range; missing {missing}")
+        f = sp.sympify(self._data[tuple(range(n))])          # ω = f dx¹ ∧ … ∧ dxⁿ
+        return sp.integrate(f, *[(c, *limits[c]) for c in M.coords])
+
     # ---------- moving indices ----------
     def _transposed(self, order):
         return self._new(np.transpose(self._data, order), [self.indices[i] for i in order], label=self.label)
