@@ -107,12 +107,16 @@ C.pullback(P.one_form([-y, x])).simplify()   # [1]: −y dx + x dy on the circle
 A coordinate held fixed is the same thing: the sphere r = 1 in spherical coordinates is
 `Manifold([th, ph], ambient=E, map={r: 1, th: th, ph: ph})`.
 
+With the same dimension as the ambient, it is a change of coordinates: the plane in polar
+coordinates is `Manifold([rho, phi], ambient=P, map={x: rho*sp.cos(phi), y: rho*sp.sin(phi)})`,
+and `pullback` then carries every tensor, up indices included.
+
 | | |
 |---|---|
 | `C.ambient` | the manifold C sits in |
 | `C.map` | the map as a tensor on C, (a↑): its index counts the ambient's directions |
 | `C.map.d()` | J (a↑ μ), the derivatives of the map |
-| `C.pullback(X)` | X, a tensor on the ambient, carried onto C: substitute the map, multiply each index by J; down and form indices only |
+| `C.pullback(X)` | X, a tensor on the ambient, carried onto C: substitute the map, multiply each down or form index by J, and each up index by J⁻¹ (same dimension only) |
 
 Integrating over a submanifold: see [Integration](integration.md).
 

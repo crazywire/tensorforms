@@ -7,6 +7,7 @@ Connection and curvature are computed when asked; Γ always comes from the metri
 
 import numpy as np
 import sympy as sp
+from sympy.matrices.exceptions import NonInvertibleMatrixError
 
 from ..tensor.index import Index
 from ..tensor.tensor import Tensor
@@ -16,7 +17,8 @@ from .metric import build_metric, inverse_metric
 from .space import Space
 from ..tensor.labels import GREEK_LETTERS, LATIN_LETTERS
 from .volume import volume_form
-from ..errors import IndexMismatchError, InvalidCoordinateError, MissingMetricError
+from ..symbolic.simplify import is_zero as _is_zero
+from ..errors import IndexMismatchError, InvalidCoordinateError, MissingMetricError, NonInvertibleError
 
 
 class Manifold:
@@ -142,9 +144,10 @@ class Manifold:
     # ---------- submanifold ----------
     def pullback(self, X):
         """X, a tensor on the ambient manifold, carried onto this submanifold: substitute the map
-        into the components, then multiply each index by J = self.map.d(). Only down and form
-        indices carry over (an up index may point off this manifold). Each index keeps its label,
-        arrow and type; only its space changes."""
+        into the components, then multiply each down or form index by J = self.map.d(). Up indices
+        only when this manifold has the ambient's dimension (a change of coordinates): each is
+        multiplied by J⁻¹. Otherwise an up index may point off this manifold, so it is refused.
+        Each index keeps its label, arrow and type; only its space changes."""
         if self.ambient is None:
             raise TypeError(f"pullback: {self} has no ambient manifold (make it with ambient=..., map=...)")
         if not isinstance(X, Tensor):
@@ -153,15 +156,25 @@ class Manifold:
         if X.manifold is not P:
             raise IndexMismatchError(f"pullback: the tensor is on {X.manifold}, but {self} sits in {P}")
         for s in X.indices:
-            if s.is_up:
-                raise IndexMismatchError(f"pullback: {s.label} is an up index; only down and form indices carry over")
+            if s.is_up and self.dim != P.dim:
+                raise IndexMismatchError(f"pullback: {s.label} is an up index; only down and form indices carry over "
+                                         f"(up indices only when the dimensions match: a change of coordinates)")
             if s.space is not P.tangent:
                 raise NotImplementedError(f"pullback: index {s.label} is not in {P.tangent.label}")
         at = dict(zip(P.coords, self.map.data))
         data = np.vectorize(lambda e: sp.sympify(e).subs(at, simultaneous=True), otypes=[object])(X.data)
         J = self.map.d().data                                 # J[a, i] = ∂x^a/∂u^i
-        for k in range(data.ndim):                            # each index: contract with J's a, keep its position
-            data = np.moveaxis(np.tensordot(data, J, axes=([k], [0])), -1, k)
+        if any(s.is_up for s in X.indices):
+            try:                                              # J⁻¹[i, a] = ∂u^i/∂x^a
+                Jinv = np.array(sp.Matrix(J.tolist()).inv(iszerofunc=_is_zero).tolist(), dtype=object)
+            except NonInvertibleMatrixError:
+                raise NonInvertibleError("pullback: the map's J is not invertible (determinant 0), "
+                                         "so up indices can't be carried") from None
+        for k, s in enumerate(X.indices):                     # each index, kept in its position
+            if s.is_up:
+                data = np.moveaxis(np.tensordot(data, Jinv, axes=([k], [1])), -1, k)
+            else:
+                data = np.moveaxis(np.tensordot(data, J, axes=([k], [0])), -1, k)
         indices = [Index(s.label, self.tangent, s.variance, s.type) for s in X.indices]
         return Tensor(self, data, indices, copy=False)
 

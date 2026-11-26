@@ -8,7 +8,8 @@
 * `integrate`: X has one form index per coordinate (μ ν …), antisymmetric. Every coordinate
   needs a range, by symbol or name; the orientation is the coordinate order. Returns a plain
   value, or sympy's unevaluated `Integral` if sympy can't do it.
-* `pullback`: X has down and form indices only. Each index keeps its label and type; its space
+* `pullback`: X has down and form indices only, unless C has the ambient's dimension (a change of
+  coordinates), when up indices are carried too. Each index keeps its label and type; its space
   becomes C's tangent space.
 
 To integrate over a region smaller than the manifold, make the region a
