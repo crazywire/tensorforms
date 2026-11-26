@@ -20,11 +20,11 @@ coordinates. Over the whole manifold, skip the pullback.
 `integrate` needs as many form indices as C has coordinates. Other tensors get them first
 (`star` needs a metric):
 
-| X | over C | call |
+| X | C | call |
 |---|---|---|
-| (μ ν …), one form index per coordinate of C | any | `C.pullback(X).integrate(...)` |
-| () | any | `C.pullback(X).star().integrate(...)` |
-| (μ↑) | a curve | `C.pullback(X.lower().as_form()).integrate(...)` |
+| (μ ν …), k form indices | dimension k | `C.pullback(X).integrate(...)` |
+| () | any dimension | `C.pullback(X).star().integrate(...)` |
+| (μ↑) | dimension 1 | `C.pullback(X.lower().as_form()).integrate(...)` |
 | (μ↑) | dimension n − 1 | `C.pullback(X.lower().as_form().star()).integrate(...)` |
 
 n is the dimension of X's manifold. For (), `star` is applied on C, after the pullback; for
@@ -45,7 +45,7 @@ S.scalar(1).star().integrate({th: (0, sp.pi), ph: (0, 2*sp.pi)})
 4*pi*r**2
 ```
 
-### Example: around the unit circle and over the disc
+### Example: Stokes' theorem, ∫ d∧w over a region = ∫ w over its boundary
 
 ```python
 from tensorforms import Manifold
@@ -54,12 +54,12 @@ x, y = sp.symbols("x y", real=True)
 u, phi = sp.symbols("u phi", real=True)
 rho = sp.Symbol("rho", positive=True)
 P = Manifold([x, y], metric=[[1, 0], [0, 1]])
-C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})                          # the circle
-D = Manifold([rho, phi], ambient=P, map={x: rho * sp.cos(phi), y: rho * sp.sin(phi)})   # the disc
+D = Manifold([rho, phi], ambient=P, map={x: rho * sp.cos(phi), y: rho * sp.sin(phi)})   # region: ρ ≤ 1
+C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})                          # its boundary: ρ = 1
 
 w = P.one_form([-y, x])                                                 # (μ)
-C.pullback(w).integrate({u: (0, 2*sp.pi)})
 D.pullback(w.wedge_d()).integrate({rho: (0, 1), phi: (0, 2*sp.pi)})     # d∧w: (μ ν)
+C.pullback(w).integrate({u: (0, 2*sp.pi)})
 ```
 
 ```text
@@ -67,7 +67,7 @@ D.pullback(w.wedge_d()).integrate({rho: (0, 1), phi: (0, 2*sp.pi)})     # d∧w:
 2*pi
 ```
 
-### Example: (μ↑) through the unit sphere
+### Example: (μ↑) through a sphere
 
 ```python
 E = tf.Manifold.euclidean(3)
