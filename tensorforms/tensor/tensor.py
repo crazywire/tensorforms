@@ -466,6 +466,16 @@ class Tensor(Derivatives, Products):
         return self._new(np.array(inv.tolist(), dtype=object), [flip(si), flip(so)],
                          label=None)
 
+    def det(self):
+        """The determinant of a tensor that is a square matrix at each point (exactly two
+        indices, of any kind), as a scalar."""
+        if len(self.indices) != 2:
+            raise IndexMismatchError(f"det: needs exactly two indices; got {self.declaration()}")
+        a, b = self.indices
+        if a.space.dim != b.space.dim:
+            raise IndexMismatchError(f"det: not square ({a.label} has size {a.space.dim}, {b.label} has size {b.space.dim})")
+        return self.manifold.scalar(sp.Matrix(self._data.tolist()).det())
+
     # ---------- Hodge star (needs the manifold's metric) ----------
     def star(self):
         """⋆X: the k form indices become n − k, with the same amount (direction ↔ plane ↔ volume …).

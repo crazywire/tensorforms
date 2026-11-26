@@ -59,6 +59,7 @@ S = Manifold([th, ph], label="S2", metric=[[r**2, 0], [0, r**2 * sp.sin(th)**2]]
 | `X.as_form()`, `X.as_value()` | change the type: covector ↔ 1-form, same numbers |
 | `X.star()` | Hodge star: k form indices become n − k, same amount (uses the metric) |
 | `X.inverse()` | for a matrix at each point (exactly two value indices, nothing else): the matrix inverse; the indices swap places and flip arrows, g(μ↓ ν↓) → g⁻¹(ν↑ μ↑) |
+| `X.det()` | for a square matrix at each point (exactly two indices, of any kind): the determinant, as a scalar |
 
 **Swaps.** T, S, U and V swap neighbouring indices, counted from 0 across all indices: each
 transposes the matrix in those two indices at every value of the others. They are properties
