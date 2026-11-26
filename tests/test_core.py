@@ -828,7 +828,7 @@ def test_submanifold():
     assert C.g.data.tolist() == [[1]]                                    # du²
     assert repr(C.map) == "Tensor(a↑)" and repr(C.map.d()) == "Tensor(a↑ μ)"   # Latin: the ambient's directions
     assert C.map.d().data.tolist() == [[-sp.sin(u)], [sp.cos(u)]]        # J
-    assert is_zero(P.one_form([-y, x]).pullback(C)[0] - 1)               # −y dx + x dy → du
+    assert is_zero(C.pullback(P.one_form([-y, x]))[0] - 1)               # −y dx + x dy → du
     E = tf.Manifold.euclidean(coords="spherical")
     r, th, ph = E.coords
     S = Manifold([th, ph], ambient=E, map={r: 1, th: th, ph: ph})       # a coordinate held fixed
@@ -840,8 +840,9 @@ def test_submanifold():
              (lambda: Manifold([u], ambient=P, map={x: u, y: x}), tf.InvalidCoordinateError), # uses x
              (lambda: Manifold([u], ambient=P), TypeError),
              (lambda: Manifold([u], ambient=P, map={x: u, y: u}, metric=[[1]]), TypeError),
-             (lambda: P.vector([1, 0]).pullback(C), tf.IndexMismatchError),                  # up index
-             (lambda: B.scalar(1).pullback(C), tf.IndexMismatchError)]                       # wrong ambient
+             (lambda: C.pullback(P.vector([1, 0])), tf.IndexMismatchError),                  # up index
+             (lambda: C.pullback(B.scalar(1)), tf.IndexMismatchError),                       # wrong ambient
+             (lambda: P.pullback(P.scalar(1)), TypeError)]                                   # P has no ambient
     for make, kind in cases:
         try:
             make()
@@ -866,14 +867,14 @@ def test_integrate():
     C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})            # the unit circle
     rho, phi = sp.Symbol("rho", positive=True), sp.Symbol("phi", real=True)
     D = Manifold([rho, phi], ambient=P, map={x: rho * sp.cos(phi), y: rho * sp.sin(phi)})   # the disc
-    around = w.pullback(C).integrate({u: (0, 2 * sp.pi)})
-    inside = w.wedge_d().pullback(D).integrate({rho: (0, 1), phi: (0, 2 * sp.pi)})
+    around = C.pullback(w).integrate({u: (0, 2 * sp.pi)})
+    inside = D.pullback(w.wedge_d()).integrate({rho: (0, 1), phi: (0, 2 * sp.pi)})
     assert is_zero(around - 2 * sp.pi) and is_zero(inside - around)        # Stokes
     E = tf.Manifold.euclidean(3)
     X, Y, Z = E.coords
     a, b = sp.symbols("a b", real=True)
     ball = Manifold([a, b], ambient=E, map={X: sp.sin(a) * sp.cos(b), Y: sp.sin(a) * sp.sin(b), Z: sp.cos(a)})
-    flux = E.vector([X, Y, Z]).lower().as_form().star().pullback(ball).integrate({a: (0, sp.pi), b: (0, 2 * sp.pi)})
+    flux = ball.pullback(E.vector([X, Y, Z]).lower().as_form().star()).integrate({a: (0, sp.pi), b: (0, 2 * sp.pi)})
     assert is_zero(flux - 4 * sp.pi)                                       # flux of (x, y, z) out of the unit sphere
     dx, dy = P.one_form([1, 0]), P.one_form([0, 1])
     cases = [(lambda: P.scalar(1).integrate({x: (0, 1), y: (0, 1)}), tf.IndexMismatchError),        # scalar

@@ -101,7 +101,7 @@ u = sp.Symbol("u", real=True)
 P = Manifold([x, y], label="P", metric=[[1, 0], [0, 1]])
 C = Manifold([u], label="C", ambient=P, map={x: sp.cos(u), y: sp.sin(u)})   # the unit circle
 C.g                                   # [[1]]: du², from P's metric
-P.one_form([-y, x]).pullback(C).simplify()   # [1]: −y dx + x dy on the circle is du
+C.pullback(P.one_form([-y, x])).simplify()   # [1]: −y dx + x dy on the circle is du
 ```
 
 A coordinate held fixed is the same thing: the sphere r = 1 in spherical coordinates is
@@ -112,21 +112,9 @@ A coordinate held fixed is the same thing: the sphere r = 1 in spherical coordin
 | `C.ambient` | the manifold C sits in |
 | `C.map` | the map as a tensor on C, (a↑): its index counts the ambient's directions |
 | `C.map.d()` | J (a↑ μ), the derivatives of the map |
-| `X.pullback(C)` | X carried onto C: substitute the map, multiply each index by J; down and form indices only |
+| `C.pullback(X)` | X, a tensor on the ambient, carried onto C: substitute the map, multiply each index by J; down and form indices only |
 
-### Example: integrating over a curve, a surface and a region
-
-```python
-C.volume_form().integrate({u: (0, 2*sp.pi)})                      # 2π: the circle's length
-P.one_form([-y, x]).pullback(C).integrate({u: (0, 2*sp.pi)})      # 2π: −y dx + x dy around it
-
-S = tf.Manifold.sphere()
-th, ph = S.coords
-S.volume_form().integrate({th: (0, sp.pi), ph: (0, 2*sp.pi)})     # 4πr²
-```
-
-Star turns what you have into a form to integrate: a scalar f as `f.star()` (f times the
-volume form), a vector field's flux as `v.lower().as_form().star()`, pulled back onto the surface.
+Integrating over a submanifold: see [Integration](integration.md).
 
 The metric comes from the ambient's, so a submanifold is not given one. A map that collapses a
 dimension is refused (its metric has determinant 0). Index labels: Greek in a manifold's own

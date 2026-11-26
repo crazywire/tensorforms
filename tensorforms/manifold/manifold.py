@@ -16,7 +16,7 @@ from .metric import build_metric, inverse_metric
 from .space import Space
 from ..tensor.labels import GREEK_LETTERS, LATIN_LETTERS
 from .volume import volume_form
-from ..errors import InvalidCoordinateError, MissingMetricError
+from ..errors import IndexMismatchError, InvalidCoordinateError, MissingMetricError
 
 
 class Manifold:
@@ -40,7 +40,7 @@ class Manifold:
                 raise TypeError("Manifold: a submanifold's metric comes from its ambient manifold; don't give one")
             self.map = _map_tensor(self, ambient, map)
             if ambient.has_metric():
-                metric = ambient.g.pullback(self).simplify()    # substituting leaves e.g. sin² + cos²
+                metric = self.pullback(ambient.g).simplify()    # substituting leaves e.g. sin² + cos²
         if metric is not None:
             self._g = build_metric(self, metric)
             self._ginv = inverse_metric(self._g)
@@ -138,6 +138,32 @@ class Manifold:
         """A 1-form (μ): one form index. For d∧ and wedge; d of a function gives one."""
         a = index or self.index()
         return Tensor(self, data, [a.form], label)
+
+    # ---------- submanifold ----------
+    def pullback(self, X):
+        """X, a tensor on the ambient manifold, carried onto this submanifold: substitute the map
+        into the components, then multiply each index by J = self.map.d(). Only down and form
+        indices carry over (an up index may point off this manifold). Each index keeps its label,
+        arrow and type; only its space changes."""
+        if self.ambient is None:
+            raise TypeError(f"pullback: {self} has no ambient manifold (make it with ambient=..., map=...)")
+        if not isinstance(X, Tensor):
+            raise TypeError(f"pullback: needs a tensor; got {type(X).__name__}")
+        P = self.ambient
+        if X.manifold is not P:
+            raise IndexMismatchError(f"pullback: the tensor is on {X.manifold}, but {self} sits in {P}")
+        for s in X.indices:
+            if s.is_up:
+                raise IndexMismatchError(f"pullback: {s.label} is an up index; only down and form indices carry over")
+            if s.space is not P.tangent:
+                raise NotImplementedError(f"pullback: index {s.label} is not in {P.tangent.label}")
+        at = dict(zip(P.coords, self.map.data))
+        data = np.vectorize(lambda e: sp.sympify(e).subs(at, simultaneous=True), otypes=[object])(X.data)
+        J = self.map.d().data                                 # J[a, i] = ∂x^a/∂u^i
+        for k in range(data.ndim):                            # each index: contract with J's a, keep its position
+            data = np.moveaxis(np.tensordot(data, J, axes=([k], [0])), -1, k)
+        indices = [Index(s.label, self.tangent, s.variance, s.type) for s in X.indices]
+        return Tensor(self, data, indices, copy=False)
 
     # ---------- metric ----------
     @property

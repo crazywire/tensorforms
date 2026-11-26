@@ -303,38 +303,18 @@ class Tensor(Derivatives, Products):
         data = np.vectorize(f, otypes=[object])(self._data)
         return data.item() if not self.indices else sp.Array(data.tolist())
 
-    def pullback(self, C):
-        """This tensor carried onto the submanifold C: substitute C's map into the components,
-        then multiply each index by J = C.map.d(). Only down and form indices carry over (an up
-        index may point off C). Each index keeps its label, arrow and type; only its space changes."""
-        P = self.manifold
-        if getattr(C, "ambient", None) is not P:
-            raise IndexMismatchError(f"pullback: {C} doesn't sit in {P}")
-        for s in self.indices:
-            if s.is_up:
-                raise IndexMismatchError(f"pullback: {s.label} is an up index; only down and form indices carry over")
-            if s.space is not P.tangent:
-                raise NotImplementedError(f"pullback: index {s.label} is not in {P.tangent.label}")
-        at = dict(zip(P.coords, C.map.data))
-        data = np.vectorize(lambda e: sp.sympify(e).subs(at, simultaneous=True), otypes=[object])(self._data)
-        J = C.map.d().data                                    # J[a, i] = ∂x^a/∂u^i
-        for k in range(data.ndim):                            # each index: contract with J's a, keep its position
-            data = np.moveaxis(np.tensordot(data, J, axes=([k], [0])), -1, k)
-        indices = [Index(s.label, C.tangent, s.variance, s.type) for s in self.indices]
-        return type(self)(C, data, indices, copy=False)
-
     def integrate(self, ranges):
         """∫ X over a coordinate box: X.integrate({θ: (0, π), φ: (0, 2π)}), every coordinate given
         (by symbol or name). X must be a form of the manifold's degree: one form index per
         coordinate, antisymmetric. Orientation: the coordinate order. Returns a plain value
         (sympy's unevaluated Integral if it can't do it). Star turns what you have into a form:
         a scalar f → f.star(); a vector's flux → v.lower().as_form().star(). A lower degree: pull
-        it back onto a submanifold of that dimension first."""
+        it back onto a submanifold of that dimension first, C.pullback(X)."""
         M, n = self.manifold, self.manifold.dim
         if len(self.indices) != n or not all(s.is_form for s in self.indices):
             raise IndexMismatchError(f"integrate: needs a form with {n} form indices, one per coordinate; "
                                      f"got {self.declaration()} (a scalar f: integrate f.star(); "
-                                     f"a lower degree: pull it back onto a submanifold first)")
+                                     f"a lower degree: pull it back onto a submanifold first, C.pullback(X))")
         if n > 1 and self.equals(self.alt()) is not True:
             raise IndexMismatchError("integrate: not shown antisymmetric; X.alt() gives a form (and changes X)")
         if not isinstance(ranges, dict):
