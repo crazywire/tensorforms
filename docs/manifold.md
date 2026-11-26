@@ -125,8 +125,8 @@ th, ph = S.coords
 S.volume_form().integrate({th: (0, sp.pi), ph: (0, 2*sp.pi)})     # 4πr²
 ```
 
-A scalar f is integrated as `f * M.volume_form()`; a vector field's flux as
-`M.volume_form().interior(v)`, pulled back onto the surface.
+Star turns what you have into a form to integrate: a scalar f as `f.star()` (f times the
+volume form), a vector field's flux as `v.lower().as_form().star()`, pulled back onto the surface.
 
 The metric comes from the ambient's, so a submanifold is not given one. A map that collapses a
 dimension is refused (its metric has determinant 0). Index labels: Greek in a manifold's own

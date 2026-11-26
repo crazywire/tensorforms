@@ -873,7 +873,7 @@ def test_integrate():
     X, Y, Z = E.coords
     a, b = sp.symbols("a b", real=True)
     ball = Manifold([a, b], ambient=E, map={X: sp.sin(a) * sp.cos(b), Y: sp.sin(a) * sp.sin(b), Z: sp.cos(a)})
-    flux = E.volume_form().interior(E.vector([X, Y, Z])).pullback(ball).integrate({a: (0, sp.pi), b: (0, 2 * sp.pi)})
+    flux = E.vector([X, Y, Z]).lower().as_form().star().pullback(ball).integrate({a: (0, sp.pi), b: (0, 2 * sp.pi)})
     assert is_zero(flux - 4 * sp.pi)                                       # flux of (x, y, z) out of the unit sphere
     dx, dy = P.one_form([1, 0]), P.one_form([0, 1])
     cases = [(lambda: P.scalar(1).integrate({x: (0, 1), y: (0, 1)}), tf.IndexMismatchError),        # scalar

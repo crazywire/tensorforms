@@ -327,12 +327,13 @@ class Tensor(Derivatives, Products):
         """∫ X over a coordinate box: X.integrate({θ: (0, π), φ: (0, 2π)}), every coordinate given
         (by symbol or name). X must be a form of the manifold's degree: one form index per
         coordinate, antisymmetric. Orientation: the coordinate order. Returns a plain value
-        (sympy's unevaluated Integral if it can't do it). A scalar f: integrate f times a volume
-        form. A lower degree: pull it back onto a submanifold of that dimension first."""
+        (sympy's unevaluated Integral if it can't do it). Star turns what you have into a form:
+        a scalar f → f.star(); a vector's flux → v.lower().as_form().star(). A lower degree: pull
+        it back onto a submanifold of that dimension first."""
         M, n = self.manifold, self.manifold.dim
         if len(self.indices) != n or not all(s.is_form for s in self.indices):
             raise IndexMismatchError(f"integrate: needs a form with {n} form indices, one per coordinate; "
-                                     f"got {self.declaration()} (a scalar f: integrate f * M.volume_form(); "
+                                     f"got {self.declaration()} (a scalar f: integrate f.star(); "
                                      f"a lower degree: pull it back onto a submanifold first)")
         if n > 1 and self.equals(self.alt()) is not True:
             raise IndexMismatchError("integrate: not shown antisymmetric; X.alt() gives a form (and changes X)")
