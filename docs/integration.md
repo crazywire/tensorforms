@@ -3,29 +3,32 @@
 | call | description |
 |---|---|
 | `X.integrate({θ: (0, π), φ: (0, 2π)})` | ∫ X over the coordinate ranges |
-| `C.pullback(X)` | X carried onto the submanifold C |
+| `C.pullback(X)` | X, a tensor on C's ambient manifold, carried onto the submanifold C |
 
-Conventions:
+* `integrate`: X has one form index per coordinate (μ ν …), antisymmetric. Every coordinate
+  needs a range, by symbol or name; the orientation is the coordinate order. Returns a plain
+  value, or sympy's unevaluated `Integral` if sympy can't do it.
+* `pullback`: X has down and form indices only. Each index keeps its label and type; its space
+  becomes C's tangent space.
 
-* `integrate` takes a form with one form index per coordinate, antisymmetric. Every coordinate
-  needs a range (by symbol or name); the orientation is the coordinate order.
-* `integrate` returns a plain value, or sympy's unevaluated `Integral` if sympy can't do it.
-* `pullback` takes a tensor on C's ambient manifold with down and form indices only. Each index
-  keeps its label and type.
+To integrate over a region smaller than the manifold, make the region a
+[submanifold](manifold.md#submanifolds) C, pull X back onto it, and integrate over C's
+coordinates. Over the whole manifold, skip the pullback.
 
-## What to integrate
+## Getting form indices
 
-A form is integrated over a region of its degree: a 1-form along a curve, a 2-form over a
-surface. A region smaller than the manifold is a [submanifold](manifold.md#submanifolds): pull
-back onto it, then integrate over its coordinates. Star (which needs a metric) gives the form
-for a scalar or a vector field:
+`integrate` needs as many form indices as C has coordinates. Other tensors get them first
+(`star` needs a metric):
 
-| you have | integrate | over |
+| X | over C | call |
 |---|---|---|
-| a form | the form | a region of its degree |
-| a scalar f (length, area, mass, …) | `f.star()`, or `C.pullback(f).star()` on a submanifold C | the manifold, or C |
-| a vector field v, along a curve (work) | `v.lower().as_form()` | the curve |
-| a vector field v, through a surface (flux) | `v.lower().as_form().star()` | the surface |
+| (μ ν …), one form index per coordinate of C | any | `C.pullback(X).integrate(...)` |
+| () | any | `C.pullback(X).star().integrate(...)` |
+| (μ↑) | a curve | `C.pullback(X.lower().as_form()).integrate(...)` |
+| (μ↑) | dimension n − 1 | `C.pullback(X.lower().as_form().star()).integrate(...)` |
+
+n is the dimension of X's manifold. For (), `star` is applied on C, after the pullback; for
+(μ↑) through dimension n − 1, on X's manifold, before it.
 
 ### Example: the area of a sphere
 
@@ -42,7 +45,7 @@ S.scalar(1).star().integrate({th: (0, sp.pi), ph: (0, 2*sp.pi)})
 4*pi*r**2
 ```
 
-### Example: Stokes, around the unit circle and over the disc
+### Example: around the unit circle and over the disc
 
 ```python
 from tensorforms import Manifold
@@ -51,12 +54,12 @@ x, y = sp.symbols("x y", real=True)
 u, phi = sp.symbols("u phi", real=True)
 rho = sp.Symbol("rho", positive=True)
 P = Manifold([x, y], metric=[[1, 0], [0, 1]])
-C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})                    # the circle
+C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})                          # the circle
 D = Manifold([rho, phi], ambient=P, map={x: rho * sp.cos(phi), y: rho * sp.sin(phi)})   # the disc
 
-w = P.one_form([-y, x])
-C.pullback(w).integrate({u: (0, 2*sp.pi)})                          # around the circle
-D.pullback(w.wedge_d()).integrate({rho: (0, 1), phi: (0, 2*sp.pi)}) # d∧w over the disc
+w = P.one_form([-y, x])                                                 # (μ)
+C.pullback(w).integrate({u: (0, 2*sp.pi)})
+D.pullback(w.wedge_d()).integrate({rho: (0, 1), phi: (0, 2*sp.pi)})     # d∧w: (μ ν)
 ```
 
 ```text
@@ -64,15 +67,15 @@ D.pullback(w.wedge_d()).integrate({rho: (0, 1), phi: (0, 2*sp.pi)}) # d∧w over
 2*pi
 ```
 
-### Example: flux out of the unit sphere
+### Example: (μ↑) through the unit sphere
 
 ```python
 E = tf.Manifold.euclidean(3)
 X, Y, Z = E.coords
 a, b = sp.symbols("a b", real=True)
-ball = Manifold([a, b], ambient=E, map={X: sp.sin(a) * sp.cos(b), Y: sp.sin(a) * sp.sin(b), Z: sp.cos(a)})
-v = E.vector([X, Y, Z])
-ball.pullback(v.lower().as_form().star()).integrate({a: (0, sp.pi), b: (0, 2*sp.pi)})
+sphere = Manifold([a, b], ambient=E, map={X: sp.sin(a) * sp.cos(b), Y: sp.sin(a) * sp.sin(b), Z: sp.cos(a)})
+v = E.vector([X, Y, Z])                                                 # (μ↑)
+sphere.pullback(v.lower().as_form().star()).integrate({a: (0, sp.pi), b: (0, 2*sp.pi)})
 ```
 
 ```text
