@@ -15,20 +15,11 @@ To integrate over a region smaller than the manifold, make the region a
 [submanifold](manifold.md#submanifolds) C, pull X back onto it, and integrate over C's
 coordinates. Over the whole manifold, skip the pullback.
 
-## Getting form indices
+A tensor without form indices is turned into a form first (`star` needs a metric):
 
-`integrate` needs as many form indices as C has coordinates. Other tensors get them first
-(`star` needs a metric):
-
-| X | C | call |
-|---|---|---|
-| (μ ν …), k form indices | dimension k | `C.pullback(X).integrate(...)` |
-| () | any dimension | `C.pullback(X).star().integrate(...)` |
-| (μ↑) | dimension 1 | `C.pullback(X.lower().as_form()).integrate(...)` |
-| (μ↑) | dimension n − 1 | `C.pullback(X.lower().as_form().star()).integrate(...)` |
-
-n is the dimension of X's manifold. For (), `star` is applied on C, after the pullback; for
-(μ↑) through dimension n − 1, on X's manifold, before it.
+* (): `C.pullback(X).star()`
+* (μ↑): `X.lower().as_form()` gives one form index; `.star()` after it gives n − 1, where n is
+  the dimension of X's manifold. Then pull back.
 
 ### Example: the area of a sphere
 
