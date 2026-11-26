@@ -853,3 +853,39 @@ def test_describe():
     assert S.g.describe().splitlines()[0] == "g on S2"
     x, y = sp.symbols("x y", real=True)
     assert Manifold([x, y]).vector([1, 0]).describe().splitlines()[0] == "Tensor on (x, y)"
+
+
+def test_integrate():
+    S = tf.Manifold.sphere()
+    th, ph = S.coords
+    r = sp.Symbol("r", positive=True)
+    assert is_zero(S.volume_form().integrate({th: (0, sp.pi), "phi": (0, 2 * sp.pi)}) - 4 * sp.pi * r ** 2)
+    x, y, u = sp.symbols("x y u", real=True)
+    P = Manifold([x, y], metric=sp.eye(2))
+    w = P.one_form([-y, x])
+    C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})            # the unit circle
+    rho, phi = sp.Symbol("rho", positive=True), sp.Symbol("phi", real=True)
+    D = Manifold([rho, phi], ambient=P, map={x: rho * sp.cos(phi), y: rho * sp.sin(phi)})   # the disc
+    around = w.pullback(C).integrate({u: (0, 2 * sp.pi)})
+    inside = w.wedge_d().pullback(D).integrate({rho: (0, 1), phi: (0, 2 * sp.pi)})
+    assert is_zero(around - 2 * sp.pi) and is_zero(inside - around)        # Stokes
+    E = tf.Manifold.euclidean(3)
+    X, Y, Z = E.coords
+    a, b = sp.symbols("a b", real=True)
+    ball = Manifold([a, b], ambient=E, map={X: sp.sin(a) * sp.cos(b), Y: sp.sin(a) * sp.sin(b), Z: sp.cos(a)})
+    flux = E.vector([X, Y, Z]).lower().as_form().star().pullback(ball).integrate({a: (0, sp.pi), b: (0, 2 * sp.pi)})
+    assert is_zero(flux - 4 * sp.pi)                                       # flux of (x, y, z) out of the unit sphere
+    dx, dy = P.one_form([1, 0]), P.one_form([0, 1])
+    cases = [(lambda: P.scalar(1).integrate({x: (0, 1), y: (0, 1)}), tf.IndexMismatchError),        # scalar
+             (lambda: w.integrate({x: (0, 1), y: (0, 1)}), tf.IndexMismatchError),                   # degree 1 on 2D
+             (lambda: dx.otimes(dy).integrate({x: (0, 1), y: (0, 1)}), tf.IndexMismatchError),       # not antisymmetric
+             (lambda: dx.wedge(dy).integrate({x: (0, 1)}), tf.InvalidCoordinateError),               # y missing
+             (lambda: dx.wedge(dy).integrate({x: (0, 1), u: (0, 1)}), tf.InvalidCoordinateError),    # not a coordinate
+             (lambda: dx.wedge(dy).integrate({x: (0, 1), y: 1}), TypeError)]                        # not a range
+    for make, kind in cases:
+        try:
+            make()
+            assert False, kind
+        except kind:
+            pass
+    assert dx.wedge(dy).integrate({x: (0, 2), y: (0, 3)}) == 6

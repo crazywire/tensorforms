@@ -114,6 +114,20 @@ A coordinate held fixed is the same thing: the sphere r = 1 in spherical coordin
 | `C.map.d()` | J (a↑ μ), the derivatives of the map |
 | `X.pullback(C)` | X carried onto C: substitute the map, multiply each index by J; down and form indices only |
 
+### Example: integrating over a curve, a surface and a region
+
+```python
+C.volume_form().integrate({u: (0, 2*sp.pi)})                      # 2π: the circle's length
+P.one_form([-y, x]).pullback(C).integrate({u: (0, 2*sp.pi)})      # 2π: −y dx + x dy around it
+
+S = tf.Manifold.sphere()
+th, ph = S.coords
+S.volume_form().integrate({th: (0, sp.pi), ph: (0, 2*sp.pi)})     # 4πr²
+```
+
+Star turns what you have into a form to integrate: a scalar f as `f.star()` (f times the
+volume form), a vector field's flux as `v.lower().as_form().star()`, pulled back onto the surface.
+
 The metric comes from the ambient's, so a submanifold is not given one. A map that collapses a
 dimension is refused (its metric has determinant 0). Index labels: Greek in a manifold's own
 tangent space, Latin in any other, so the map's index is a.
