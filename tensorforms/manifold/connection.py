@@ -8,11 +8,12 @@ import sympy as sp
 
 
 
-def levi_civita(g, ginv):
-    """Γ = ½ g⁻¹(dg + dg^S − dg^{ST}), computed with the operations themselves."""
+def levi_civita(g):
+    """Γ = ½ (dg + dg^S − dg^{ST}) with its first index raised, computed with the operations
+    themselves."""
     D = g.d().as_value()                                        # dg, with all three indices as values
     X = D + D.S - D.S.T                                  # dg + dg^S − dg^ST
-    G = sp.Rational(1, 2) * ginv.contract(X, 1, 0)
+    G = sp.Rational(1, 2) * X.raise_(0)                        # raise the first index: g⁻¹ on the left
     G = G.as_form(2).simplify()                                # the step index becomes a form index
     G = G.relabel_indices({0: "ρ", 1: "σ", 2: "μ"})
     G.label = "Γ"
