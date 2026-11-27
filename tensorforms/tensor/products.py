@@ -3,7 +3,7 @@
 
     A @ B                  your AB: A's column (last value index, down) with B's row (first, up)
     A.contract(B, a, b)    the paired product over the indices you name
-    X.interior(V)          X's first form index with V's row (the interior product)
+    X(u, w, …)             evaluate X on vectors: each fills the next form index
     A.otimes(B)            tensor product: pairs nothing
     A.wedge(B)             A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
     A.odot(B)              A ⊙ B = k!/(p! q!) · Sym(AB)
@@ -118,15 +118,29 @@ class Products:
         For the usual AB (column with row), write A @ B."""
         return _contract(self, _other(self, other, "contract"), a, a if b is None else b)
 
-    def interior(self, V):
-        """The interior product: this tensor's first form index with V's row (first value index, up).
-        Like A @ B, but using the first form index instead of the column."""
-        V = _other(self, V, "interior")
-        if not self._form_positions():
-            raise IndexMismatchError(f"interior: {self.declaration()} has no form index")
-        if not V._value_positions() or not V.index(V._value_positions()[0]).is_up:
-            raise IndexMismatchError(f"interior: V needs a row (first value index, up); got {V.declaration()}")
-        return _contract(self, V, self._form_positions()[0], V._value_positions()[0])
+    def __call__(self, *vectors):
+        """X(u, w, …): evaluate X on vectors; each vector fills the next form index, in order.
+        With fewer vectors than form indices, the remaining form indices stay (ω(u) for a 2-form
+        is the interior product). Value indices are paired with @."""
+        forms = len(self._form_positions())
+        if not forms:
+            raise IndexMismatchError(f"call: {self.declaration()} has no form index to evaluate on a vector; "
+                                     "pair value indices with @, or evaluate at a point with .at({...})")
+        if not vectors:
+            raise TypeError("call: give at least one vector")
+        if len(vectors) > forms:
+            raise IndexMismatchError(f"call: {self.declaration()} has {forms} form "
+                                     f"{'index' if forms == 1 else 'indices'}; got {len(vectors)} vectors")
+        X = self
+        for u in vectors:
+            if not isinstance(u, type(self)):
+                raise TypeError(f"call: arguments must be vectors, not {type(u).__name__}; "
+                                "to evaluate at a point, use .at({...})")
+            if len(u.indices) != 1 or not u.indices[0].is_up:
+                raise IndexMismatchError(f"call: arguments must be vectors (one up index); got {u.declaration()}; "
+                                         "to pair with a larger tensor, use contract")
+            X = _contract(X, u, X._form_positions()[0], 0)
+        return X
 
     def otimes(self, other):
         """Tensor product A ⊗ B: pair nothing, keep every index.

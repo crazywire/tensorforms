@@ -138,7 +138,7 @@ A∧B = k!/(p! q!) · Alt(AB),  k = p + q
 |---|---|
 | `A @ B` | AB; refuses if the pair doesn't exist |
 | `A.contract(B, a, b)` | pair the indices you name |
-| `X.interior(V)` | the interior product: like `X @ V`, but X's first form index with V's row |
+| `X(u, w, …)` | evaluate X's form indices on the vectors u, w, … in order; with fewer vectors, the remaining form indices stay (ω(u) is the interior product) |
 | `A.otimes(B)` | A ⊗ B: pair nothing |
 | `A.wedge(B)`, `A.odot(B)` | A∧B, A⊙B |
 
@@ -169,12 +169,12 @@ Rv(ρ↑ μ ν)
 [0 -1]
 ```
 
-### Example: df fed a direction (interior product)
+### Example: df evaluated on a vector
 
 ```python
 f = S.scalar(sp.cos(th))
 v = S.vector([1, 0])                  # e_θ
-print(f.d().interior(v).value)
+print(f.d()(v).value)
 ```
 
 ```text
