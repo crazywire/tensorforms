@@ -283,7 +283,7 @@ def test_labels():
     computed = (R.alt(), R.sym(), -R, R + R, 3 * R, R / 2, R.tr(0, 1), g.inverse(), v.star(),
                 R @ v, v.otimes(v), S.one_form([1, 0]).wedge(S.one_form([0, 1])))
     assert all(X.label is None for X in computed)
-    kept = (R.S, R.swap(0, 2), R.reorder(3, 2, 1, 0), R.relabel_indices({"mu": "kappa"}), v.lower(),
+    kept = (R.T, R.swap(2, 3), R.reorder(1, 0, 3, 2), R.relabel_indices({"mu": "kappa"}), v.lower(),
             v.lower().as_form(), R.simplify(), R + 0)
     assert all(X.label == X_label for X, X_label in zip(kept, "R R R R v v R R".split()))
     X = R @ v
@@ -965,5 +965,17 @@ def test_lie_keeps_index_order():
     th, ph = S.coords
     v = S.vector([sp.sin(ph), th])
     G, R = S.levi_civita(), S.riemann()
-    assert G.T.S.lie(v).equals(G.lie(v).T.S)            # a form index before a value index
+    assert G.T.lie(v).equals(G.lie(v).T)
     assert R.U.lie(v).equals(R.lie(v).U)
+
+
+def test_values_before_forms():
+    S = tf.Manifold.sphere()
+    G = S.levi_civita()                                   # Γ(ρ↑ σ↓ μ)
+    for make in (lambda: G.S, lambda: G.swap(0, 2), lambda: G.reorder(2, 0, 1), lambda: S.g.as_form(0)):
+        try:
+            make()
+            assert False, "should have been refused"
+        except tf.IndexMismatchError as e:
+            assert "a form index comes before a value index" in str(e)
+    assert G.as_value().S.declaration() == "(ρ↑ μ↓ σ↓)"   # as values, any swap is fine

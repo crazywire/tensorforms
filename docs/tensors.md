@@ -15,6 +15,10 @@ or down (↓), or a **form** index (always down, shown with no arrow):
 | R | (ρ↑ σ↓ μ ν) |
 | g | (μ↓ ν↓) |
 
+Value indices always come first, then form indices. A tensor with a form index before a value
+index is refused, and so is a swap that would make one; `as_value()` turns form indices into
+values first.
+
 Labels are only for display and for pointing at an index; everything is computed by position.
 The package hands out Greek labels (μ ν λ κ ρ σ …); `"mu"` works for μ, and an index can also be
 given by number (0, 1, …).
@@ -81,11 +85,11 @@ Any other swap: `X.swap(a, b)` (by label or position) or `X.reorder(...)`.
 reorders, index relabelling, raising/lowering, `as_form`/`as_value` and `simplify` keep it;
 anything computed has none and prints as `Tensor(…)`. Set one with `X.label = "K"`.
 
-### Example: Ric = tr(R^S)
+### Example: Ricci
 
 ```python
 R = S.riemann()                 # R(ρ↑ σ↓ μ ν)
-Ric = R.S.tr(0, 1)
+Ric = R.tr(0, 2)                # pair ρ with μ
 Ric.label = "Ric"               # a computed result has no label until you name it
 print(Ric)
 print(Ric.simplify().data)

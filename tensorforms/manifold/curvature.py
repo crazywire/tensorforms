@@ -12,10 +12,9 @@ def riemann(Gamma):
 
 
 def ricci(R):
-    """Ric = tr(R^S): swap R's 2nd and 3rd indices, then pair the first two.
-    The trace leaves (σ↓ ν); Ric is returned as (μ↓ ν↓) so it has g's type
-    and can be added to g in G = Ric − ½R_s g."""
-    Ric = R.S.tr(0, 1).as_value().simplify()
+    """Ric: pair R's first index with its third, R(ρ↑ σ↓ μ ν) → (σ↓ ν).
+    Ric is returned as (μ↓ ν↓) so it has g's type and can be added to g in G = Ric − ½R_s g."""
+    Ric = R.tr(0, 2).as_value().simplify()
     Ric = Ric.relabel_indices({0: "μ", 1: "ν"})
     Ric.label = "Ric"
     return Ric

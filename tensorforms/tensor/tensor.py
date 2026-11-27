@@ -79,6 +79,10 @@ class Tensor(Derivatives, Products):
         labels = self._index_labels()
         if len(set(labels)) != len(labels):
             raise ValueError(f"Tensor: index labels must be unique; got {labels}")
+        types = [s.is_form for s in self.indices]
+        if types != sorted(types):                           # values first, then forms
+            raise IndexMismatchError(f"{self.declaration()}: a form index comes before a value index; "
+                                     f"value indices go first (as_value() turns form indices into values)")
 
     def _new(self, data=None, indices=None, *, label):
         """A tensor on the same manifold; data and indices default to this tensor's.
