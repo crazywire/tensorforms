@@ -27,7 +27,7 @@ class Manifold:
         metric: a matrix, or a tensor with two down value indices; checked here.
         ambient, map: for a submanifold, the manifold it sits in and every ambient coordinate
         written in this one's coordinates, e.g. {x: cos(u), y: sin(u)}. The metric then comes
-        from the ambient's (pulled back); C.map is the map as a tensor and C.map.d() is J."""
+        from the ambient's (pulled back); C.map is the map as a tensor and C.map.d() is E, C's coordinate frame in ambient components."""
         self.coords = list(coords)
         self.dim = len(self.coords)
         self.label = label
@@ -144,9 +144,9 @@ class Manifold:
     # ---------- submanifold ----------
     def pullback(self, X):
         """X, a tensor on the ambient manifold, carried onto this submanifold: substitute the map
-        into the components, then multiply each down or form index by J = self.map.d(). Up indices
+        into the components, then multiply each down or form index by the frame E = self.map.d(). Up indices
         only when this manifold has the ambient's dimension (a change of coordinates): each is
-        multiplied by J⁻¹. Otherwise an up index may point off this manifold, so it is refused.
+        multiplied by E⁻¹. Otherwise an up index may point off this manifold, so it is refused.
         Each index keeps its label, arrow and type; only its space changes."""
         if self.ambient is None:
             raise TypeError(f"pullback: {self} has no ambient manifold (make it with ambient=..., map=...)")
@@ -163,18 +163,18 @@ class Manifold:
                 raise NotImplementedError(f"pullback: index {s.label} is not in {P.tangent.label}")
         at = dict(zip(P.coords, self.map.data))
         data = np.vectorize(lambda e: sp.sympify(e).subs(at, simultaneous=True), otypes=[object])(X.data)
-        J = self.map.d().data                                 # J[a, i] = ∂x^a/∂u^i
+        E = self.map.d().data                                 # the frame: E[a, i] = ∂x^a/∂u^i
         if any(s.is_up for s in X.indices):
-            try:                                              # J⁻¹[i, a] = ∂u^i/∂x^a
-                Jinv = np.array(sp.Matrix(J.tolist()).inv(iszerofunc=_is_zero).tolist(), dtype=object)
+            try:                                              # E⁻¹[i, a] = ∂u^i/∂x^a
+                Einv = np.array(sp.Matrix(E.tolist()).inv(iszerofunc=_is_zero).tolist(), dtype=object)
             except NonInvertibleMatrixError:
-                raise NonInvertibleError("pullback: the map's J is not invertible (determinant 0), "
+                raise NonInvertibleError("pullback: the map's frame E is not invertible (determinant 0), "
                                          "so up indices can't be carried") from None
         for k, s in enumerate(X.indices):                     # each index, kept in its position
             if s.is_up:
-                data = np.moveaxis(np.tensordot(data, Jinv, axes=([k], [1])), -1, k)
+                data = np.moveaxis(np.tensordot(data, Einv, axes=([k], [1])), -1, k)
             else:
-                data = np.moveaxis(np.tensordot(data, J, axes=([k], [0])), -1, k)
+                data = np.moveaxis(np.tensordot(data, E, axes=([k], [0])), -1, k)
         indices = [Index(s.label, self.tangent, s.variance, s.type) for s in X.indices]
         return Tensor(self, data, indices, copy=False)
 

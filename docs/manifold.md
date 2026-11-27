@@ -115,8 +115,8 @@ and `pullback` then carries every tensor, up indices included.
 |---|---|
 | `C.ambient` | the manifold C sits in |
 | `C.map` | the map as a tensor on C, (a↑): its index counts the ambient's directions |
-| `C.map.d()` | J (a↑ μ), the derivatives of the map |
-| `C.pullback(X)` | X, a tensor on the ambient, carried onto C: substitute the map, multiply each down or form index by J, and each up index by J⁻¹ (same dimension only) |
+| `C.map.d()` | E (a↑ μ), C's coordinate frame in ambient components: the derivatives of the map |
+| `C.pullback(X)` | X, a tensor on the ambient, carried onto C: substitute the map, multiply each down or form index by E, and each up index by E⁻¹ (same dimension only) |
 
 Integrating over a submanifold: see [Integration](integration.md).
 

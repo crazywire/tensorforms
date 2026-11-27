@@ -833,7 +833,7 @@ def test_submanifold():
     C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})
     assert C.g.data.tolist() == [[1]]                                    # du²
     assert repr(C.map) == "Tensor(a↑)" and repr(C.map.d()) == "Tensor(a↑ μ)"   # Latin: the ambient's directions
-    assert C.map.d().data.tolist() == [[-sp.sin(u)], [sp.cos(u)]]        # J
+    assert C.map.d().data.tolist() == [[-sp.sin(u)], [sp.cos(u)]]        # the frame E
     assert is_zero(C.pullback(P.one_form([-y, x]))[0] - 1)               # −y dx + x dy → du
     E = tf.Manifold.euclidean(coords="spherical")
     r, th, ph = E.coords
@@ -904,7 +904,7 @@ def test_change_of_coordinates():
     P = Manifold([x, y], metric=sp.eye(2))
     D = Manifold([rho, phi], ambient=P, map={x: rho * sp.cos(phi), y: rho * sp.sin(phi)})   # the plane, polar
     assert D.g.data.tolist() == [[1, 0], [0, rho ** 2]]
-    ex = D.pullback(P.vector([1, 0])).simplify()                       # ∂_x in polar: up index, uses J⁻¹
+    ex = D.pullback(P.vector([1, 0])).simplify()                       # ∂_x in polar: up index, uses E⁻¹
     assert ex.data.tolist() == [sp.cos(phi), -sp.sin(phi) / rho]
     v = P.vector([x, y ** 2])
     assert is_zero((D.pullback(v).lower() @ D.pullback(v)).value - D.pullback(v.lower() @ v).value)   # length² kept
@@ -917,7 +917,7 @@ def test_change_of_coordinates():
         pass
     a, b = sp.symbols("a b", real=True)
     B = Manifold([x, y])                                               # no metric, so the map isn't refused at creation
-    flat = Manifold([a, b], ambient=B, map={x: a + b, y: a + b})       # J has determinant 0
+    flat = Manifold([a, b], ambient=B, map={x: a + b, y: a + b})       # E has determinant 0
     try:
         flat.pullback(B.vector([1, 0]))
         assert False
