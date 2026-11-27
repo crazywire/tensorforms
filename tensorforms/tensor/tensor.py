@@ -345,32 +345,42 @@ class Tensor(Derivatives, Products):
         return self._transposed(order)
 
     def swap(self, a, b):
-        """Exchange two indices, given by label or position."""
+        """Exchange two indices, given by label or position. Only reorders: each index keeps its
+        arrow and type, so a single index is never transposed (turning ↑ into ↓ is lower())."""
+        n = len(self.indices)
+        bad = [x for x in (a, b) if isinstance(x, int) and not isinstance(x, bool) and not 0 <= x < n]
+        if bad:
+            hint = ""
+            if n == 1 and not self.indices[0].is_form:
+                hint = ("; to make a column a row, lower it: X.lower()" if self.indices[0].is_up
+                        else "; to make a row a column, raise it: X.raise_()")
+            raise IndexMismatchError(f"swap: positions {a} and {b}; {self.declaration()} has {n} "
+                                     f"{'index' if n == 1 else 'indices'}{hint}")
         i, j = self.position(a), self.position(b)
-        order = list(range(len(self.indices)))
+        order = list(range(n))
         order[i], order[j] = order[j], order[i]
         return self._transposed(order)
 
-    # T, S, U, V: the notation's swaps of neighbouring indices. Each transposes the matrix in two
-    # neighbouring indices at every value of the others; they chain: R.U.S is R^US.
+    # T, S, U, V: the notation's swaps of neighbouring indices. They only reorder: each index keeps
+    # its arrow and type. They chain: R.U.S is R^US.
     @property
     def T(self):
-        """Transpose the matrix in indices 0 and 1, at every value of the others: swap(0, 1)."""
+        """Swap positions 0 and 1."""
         return self.swap(0, 1)
 
     @property
     def S(self):
-        """Transpose the matrix in indices 1 and 2, at every value of the others: swap(1, 2)."""
+        """Swap positions 1 and 2."""
         return self.swap(1, 2)
 
     @property
     def U(self):
-        """Transpose the matrix in indices 2 and 3, at every value of the others: swap(2, 3)."""
+        """Swap positions 2 and 3."""
         return self.swap(2, 3)
 
     @property
     def V(self):
-        """Transpose the matrix in indices 3 and 4, at every value of the others: swap(3, 4)."""
+        """Swap positions 3 and 4."""
         return self.swap(3, 4)
 
     def relabel_indices(self, mapping):
