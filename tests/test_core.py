@@ -398,21 +398,27 @@ def test_static_spherical_vacuum_gives_schwarzschild():
     raise AssertionError("expected a ValueError")
 
 
-def test_interior():
+def test_evaluate_on_vectors():
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z], metric=sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     f = M.scalar(x * y ** 2 + sp.sin(z))
     v = M.vector([y, x * z, 1])
     df = f.d()
     dv = sum(v.data[i] * sp.diff(f.data.item(), c) for i, c in enumerate(M.coords))
-    assert is_zero(df.interior(v).data.item() - dv)                  # df(v): the directional derivative
+    assert is_zero(df(v).data.item() - dv)                  # df(v): the directional derivative
     a, b = M.one_form([x, y * z, 1]), M.one_form([z, 1, x * y])
-    lhs = a.wedge(b).interior(v)                                    # ι(a∧b) = (ι a) b − a (ι b)
-    rhs = b * a.interior(v).data.item() - a * b.interior(v).data.item()
+    lhs = a.wedge(b)(v)                                    # ι(a∧b) = (ι a) b − a (ι b)
+    rhs = b * a(v).data.item() - a * b(v).data.item()
     assert lhs.equals(rhs)
     R = M.riemann()
-    assert R.interior(v).equals(R.contract(v, "μ", v.indices[0].label))     # contract with X's first form index
-    for bad in (lambda: v.interior(v), lambda: df.interior(df)):     # no form index / no row
+    assert R(v).equals(R.contract(v, "μ", v.indices[0].label))     # contract with X's first form index
+    w = M.vector([1, 0, x])
+    assert R(v, w).equals(R(v)(w)) and R(v, w).equals(-R(w, v))            # slots in order; antisymmetric
+    for bad in (lambda: v(v),                                             # no form index
+                lambda: df(df),                                           # not a direction
+                lambda: df(v, w),                                         # one form index, two directions
+                lambda: df(),                                             # nothing to feed
+                lambda: df({x: 1})):                                      # a point is .at(...)
         try:
             bad()
         except TypeError:
@@ -730,7 +736,7 @@ def test_lie_derivative():
     assert w.lie(v).data.tolist() == [0, -1]                               # rotation vs a fixed arrow
     assert w.lie(v).equals(-v.lie(w))                                    # the Lie bracket is antisymmetric
     a = E.one_form([x * y, x**2])
-    assert a.lie(v).equals(a.wedge_d().interior(v) + a.interior(v).d())   # Cartan's formula
+    assert a.lie(v).equals(a.wedge_d()(v) + a(v).d())   # Cartan's formula
     f = E.scalar(x**2 * y)
     assert sp.simplify(f.lie(v).value - (-2 * x * y**2 + x**3)) == 0      # on a scalar: v(f)
     # matches the ∇ version (the Γ terms cancel), on a mixed tensor
@@ -738,7 +744,7 @@ def test_lie_derivative():
     T = S.tensor(i.up, j.down, k.form, data=[[[th * ph, sp.sin(th)], [ph**2, 1]],
                                              [[sp.cos(ph), th], [0, th * ph**2]]])
     u = S.vector([sp.sin(ph), th * sp.cos(th)])
-    Jn, data = u.nabla().as_value().data, T.nabla().interior(u).data
+    Jn, data = u.nabla().as_value().data, T.nabla()(u).data
     for n, s in enumerate(T.indices):
         if s.is_up:
             data = data - np.moveaxis(np.tensordot(Jn, T.data, axes=([1], [n])), 0, n)
