@@ -65,8 +65,8 @@ def _default_pair(A, B):
     if sa.space is sb.space and not sa.is_up and sb.is_up:
         return av[-1], bv[0]
     if sa.space is sb.space and sa.is_up and not sb.is_up:
-        raise IndexMismatchError(f"@: {A.declaration()} has no column and {B.declaration()} "
-                                 "has no row; use A.otimes(B)")
+        raise IndexMismatchError(f"@: pairs A's last value index (↓) with B's first (↑); here {sa!r} "
+                                 f"meets {sb!r}. To pair them, A.contract(B, a, b); to keep both, A.otimes(B)")
     raise IndexMismatchError(f"@: {sa.label} and {sb.label} don't pair; name the indices "
                              "(A.contract(B, a, b)), use A.otimes(B), or raise or lower one")
 
