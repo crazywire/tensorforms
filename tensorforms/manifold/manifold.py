@@ -193,7 +193,7 @@ class Manifold:
     # ---------- connection and curvature ----------
     def levi_civita(self):
         """Γ (ρ↑ σ↓ μ), from the metric."""
-        return self._cached("Γ", lambda: levi_civita(self.g, self.ginv))
+        return self._cached("Γ", lambda: levi_civita(self.g))
 
     def volume_form(self):
         """ε (μ ν …) = √|det g| dx¹ ∧ … ∧ dxⁿ: n-dimensional volume, from the metric."""

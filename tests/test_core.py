@@ -958,3 +958,10 @@ def test_swaps_need_two_indices():
         assert False
     except tf.IndexMismatchError as e:
         assert str(e).startswith("S: swaps positions 1 and 2")
+def test_lie_keeps_index_order():
+    S = tf.Manifold.sphere()
+    th, ph = S.coords
+    v = S.vector([sp.sin(ph), th])
+    G, R = S.levi_civita(), S.riemann()
+    assert G.T.S.lie(v).equals(G.lie(v).T.S)            # a form index before a value index
+    assert R.U.lie(v).equals(R.lie(v).U)
