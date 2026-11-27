@@ -47,7 +47,7 @@ Metric templates with unknown functions, for solving, are in `tf.templates`.
 |---|---|---|
 | AB | `A @ B` | product: A's column with B's row |
 | | `A.contract(B, a, b)` | pair the indices you name |
-| X(u, w) | `X(u, w)` | feed directions into X's form indices, in order |
+| X(u, w) | `X(u, w)` | evaluate X's form indices on vectors, in order |
 | A ⊗ B | `A.otimes(B)` | tensor product |
 | A∧B, A⊙B | `A.wedge(B)`, `A.odot(B)` | wedge and symmetric products |
 | tr X | `X.tr(a, b)` | trace over two indices |

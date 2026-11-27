@@ -398,7 +398,7 @@ def test_static_spherical_vacuum_gives_schwarzschild():
     raise AssertionError("expected a ValueError")
 
 
-def test_feeding_directions():
+def test_evaluate_on_vectors():
     x, y, z = sp.symbols("x y z", real=True)
     M = Manifold([x, y, z], metric=sp.diag(1, 1 + x ** 2, 1 + x ** 2 * y ** 2))
     f = M.scalar(x * y ** 2 + sp.sin(z))
