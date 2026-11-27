@@ -130,8 +130,8 @@ print(flat.star().wedge_d().star().value, outward.nabla().tr(0, 1).value)
 ## Products
 
 `A @ B` is AB: A's column (last value index, ↓) with B's row (first value index, ↑). It refuses
-if both are up or both down. Every product puts value indices first, then A's form indices, then
-B's: R @ v is (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν).
+if both are up or both down. Every product keeps plain order: A's remaining indices, then B's, each
+where it was. R @ v is (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν); Γ∧Γ is (ρ↑ μ σ↓ ν), so R = d∧Γ + (Γ∧Γ)^S.
 
 The wedge of A (p form indices) and B (q form indices), each first made antisymmetric:
 

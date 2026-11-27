@@ -8,7 +8,7 @@
     A.wedge(B)             A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
     A.odot(B)              A ⊙ B = k!/(p! q!) · Sym(AB)
 
-Results put value indices first, then A's form indices, then B's.
+Results keep plain order: A's remaining indices, then B's, each where it was.
 """
 import math
 
@@ -41,18 +41,9 @@ def _check_pair(sa, sb):
     raise IndexMismatchError(f"pair: {sa.label} and {sb.label} are both {sa.variance}; raise or lower one first")
 
 
-def _values_first(indices, n_a):
-    """Order: value indices, then A's form indices, then B's form indices.
-    The first n_a indices came from A (told apart by position, not by name)."""
-    vals = [k for k, s in enumerate(indices) if not s.is_form]
-    fa = [k for k, s in enumerate(indices) if s.is_form and k < n_a]
-    fb = [k for k, s in enumerate(indices) if s.is_form and k >= n_a]
-    return vals + fa + fb
-
-
 def _joined(A, data, indices, n_a, label):
-    order = _values_first(indices, n_a)
-    return type(A)(A.manifold, np.transpose(data, order), [indices[k] for k in order], label, copy=False)
+    """Plain order: A's remaining indices, then B's, exactly where they were."""
+    return type(A)(A.manifold, data, list(indices), label, copy=False)
 
 
 def _default_pair(A, B):
@@ -72,8 +63,7 @@ def _default_pair(A, B):
 
 
 def _contract(A, B, a, b):
-    """Pair index a of A with index b of B and sum. Result: value indices first, then A's form
-    indices, then B's."""
+    """Pair index a of A with index b of B and sum. Result: A's remaining indices, then B's."""
     i, j = A.position(a), B.position(b)
     _check_pair(A.indices[i], B.indices[j])
     data = np.tensordot(A.data, B.data, axes=([i], [j]))
@@ -144,7 +134,7 @@ class Products:
 
     def otimes(self, other):
         """Tensor product A ⊗ B: pair nothing, keep every index.
-        Result: value indices first, then A's form indices, then B's."""
+        Result: A's indices, then B's."""
         other = _other(self, other, "otimes")
         keep_b = _rename_clashes(self.manifold, self._index_labels(), other.indices)
         return _joined(self, np.multiply.outer(self.data, other.data), (*self.indices, *keep_b),

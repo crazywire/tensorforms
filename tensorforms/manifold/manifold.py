@@ -7,7 +7,6 @@ Connection and curvature are computed when asked; Γ always comes from the metri
 
 import numpy as np
 import sympy as sp
-from sympy.matrices.exceptions import NonInvertibleMatrixError
 
 from ..tensor.index import Index
 from ..tensor.tensor import Tensor
@@ -17,7 +16,6 @@ from .metric import build_metric, inverse_metric
 from .space import Space
 from ..tensor.labels import GREEK_LETTERS, LATIN_LETTERS
 from .volume import volume_form
-from ..symbolic.simplify import is_zero as _is_zero
 from ..errors import IndexMismatchError, InvalidCoordinateError, MissingMetricError, NonInvertibleError
 
 
@@ -142,41 +140,43 @@ class Manifold:
         return Tensor(self, data, [a.form], label)
 
     # ---------- submanifold ----------
-    def pullback(self, X):
-        """X, a tensor on the ambient manifold, carried onto this submanifold: substitute the map
-        into the components, then multiply each down or form index by the frame E = self.map.d(). Up indices
-        only when this manifold has the ambient's dimension (a change of coordinates): each is
-        multiplied by E⁻¹. Otherwise an up index may point off this manifold, so it is refused.
-        Each index keeps its label, arrow and type; only its space changes."""
+    def along(self, X):
+        """X, a tensor on the ambient manifold, with this manifold's map substituted into its
+        components: the same indices (in the ambient's tangent space), now a tensor on this manifold."""
         if self.ambient is None:
-            raise TypeError(f"pullback: {self} has no ambient manifold (make it with ambient=..., map=...)")
+            raise TypeError(f"along: {self} has no ambient manifold (make it with ambient=..., map=...)")
         if not isinstance(X, Tensor):
-            raise TypeError(f"pullback: needs a tensor; got {type(X).__name__}")
+            raise TypeError(f"along: needs a tensor; got {type(X).__name__}")
+        if X.manifold is not self.ambient:
+            raise IndexMismatchError(f"along: the tensor is on {X.manifold}, but {self} sits in {self.ambient}")
+        at = dict(zip(self.ambient.coords, self.map.data))
+        data = np.vectorize(lambda e: sp.sympify(e).subs(at, simultaneous=True), otypes=[object])(X.data)
+        return Tensor(self, data, X.indices, copy=False)
+
+    def pullback(self, X):
+        """X, a tensor on the ambient manifold, carried onto this submanifold: along(X), then each
+        down or form index contracted with the frame E = self.map.d(), each up index with E⁻¹
+        (only when this manifold has the ambient's dimension: a change of coordinates).
+        Each index keeps its label, arrow and type; only its space changes."""
+        Y = self.along(X)
         P = self.ambient
-        if X.manifold is not P:
-            raise IndexMismatchError(f"pullback: the tensor is on {X.manifold}, but {self} sits in {P}")
         for s in X.indices:
             if s.is_up and self.dim != P.dim:
                 raise IndexMismatchError(f"pullback: {s.label} is an up index; only down and form indices carry over "
                                          f"(up indices only when the dimensions match: a change of coordinates)")
             if s.space is not P.tangent:
                 raise NotImplementedError(f"pullback: index {s.label} is not in {P.tangent.label}")
-        at = dict(zip(P.coords, self.map.data))
-        data = np.vectorize(lambda e: sp.sympify(e).subs(at, simultaneous=True), otypes=[object])(X.data)
-        E = self.map.d().data                                 # the frame: E[a, i] = ∂x^a/∂u^i
+        E = self.map.d()                                       # (a↑ μ): a in the ambient's space, μ in ours
         if any(s.is_up for s in X.indices):
-            try:                                              # E⁻¹[i, a] = ∂u^i/∂x^a
-                Einv = np.array(sp.Matrix(E.tolist()).inv(iszerofunc=_is_zero).tolist(), dtype=object)
-            except NonInvertibleMatrixError:
+            try:
+                Einv = E.as_value().inverse()                  # (μ↑ a↓)
+            except NonInvertibleError:
                 raise NonInvertibleError("pullback: the map's frame E is not invertible (determinant 0), "
                                          "so up indices can't be carried") from None
-        for k, s in enumerate(X.indices):                     # each index, kept in its position
-            if s.is_up:
-                data = np.moveaxis(np.tensordot(data, Einv, axes=([k], [1])), -1, k)
-            else:
-                data = np.moveaxis(np.tensordot(data, E, axes=([k], [0])), -1, k)
+        for s in X.indices:                                    # always the first index: each contraction moves
+            Y = Y.contract(Einv, 0, 1) if s.is_up else Y.contract(E, 0, 0)   # the new index to the end
         indices = [Index(s.label, self.tangent, s.variance, s.type) for s in X.indices]
-        return Tensor(self, data, indices, copy=False)
+        return Tensor(self, Y.data, indices, copy=False)
 
     # ---------- metric ----------
     @property

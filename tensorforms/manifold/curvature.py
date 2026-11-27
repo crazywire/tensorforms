@@ -4,8 +4,9 @@ import sympy as sp
 
 
 def riemann(Gamma):
-    """R = d∧Γ + Γ∧Γ, computed with the derivatives themselves. Indices (ρ↑ σ↓ μ ν)."""
-    R = (Gamma.wedge_d() + Gamma.wedge(Gamma)).simplify()
+    """R = d∧Γ + (Γ∧Γ)^S, computed with the derivatives themselves. Indices (ρ↑ σ↓ μ ν).
+    Γ∧Γ comes out (ρ↑ μ σ↓ ν): the first Γ's form index sits between the value indices, so S."""
+    R = (Gamma.wedge_d() + Gamma.wedge(Gamma).S).simplify()
     R = R.relabel_indices({0: "ρ", 1: "σ", 2: "μ", 3: "ν"})
     R.label = "R"
     return R

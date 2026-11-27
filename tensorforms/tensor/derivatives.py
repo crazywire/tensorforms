@@ -94,8 +94,8 @@ class Derivatives:
                 or not v.indices[0].is_up or v.indices[0].is_form or v.indices[0].space is not M.tangent):
             raise IndexMismatchError("lie: v must be a vector field (one up value index, same manifold); "
                             f"got {getattr(v, 'declaration', lambda: v)()}")
-        # dX(v): d's new form index (first among the form indices) evaluated on v; the order is kept
-        data = np.tensordot(v.data, self.d().data, axes=([0], [_insert_position(self)]))
+        # dX(v): d's new index is X's first form index, so the call evaluates it on v (order kept)
+        data = self.d()(v).data
         J = v.d().as_value().data                                   # J[a, c] = ∂_c v^a
         for i, s in enumerate(self.indices):
             if s.space is not M.tangent:

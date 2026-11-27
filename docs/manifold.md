@@ -54,7 +54,7 @@ Computed from g (Levi-Civita, no torsion):
 |---|---|---|
 | g | `M.g` | metric (μ↓ ν↓) |
 | Γ = ½ g⁻¹(dg + dg^S − dg^ST) | `M.levi_civita()` | Levi-Civita connection (ρ↑ σ↓ μ) |
-| R = d∧Γ + Γ∧Γ | `M.riemann()` | Riemann curvature (ρ↑ σ↓ μ ν) |
+| R = d∧Γ + (Γ∧Γ)^S | `M.riemann()` | Riemann curvature (ρ↑ σ↓ μ ν) |
 | Ric = tr(R^S) | `M.ricci()` | Ricci tensor (μ↓ ν↓) |
 | R_s = tr(g⁻¹ Ric) | `M.ricci_scalar()` | Ricci scalar |
 | G = Ric − ½ R_s g | `M.einstein()` | Einstein tensor (μ↓ ν↓) |
