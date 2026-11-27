@@ -96,14 +96,9 @@ class Derivatives:
                             f"got {getattr(v, 'declaration', lambda: v)()}")
         # dX(v): d's new form index (first among the form indices) evaluated on v; the order is kept
         data = np.tensordot(v.data, self.d().data, axes=([0], [_insert_position(self)]))
-        J = v.d().as_value().data                                   # J[a, c] = ∂_c v^a
-        for i, s in enumerate(self.indices):
-            if s.space is not M.tangent:
-                raise NotImplementedError(f"lie: index {s.label} is not in {M.tangent.label}; only tangent-space indices are supported")
-            if s.is_up:                       # −J^a_c X^{…c…}: J's a takes index i's place
-                data = data - np.moveaxis(np.tensordot(J, self.data, axes=([1], [i])), 0, i)
-            else:                             # +X_{…c…} J^c_b: J's b takes index i's place
-                data = data + np.moveaxis(np.tensordot(self.data, J, axes=([i], [0])), -1, i)
+        J = v.d().as_value()                                        # J^a_c = ∂_c v^a
+        for i, s in enumerate(self.indices):                        # − on up indices, + on down and form
+            data = data + (-1 if s.is_up else 1) * _apply(self, i, J)
         return type(self)(M, data, self.indices, None, copy=False)
 
 
@@ -145,40 +140,41 @@ def _d(X, pos):
     return np.moveaxis(D, -1, pos)
 
 
+def _apply(X, i, A):
+    """The numbers of A applied to X's index i, in X's layout. A has exactly two value indices
+    (and any form indices). The one of A's value indices that pairs with X's index i is summed
+    against it (A's second if both could); the other takes index i's place. A's form indices are
+    added first among X's form indices, where d puts new ones. Used by raise_/lower (g, g⁻¹),
+    the Lie derivative (J) and the covariant and curvature derivatives (Γ, R)."""
+    s = X.indices[i]
+    vals, forms = A._value_positions(), A._form_positions()
+    if len(vals) != 2:
+        raise IndexMismatchError(f"apply: needs exactly two value indices; got {A.declaration()}")
+    if s.space is not X.manifold.tangent:
+        raise NotImplementedError(f"apply: index {s.label} is not in {X.manifold.tangent.label}; only tangent-space indices are supported")
+    first, second = vals
+    eat, put = (second, first) if A.index(second).pairs_with(s) else (first, second)
+    if not A.index(eat).pairs_with(s):
+        raise IndexMismatchError(f"apply: {A.declaration()} has no index that pairs with {s.label}")
+    data = np.tensordot(A.data, X.data, axes=([eat], [i]))      # [A's put and forms, in A's order; X's others]
+    a_rest = [m for m in range(len(A.indices)) if m != eat]
+    put_axis = a_rest.index(put)
+    form_axes = [a_rest.index(f) for f in forms]
+    n, k = len(X.indices), len(forms)
+    x_axis = {m: k + 1 + pos for pos, m in enumerate(m for m in range(n) if m != i)}
+    source = [put_axis if m == i else x_axis[m] for m in range(n)]
+    pos = _insert_position(X)
+    return np.transpose(data, source[:pos] + form_axes + source[pos:])
+
+
 def _act(C, X, indices, values_only=False):
-    """C (Γ or R) acts on each index of X (numbers with numpy's tensordot, by position):
-        up index s:    +C X   (C's down index pairs with s; C's up index takes s's place)
-        down index s:  −X C   (s pairs with C's up index; C's down index takes s's place)
-    C's form indices become the new form indices, first among the form indices.
-    values_only: skip X's form indices (the wedged derivatives).
-    C must be (↑ ↓ forms…): a matrix (one up, one down value index) with form indices, like Γ and R.
-    The result's order is X's indices, s replaced in place, with C's forms inserted first among
-    X's form indices (that is `indices`)."""
-    if (len(C.indices) < 2 or not C.indices[0].is_up or C.indices[1].is_up
-            or C.indices[0].is_form or C.indices[1].is_form or not all(s.is_form for s in C.indices[2:])):
-        raise TypeError(f"_act: C must be shaped (↑ ↓ forms…) like Γ or R; got {C.declaration()}")
-    n, k = len(X.indices), len(C.indices) - 2                   # X's indices; C's form indices (the new ones)
-    pos = _insert_position(X)                               # where the new form indices go
+    """C (Γ or R) applied to each index of X: + on up indices, − on down and form indices.
+    values_only: skip X's form indices (the wedged derivatives)."""
     total = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
     for j, s in enumerate(X.indices):
         if values_only and s.is_form:
             continue
-        if s.space is not X.manifold.tangent:
-            raise NotImplementedError(f"derivative: index {s.label} is not in {X.manifold.tangent.label}; only tangent-space indices are supported")
-        rest = lambda t: t if t < j else t - 1             # X's index t among X's other indices
-        if s.is_up:
-            # tensordot(C, X): [C's up, C's forms, X's other indices]
-            data, sign = np.tensordot(C.data, X.data, axes=([1], [j])), 1
-            replaced, form = 0, lambda a: 1 + a
-            other = lambda t: 1 + k + rest(t)
-        else:
-            # tensordot(X, C): [X's other indices, C's down, C's forms]
-            data, sign = np.tensordot(X.data, C.data, axes=([j], [0])), -1
-            replaced, form = n - 1, lambda a: n + a
-            other = rest
-        source = [replaced if t == j else other(t) for t in range(n)]
-        order = source[:pos] + [form(a) for a in range(k)] + source[pos:]
-        total = total + sign * np.transpose(data, order)
+        total = total + (1 if s.is_up else -1) * _apply(X, j, C)
     return total
 
 
