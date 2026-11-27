@@ -47,7 +47,8 @@ class Derivatives:
         data = _d(self, pos)
         G, _ = _geometry(self)
         if G is not None:
-            data = data + _act(G, self, indices)
+            data = data + sum((1 if s.is_up else -1) * _apply(self, i, G)    # + on up, − on down and form
+                              for i, s in enumerate(self.indices))
         return type(self)(self.manifold, data, indices, None, copy=False)
 
     def wedge_nabla(self):
@@ -58,7 +59,8 @@ class Derivatives:
         data = _d(Xa, pos)
         G, _ = _geometry(self)
         if G is not None:
-            data = data + _act(G, Xa, indices, values_only=True)
+            data = data + sum((1 if s.is_up else -1) * _apply(Xa, i, G)      # value indices only
+                              for i, s in enumerate(Xa.indices) if not s.is_form)
         Y = _wedge_new(type(self)(self.manifold, data, indices, copy=False), p, 1)
         return Y._new(label=None)
 
@@ -69,7 +71,9 @@ class Derivatives:
         if R is None:
             data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
         else:
-            data = _act(R(), self, indices)
+            R = R()
+            data = sum(((1 if s.is_up else -1) * _apply(self, i, R) for i, s in enumerate(self.indices)),
+                       np.zeros(tuple(s.space.dim for s in indices), dtype=object))
         return type(self)(self.manifold, data, indices, None, copy=False)
 
     def wedge_curvature(self):
@@ -81,7 +85,9 @@ class Derivatives:
         if R is None:
             data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
         else:
-            data = _act(R(), Xa, indices, values_only=True)
+            R = R()
+            data = sum(((1 if s.is_up else -1) * _apply(Xa, i, R) for i, s in enumerate(Xa.indices) if not s.is_form),
+                       np.zeros(tuple(s.space.dim for s in indices), dtype=object))
         Y = _wedge_new(type(self)(self.manifold, data, indices, copy=False), p, 2)
         return Y._new(label=None)
 
@@ -97,8 +103,8 @@ class Derivatives:
         # dX(v): d's new form index (first among the form indices) evaluated on v; the order is kept
         data = np.tensordot(v.data, self.d().data, axes=([0], [_insert_position(self)]))
         J = v.d().as_value()                                        # J^a_c = ∂_c v^a
-        for i, s in enumerate(self.indices):                        # − on up indices, + on down and form
-            data = data + (-1 if s.is_up else 1) * _apply(self, i, J)
+        data = data + sum((-1 if s.is_up else 1) * _apply(self, i, J)   # − on up, + on down and form
+                          for i, s in enumerate(self.indices))
         return type(self)(M, data, self.indices, None, copy=False)
 
 
@@ -165,17 +171,6 @@ def _apply(X, i, A):
     source = [put_axis if m == i else x_axis[m] for m in range(n)]
     pos = _insert_position(X)
     return np.transpose(data, source[:pos] + form_axes + source[pos:])
-
-
-def _act(C, X, indices, values_only=False):
-    """C (Γ or R) applied to each index of X: + on up indices, − on down and form indices.
-    values_only: skip X's form indices (the wedged derivatives)."""
-    total = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
-    for j, s in enumerate(X.indices):
-        if values_only and s.is_form:
-            continue
-        total = total + (1 if s.is_up else -1) * _apply(X, j, C)
-    return total
 
 
 def _wedge_new(Y, p, new):
