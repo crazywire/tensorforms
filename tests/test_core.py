@@ -943,3 +943,12 @@ def test_det():
             assert False
         except tf.IndexMismatchError:
             pass
+
+
+def test_lie_keeps_index_order():
+    S = tf.Manifold.sphere()
+    th, ph = S.coords
+    v = S.vector([sp.sin(ph), th])
+    G, R = S.levi_civita(), S.riemann()
+    assert G.T.S.lie(v).equals(G.lie(v).T.S)            # a form index before a value index
+    assert R.U.lie(v).equals(R.lie(v).U)

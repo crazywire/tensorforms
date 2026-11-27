@@ -27,7 +27,9 @@ Each returns a new tensor with no label. Conventions:
 `X.lie(v)`: v is a vector field, X any tensor on the same manifold. The result has X's indices.
 No metric is needed.
 
-L_v X = (dX)v − J on each up index + J on each down or form index,  with J = (dv).as_value()
+L_v X = dX(v) − J on each up index + J on each down or form index,  with J = (dv).as_value()
+
+dX(v) evaluates d's new form index on v.
 
 For example, checking whether a vector field is a symmetry of the metric (L_v g = 0):
 
