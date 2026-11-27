@@ -3,7 +3,7 @@
 
     A @ B                  your AB: A's column (last value index, down) with B's row (first, up)
     A.contract(B, a, b)    the paired product over the indices you name
-    X.interior(V)          X's first form index with V's row (the interior product)
+    X(u, w, …)             feed directions (vectors) into X's form indices, in order
     A.otimes(B)            tensor product: pairs nothing
     A.wedge(B)             A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
     A.odot(B)              A ⊙ B = k!/(p! q!) · Sym(AB)
@@ -118,15 +118,29 @@ class Products:
         For the usual AB (column with row), write A @ B."""
         return _contract(self, _other(self, other, "contract"), a, a if b is None else b)
 
-    def interior(self, V):
-        """The interior product: this tensor's first form index with V's row (first value index, up).
-        Like A @ B, but using the first form index instead of the column."""
-        V = _other(self, V, "interior")
-        if not self._form_positions():
-            raise IndexMismatchError(f"interior: {self.declaration()} has no form index")
-        if not V._value_positions() or not V.index(V._value_positions()[0]).is_up:
-            raise IndexMismatchError(f"interior: V needs a row (first value index, up); got {V.declaration()}")
-        return _contract(self, V, self._form_positions()[0], V._value_positions()[0])
+    def __call__(self, *directions):
+        """X(u, w, …): feed directions into X's form indices, first form index first. Each direction
+        is a vector (one up index). Fewer directions than form indices leaves the rest open:
+        ω(u) for a 2-form ω is the interior product. Value indices are fed with @."""
+        forms = len(self._form_positions())
+        if not forms:
+            raise IndexMismatchError(f"call: {self.declaration()} has no form index to feed; "
+                                     "feed value indices with @, or evaluate at a point with .at({...})")
+        if not directions:
+            raise TypeError("call: give at least one direction (a vector)")
+        if len(directions) > forms:
+            raise IndexMismatchError(f"call: {self.declaration()} has {forms} form "
+                                     f"{'index' if forms == 1 else 'indices'}; got {len(directions)} directions")
+        X = self
+        for u in directions:
+            if not isinstance(u, type(self)):
+                raise TypeError(f"call: a direction must be a vector (a tensor), not {type(u).__name__}; "
+                                "to evaluate at a point, use .at({...})")
+            if len(u.indices) != 1 or not u.indices[0].is_up:
+                raise IndexMismatchError(f"call: a direction must be a vector (one up index); got {u.declaration()}; "
+                                         "to feed a larger tensor, use contract")
+            X = _contract(X, u, X._form_positions()[0], 0)
+        return X
 
     def otimes(self, other):
         """Tensor product A ⊗ B: pair nothing, keep every index.
