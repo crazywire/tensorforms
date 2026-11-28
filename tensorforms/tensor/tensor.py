@@ -443,7 +443,7 @@ class Tensor(Derivatives, Products):
         s = self.indices[i]
         if s.is_form or s.variance == to:
             raise IndexMismatchError(f"{name}: can't make {s.label} {to}; it is a form index or already {to}")
-        return self.apply(metric, i)._new(label=self.label)     # the metric on index i, in place
+        return self.apply(metric, i, 1)._new(label=self.label)  # the metric on index i, in place
 
     def lower(self, index=None):
         """g on one up value index: ↑ → ↓. Same physics; raise_ undoes it exactly.

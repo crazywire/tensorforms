@@ -45,7 +45,7 @@ class Derivatives:
         if G is None:
             return self.d()
         _tangent_only(self, "nabla")
-        return self.d() + sum((1 if s.is_up else -1) * self.apply(G, i)    # + on up, − on down and form
+        return self.d() + sum((1 if s.is_up else -1) * self.apply(G, i, _summed(s))    # + on up, − on down and form
                               for i, s in enumerate(self.indices))
 
     def wedge_nabla(self):
@@ -56,7 +56,7 @@ class Derivatives:
         G, _ = _geometry(self)
         if G is not None:
             _tangent_only(self, "wedge_nabla")
-            Y = Y + sum((1 if s.is_up else -1) * Xa.apply(G, i)          # value indices only
+            Y = Y + sum((1 if s.is_up else -1) * Xa.apply(G, i, _summed(s))          # value indices only
                         for i, s in enumerate(Xa.indices) if not s.is_form)
         return _wedge_new(Y, p, 1)._new(label=None)
 
@@ -68,7 +68,7 @@ class Derivatives:
             return Y
         _tangent_only(self, "curvature")
         R = R()
-        return Y + sum((1 if s.is_up else -1) * self.apply(R, i) for i, s in enumerate(self.indices))
+        return Y + sum((1 if s.is_up else -1) * self.apply(R, i, _summed(s)) for i, s in enumerate(self.indices))
 
     def wedge_curvature(self):
         """Wedge curvature: ∇∧∇∧X = R∧ on value indices. X is never differentiated."""
@@ -79,7 +79,7 @@ class Derivatives:
         if R is not None:
             _tangent_only(self, "wedge_curvature")
             R = R()
-            Y = Y + sum((1 if s.is_up else -1) * Xa.apply(R, i) for i, s in enumerate(Xa.indices) if not s.is_form)
+            Y = Y + sum((1 if s.is_up else -1) * Xa.apply(R, i, _summed(s)) for i, s in enumerate(Xa.indices) if not s.is_form)
         return _wedge_new(Y, p, 2)._new(label=None)
 
     def lie(self, v):
@@ -95,7 +95,7 @@ class Derivatives:
                             f"got {getattr(v, 'declaration', lambda: v)()}")
         _tangent_only(self, "lie")
         J = v.d().as_value()                                        # J^a_c = ∂_c v^a
-        return self.d()(v) + sum((-1 if s.is_up else 1) * self.apply(J, i)   # − on up, + on down and form
+        return self.d()(v) + sum((-1 if s.is_up else 1) * self.apply(J, i, _summed(s))   # − on up, + on down and form
                                  for i, s in enumerate(self.indices))
 
 
@@ -123,6 +123,12 @@ def _new_form_indices(X, count):
         used.append(name)
         indices.append(Index(name, M.tangent, "down", "form"))
     return indices
+
+
+def _summed(s):
+    """Which of Γ's, R's or J's value indices (↑ then ↓) is summed with X's index s: its ↓
+    (position 1) for an up index, as in Γv; its ↑ (position 0) for a down or form index, as in wΓ."""
+    return 1 if s.is_up else 0
 
 
 def _tangent_only(X, what):

@@ -988,22 +988,24 @@ def test_apply():
     S = tf.Manifold.sphere()
     th, ph = S.coords
     v, G = S.vector([sp.sin(ph), th]), S.levi_civita()
-    assert v.apply(S.g, "μ").equals(v.lower())                         # g on v's index: lowering
-    Gv = v.apply(G, 0)                                                 # Γ^a_σμ v^σ
+    assert v.apply(S.g, "μ", 1).equals(v.lower())                      # g on v's index: lowering
+    Gv = v.apply(G, 0, 1)                                              # Γ^a_σμ v^σ: Γ's σ↓ summed
     assert Gv.declaration() == "(μ↑ ν)" and Gv.equals(G @ v)
     w = S.covector([1, th])
-    assert w.apply(G, 0).declaration() == "(μ↓ ν)"                     # Γ^ρ_aμ w_ρ: a stays down
+    assert w.apply(G, 0, 0).declaration() == "(μ↓ ν)"                  # Γ^ρ_aμ w_ρ: Γ's ρ↑ summed
     x, y, u = sp.symbols("x y u", real=True)
     P = Manifold([x, y], metric=sp.eye(2))
     C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})
     a = C.map.indices[0]
     E = C.map.d().as_value()                                           # (a↑ μ↓): two spaces
     wa = C.tensor(a.down, data=[-sp.sin(u), sp.cos(u)])                # −y dx + x dy along C, as (a↓)
-    pulled = wa.apply(E, 0)
+    pulled = wa.apply(E, 0, 0)
     assert pulled.declaration() == "(μ↓)" and is_zero(pulled[0] - 1)  # → du, in C's own letters
-    for bad in (lambda: v.apply(v, 0),                                 # not two value indices
-                lambda: v.apply(S.ginv, 0),                            # nothing pairs with μ↑
-                lambda: S.one_form([1, 0]).apply(S.ginv, 0)):          # a form index can't go up
+    for bad in (lambda: v.apply(v, 0, 0),                              # not two value indices
+                lambda: v.apply(S.ginv, 0, 1),                         # g⁻¹'s index doesn't pair with μ↑
+                lambda: v.apply(G, 0, 0),                              # Γ's ρ↑ doesn't pair with μ↑
+                lambda: v.apply(G, 0, 2),                              # Γ's μ is a form index
+                lambda: S.one_form([1, 0]).apply(S.ginv, 0, 1)):       # a form index can't go up
         try:
             bad()
             raise AssertionError("expected a refusal")
@@ -1014,7 +1016,7 @@ def test_apply():
 def test_products_need_a_tensor():
     v = tf.Manifold.sphere().vector([1, 0])
     for bad in (lambda: v @ 2, lambda: v.contract(2, 0, 0), lambda: v.otimes([1]),
-                lambda: v.wedge(2), lambda: v.odot(2), lambda: v.apply(2, 0)):
+                lambda: v.wedge(2), lambda: v.odot(2), lambda: v.apply(2, 0, 0)):
         try:
             bad()
             raise AssertionError("expected a refusal")
@@ -1028,7 +1030,7 @@ def test_same_manifold():
     for bad in (lambda: v.otimes(w), lambda: v + w, lambda: v - w, lambda: S.covector([1, 0]) @ w,
                 lambda: v.contract(T.covector([1, 0]), 0, 0), lambda: S.one_form([1, 0])(w),
                 lambda: T.scalar(2) * v, lambda: v / T.scalar(2), lambda: S.g.lie(w),
-                lambda: v.apply(T.g, 0)):
+                lambda: v.apply(T.g, 0, 1)):
         try:
             bad()
             raise AssertionError("expected a refusal")

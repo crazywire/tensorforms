@@ -7,7 +7,7 @@
     A.otimes(B)            tensor product: pairs nothing
     A.wedge(B)             A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
     A.odot(B)              A ⊙ B = k!/(p! q!) · Sym(AB)
-    X.apply(A, i)          the matrix A acting on X's index i, which stays in place
+    X.apply(A, i, a)       A's index a summed with X's index i; A's other index takes i's place
 
 Results put value indices first, then A's form indices, then B's.
 """
@@ -151,27 +151,27 @@ class Products:
             X = _contract(X, u, X._form_positions()[0], 0)
         return X
 
-    def apply(self, A, i):
-        """X.apply(A, i): the matrix A acting on X's index i, which stays in place. A has exactly two
-        value indices (and any form indices). The one that pairs with index i is summed against it
-        (A's second if both could); the other moves into i's place, renamed to i's label (a new
-        label if it is in another space), keeping i's type and taking its own arrow and space. A's form indices go first among X's form
-        indices. No sign: v.apply(g, "μ") is v lowered; the derivatives add ± X.apply(Γ, i)."""
+    def apply(self, A, i, a):
+        """X.apply(A, i, a): A acting on X's index i, which stays in place. A has exactly two value
+        indices (and any form indices); its value index a is summed against index i, and A's other
+        value index moves into i's place, renamed to i's label (a new label if it is in another
+        space), keeping i's type and taking its own arrow and space. A's form indices go first among
+        X's form indices. No sign: v.apply(g, "μ", 1) is v lowered."""
         _assert_tensor(A)
         _assert_same_manifold(self, A)
-        i = self.position(i)
-        s = self.indices[i]
+        i, eat = self.position(i), A.position(a)
+        s, e = self.indices[i], A.indices[eat]
         vals, forms = A._value_positions(), A._form_positions()
         if len(vals) != 2:
             raise IndexMismatchError(f"apply: A must have exactly two value indices, not {A.declaration()}")
-        first, second = vals
-        eat, put = (second, first) if A.index(second).pairs_with(s) else (first, second)
-        if not A.index(eat).pairs_with(s):
-            raise IndexMismatchError(f"apply: {A.declaration()} has no index that pairs with {s!r}")
+        if e.is_form:
+            raise IndexMismatchError(f"apply: A's {e!r} must be a value index")
+        if not e.pairs_with(s):
+            raise IndexMismatchError(f"apply: A's {e!r} must pair with {s!r}")
+        put = next(m for m in vals if m != eat)
         p = A.index(put)
         if s.is_form and p.is_up:
-            raise IndexMismatchError(f"apply: {s.label} is a form index, always down; "
-                                     f"{A.declaration()} would make it up")
+            raise IndexMismatchError(f"apply: {s!r} is a form index, so A's {p!r} must be down")
         data = np.tensordot(A.data, self.data, axes=([eat], [i]))   # [A's put and forms, in A's order; X's others]
         a_rest = [m for m in range(len(A.indices)) if m != eat]
         n, k = len(self.indices), len(forms)
