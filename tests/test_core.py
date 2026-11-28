@@ -308,6 +308,11 @@ def test_contract_default_and_otimes():
         raise AssertionError("expected a TypeError")
     T = v.otimes(u)                                             # v^μ u^ν: both indices kept
     assert [s.label for s in T.indices] == ["μ", "ν"] and T.data[0, 1] == 1
+    try:
+        v @ w
+        raise AssertionError("expected v @ w to be refused")
+    except tf.IndexMismatchError as e:
+        assert "here μ↑ meets μ↓" in str(e)
 
 
 def test_raise_lower_undo():
