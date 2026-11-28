@@ -134,10 +134,8 @@ print(flat.star().wedge_d().star().value, outward.nabla().tr(0, 1).value)
 ## Products
 
 `A @ B` is AB: A's column (last value index, ↓) with B's row (first value index, ↑). Anything
-else is refused; to pair a ↑ with a ↓, name the pair with `contract`. That is how a product is
-transposed: T only reorders, so for two matrices (A @ B).T is `B.T.contract(A.T, 1, 0)`, not
-`B.T @ A.T`. Every product puts value indices first, then A's form indices, then
-B's: R @ v is (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν).
+else is refused; to pair a ↑ with a ↓, name the pair with `contract`. Every product puts value
+indices first, then A's form indices, then B's: R @ v is (ρ↑ σ↓ μ ν)(κ↑) → (ρ↑ μ ν).
 
 The wedge of A (p form indices) and B (q form indices), each first made antisymmetric:
 
