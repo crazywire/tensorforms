@@ -113,10 +113,10 @@ class Products:
         other = _other(self, other, "@")
         return _contract(self, other, *_default_pair(self, other))
 
-    def contract(self, other, a, b=None):
-        """Pair index a of this tensor with index b of other (b defaults to a's label) and sum.
+    def contract(self, other, a, b):
+        """Pair index a of this tensor with index b of other (each by label or position) and sum.
         For the usual AB (column with row), write A @ B."""
-        return _contract(self, _other(self, other, "contract"), a, a if b is None else b)
+        return _contract(self, _other(self, other, "contract"), a, b)
 
     def __call__(self, *vectors):
         """X(u, w, …): evaluate X on vectors; each vector fills the next form index, in order.

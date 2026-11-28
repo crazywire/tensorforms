@@ -129,8 +129,8 @@ def test_product_rule():
     a, b = S.indices(2)
     A = S.tensor(a.up, b.down, data=[[th, ph], [th * ph, 1]])
     v = S.vector([sp.sin(th), ph], index=b)
-    lhs = A.contract(v, b).nabla()
-    rhs = A.nabla().contract(v, b) + A.contract(v.nabla(), b)
+    lhs = A.contract(v, 1, 0).nabla()
+    rhs = A.nabla().contract(v, 1, 0) + A.contract(v.nabla(), 1, 0)
     assert lhs.equals(rhs)
 
 
