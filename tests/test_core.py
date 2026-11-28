@@ -984,3 +984,14 @@ def test_values_before_forms():
         except tf.IndexMismatchError as e:
             assert "a form index comes before a value index" in str(e)
     assert G.as_value().S.declaration() == "(ρ↑ μ↓ σ↓)"   # as values, any swap is fine
+
+
+def test_products_need_a_tensor():
+    v = tf.Manifold.sphere().vector([1, 0])
+    for bad in (lambda: v @ 2, lambda: v.contract(2, 0, 0), lambda: v.otimes([1]),
+                lambda: v.wedge(2), lambda: v.odot(2)):
+        try:
+            bad()
+            raise AssertionError("expected a refusal")
+        except TypeError as e:
+            assert str(e).startswith("the argument must be a tensor, not ")
