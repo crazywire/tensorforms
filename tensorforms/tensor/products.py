@@ -7,7 +7,7 @@
     A.otimes(B)            tensor product: pairs nothing
     A.wedge(B)             A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
     A.odot(B)              A ⊙ B = k!/(p! q!) · Sym(AB)
-    X.apply(A, i, a)       A's index a summed with X's index i; A's other index takes i's place
+    X.apply(A, a, b)       X's index a summed with A's index b; A's other index takes a's place
 
 Results put value indices first, then A's form indices, then B's.
 """
@@ -151,15 +151,16 @@ class Products:
             X = _contract(X, u, X._form_positions()[0], 0)
         return X
 
-    def apply(self, A, i, a):
-        """X.apply(A, i, a): A acting on X's index i, which stays in place. A has exactly two value
-        indices (and any form indices); its value index a is summed against index i, and A's other
-        value index moves into i's place, renamed to i's label (a new label if it is in another
-        space), keeping i's type and taking its own arrow and space. A's form indices go first among
-        X's form indices. No sign: v.apply(g, "μ", 1) is v lowered."""
+    def apply(self, A, a, b):
+        """X.apply(A, a, b): A acting on X's index a, which stays in place. As in contract, a is this
+        tensor's index and b is A's. A has exactly two value indices (and any form indices); its value
+        index b is summed against index a, and A's other value index moves into a's place, renamed to
+        a's label (a new label if it is in another space), keeping a's type and taking its own arrow
+        and space. A's form indices go first among X's form indices. No sign: v.apply(g, "μ", 1) is
+        v lowered."""
         _assert_tensor(A)
         _assert_same_manifold(self, A)
-        i, eat = self.position(i), A.position(a)
+        i, eat = self.position(a), A.position(b)
         s, e = self.indices[i], A.indices[eat]
         vals, forms = A._value_positions(), A._form_positions()
         if len(vals) != 2:

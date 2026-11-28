@@ -17,7 +17,7 @@ Each returns a new tensor with no label. Conventions:
 * Γ and R come from the manifold (Levi-Civita, no torsion). With no metric, ∇ and ∇∧ act as d
   and d∧, and the two curvature derivatives give zero.
 * ∇ corrects up indices with +Γ (Γ's ↓ summed, as in Γv) and down indices with −Γ (Γ's ↑
-  summed, as in wΓ), each term `X.apply(Γ, i, a)`. ∇∧ corrects value indices only.
+  summed, as in wΓ), each term `X.apply(Γ, a, b)`. ∇∧ corrects value indices only.
 * d∧ multiplies by p + 1 after antisymmetrizing, and ∇∧∇∧ by C(p+2; 2, p), where p is the number
   of form indices of X.
 * The curvature derivatives multiply by R; they don't differentiate X.
