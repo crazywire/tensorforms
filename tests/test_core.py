@@ -1013,3 +1013,13 @@ def test_apply():
         except tf.IndexMismatchError:
             pass
 
+
+def test_products_need_a_tensor():
+    v = tf.Manifold.sphere().vector([1, 0])
+    for bad in (lambda: v @ 2, lambda: v.contract(2, 0, 0), lambda: v.otimes([1]),
+                lambda: v.wedge(2), lambda: v.odot(2), lambda: v.apply(2, 0)):
+        try:
+            bad()
+            raise AssertionError("expected a refusal")
+        except TypeError as e:
+            assert str(e).startswith("the argument must be a tensor, not ")
