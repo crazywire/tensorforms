@@ -984,3 +984,32 @@ def test_values_before_forms():
         except tf.IndexMismatchError as e:
             assert "a form index comes before a value index" in str(e)
     assert G.as_value().S.declaration() == "(ρ↑ μ↓ σ↓)"   # as values, any swap is fine
+
+
+def test_apply():
+    S = tf.Manifold.sphere()
+    th, ph = S.coords
+    v, G = S.vector([sp.sin(ph), th]), S.levi_civita()
+    assert v.apply(S.g, "μ").equals(v.lower())                         # g on v's index: lowering
+    Gv = v.apply(G, 0)                                                 # Γ^a_σμ v^σ
+    assert Gv.declaration() == "(μ↑ ν)" and Gv.equals(G @ v)
+    w = S.covector([1, th])
+    assert w.apply(G, 0).declaration() == "(μ↓ ν)"                     # Γ^ρ_aμ w_ρ: a stays down
+    x, y, u = sp.symbols("x y u", real=True)
+    P = Manifold([x, y], metric=sp.eye(2))
+    C = Manifold([u], ambient=P, map={x: sp.cos(u), y: sp.sin(u)})
+    a = C.map.indices[0]
+    E = C.map.d().as_value()                                           # (a↑ μ↓): two spaces
+    wa = C.tensor(a.down, data=[-sp.sin(u), sp.cos(u)])                # −y dx + x dy along C, as (a↓)
+    pulled = wa.apply(E, 0)
+    assert pulled.declaration() == "(μ↓)" and is_zero(pulled[0] - 1)  # → du, in C's own letters
+    for bad in (lambda: v.apply(P.g, 0),                               # another manifold
+                lambda: v.apply(v, 0),                                 # not two value indices
+                lambda: v.apply(S.ginv, 0),                            # nothing pairs with μ↑
+                lambda: S.one_form([1, 0]).apply(S.ginv, 0)):          # a form index can't go up
+        try:
+            bad()
+            raise AssertionError("expected a refusal")
+        except tf.IndexMismatchError:
+            pass
+

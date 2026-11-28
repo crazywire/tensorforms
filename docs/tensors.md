@@ -146,6 +146,7 @@ A∧B = k!/(p! q!) · Alt(AB),  k = p + q
 | `A @ B` | AB; refuses if the pair doesn't exist |
 | `A.contract(B, a, b)` | pair the indices you name |
 | `X(u, w, …)` | evaluate X's form indices on the vectors u, w, … in order; with fewer vectors, the remaining form indices stay (ω(u) is the interior product) |
+| `X.apply(A, i)` | the matrix A acting on X's index i, which stays in place: the index of A that pairs with i is summed, A's other index takes i's place (same label, A's arrow), A's form indices go first among X's; `v.apply(g, "μ")` is v lowered |
 | `A.otimes(B)` | A ⊗ B: pair nothing |
 | `A.wedge(B)`, `A.odot(B)` | A∧B, A⊙B |
 

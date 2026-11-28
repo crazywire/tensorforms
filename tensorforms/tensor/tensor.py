@@ -18,7 +18,7 @@ from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
 from .labels import index_label
 from .index import Index
 from .products import Products
-from .derivatives import Derivatives, _apply
+from .derivatives import Derivatives
 from ..errors import (IndexMismatchError, InvalidCoordinateError, MissingMetricError,
                       NonInvertibleError)
 
@@ -443,9 +443,7 @@ class Tensor(Derivatives, Products):
         s = self.indices[i]
         if s.is_form or s.variance == to:
             raise IndexMismatchError(f"{name}: can't make {s.label} {to}; it is a form index or already {to}")
-        data = _apply(self, i, metric)                     # the metric applied to index i, in place
-        flipped = Index(s.label, s.space, to, "value")
-        return self._new(data, (*self.indices[:i], flipped, *self.indices[i + 1:]), label=self.label)
+        return self.apply(metric, i)._new(label=self.label)     # the metric on index i, in place
 
     def lower(self, index=None):
         """g on one up value index: ↑ → ↓. Same physics; raise_ undoes it exactly.
