@@ -82,11 +82,9 @@ def _contract(A, B, a, b):
     return _joined(A, data, keep_a + keep_b, len(keep_a), None)
 
 
-def _other(A, other, what):
-    if not isinstance(other, type(A)):
-        raise TypeError(f"{what}: needs another tensor, not {type(other).__name__}; "
-                        "to scale by a number, use *")
-    return other
+def _assert_tensor(x):
+    if not isinstance(x, Products):                  # every tensor inherits Products
+        raise TypeError(f"the argument must be a tensor, not {type(x).__name__}")
 
 
 def _wedge_like(A, B, pair, signed):
@@ -110,13 +108,14 @@ class Products:
 
     def __matmul__(self, other):
         """A @ B: A's column (last value index, down) with B's row (first value index, up), as in AB."""
-        other = _other(self, other, "@")
+        _assert_tensor(other)
         return _contract(self, other, *_default_pair(self, other))
 
     def contract(self, other, a, b):
         """Pair index a of this tensor with index b of other (each by label or position) and sum.
         For the usual AB (column with row), write A @ B."""
-        return _contract(self, _other(self, other, "contract"), a, b)
+        _assert_tensor(other)
+        return _contract(self, other, a, b)
 
     def __call__(self, *vectors):
         """X(u, w, …): evaluate X on vectors; each vector fills the next form index, in order.
@@ -145,7 +144,7 @@ class Products:
     def otimes(self, other):
         """Tensor product A ⊗ B: pair nothing, keep every index.
         Result: value indices first, then A's form indices, then B's."""
-        other = _other(self, other, "otimes")
+        _assert_tensor(other)
         keep_b = _rename_clashes(self.manifold, self._index_labels(), other.indices)
         return _joined(self, np.multiply.outer(self.data, other.data), (*self.indices, *keep_b),
                        len(self.indices), None)
@@ -153,8 +152,10 @@ class Products:
     def wedge(self, other, pair=None):
         """A ∧ B = k!/(p! q!) · Alt(AB) over all form indices (each interleaving once).
         AB pairs A's column with B's row (or the indices in pair); with a scalar-valued factor it is A ⊗ B."""
-        return _wedge_like(self, _other(self, other, "wedge"), pair, signed=True)
+        _assert_tensor(other)
+        return _wedge_like(self, other, pair, signed=True)
 
     def odot(self, other, pair=None):
         """A ⊙ B = k!/(p! q!) · Sym(AB) over all form indices."""
-        return _wedge_like(self, _other(self, other, "odot"), pair, signed=False)
+        _assert_tensor(other)
+        return _wedge_like(self, other, pair, signed=False)
