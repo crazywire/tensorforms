@@ -13,7 +13,11 @@ class TensorformsError(Exception):
 
 class IndexMismatchError(TensorformsError, TypeError):
     """The indices don't fit the operation: adding or pairing indices that don't match, raising a
-    form index, a v that isn't a vector, tensors on different manifolds, …"""
+    form index, a v that isn't a vector, …"""
+
+
+class ManifoldMismatchError(TensorformsError, TypeError):
+    """Two tensors from different manifolds meet in one operation."""
 
 
 class MissingMetricError(TensorformsError, AttributeError):

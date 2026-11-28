@@ -9,10 +9,10 @@
 """
 from .manifold import Manifold, Space, templates
 from .tensor import Index, Tensor
-from .errors import (TensorformsError, IndexMismatchError, MissingMetricError, InvalidMetricError,
+from .errors import (TensorformsError, IndexMismatchError, ManifoldMismatchError, MissingMetricError, InvalidMetricError,
                      InvalidCoordinateError, NonInvertibleError)
 
 __all__ = ["Manifold", "Index", "Space", "Tensor", "templates",
-           "TensorformsError", "IndexMismatchError", "MissingMetricError", "InvalidMetricError",
+           "TensorformsError", "IndexMismatchError", "ManifoldMismatchError", "MissingMetricError", "InvalidMetricError",
            "InvalidCoordinateError", "NonInvertibleError"]
 __version__ = "0.1.0"

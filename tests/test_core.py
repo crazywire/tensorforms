@@ -373,7 +373,7 @@ def test_flrw_scale_factor():
     t = sp.Symbol("t", real=True)
     a1 = tf.Manifold.flrw(a=t ** 2).ricci_scalar()               # the preset's t
     a2 = tf.Manifold.flrw(a=lambda T: T ** 2).ricci_scalar()     # a function of t
-    assert a1 != 0 and is_zero(a1 - a2)
+    assert a1 != 0 and is_zero(a1.value - a2.value)               # two manifolds: compare the values
     try:
         tf.Manifold.flrw(a=sp.Symbol("t") ** 2)                       # a different t: refused
     except ValueError:
@@ -770,7 +770,7 @@ def test_errors():
     th = S.coords[0]
     mu, nu = S.indices(2)
     bare = tf.Manifold(list(sp.symbols("x y")))
-    cases = [(lambda: S.g + S1.g, tf.IndexMismatchError),                 # different manifolds
+    cases = [(lambda: S.g + S1.g, tf.ManifoldMismatchError),              # different manifolds
              (lambda: S.vector([1, 0]) @ S.vector([0, 1]), tf.IndexMismatchError),
              (lambda: S.g.lie(S.covector([1, 0])), tf.IndexMismatchError),
              (lambda: bare.g, tf.MissingMetricError),
@@ -787,10 +787,7 @@ def test_errors():
             assert isinstance(e, tf.TensorformsError)
     assert issubclass(tf.IndexMismatchError, TypeError) and issubclass(tf.NonInvertibleError, ValueError)
     assert not hasattr(bare, "g")                                         # MissingMetricError is an AttributeError
-    try:
-        S.g + S1.g
-    except tf.IndexMismatchError as e:
-        assert "different manifolds" in str(e)
+    assert issubclass(tf.ManifoldMismatchError, TypeError)
 
 
 def test_input_checks():
@@ -827,8 +824,9 @@ def test_manifold_label_is_optional():
     assert str(tf.Manifold.sphere()) == "S2"
     try:
         M.scalar(1) + N.scalar(1)
-    except tf.IndexMismatchError as e:
-        assert "(x, y) and (x, y)" in str(e)
+        raise AssertionError("expected a refusal")
+    except tf.ManifoldMismatchError as e:
+        assert str(e) == "the tensors must be on the same manifold"
 
 
 def test_submanifold():
@@ -995,3 +993,17 @@ def test_products_need_a_tensor():
             raise AssertionError("expected a refusal")
         except TypeError as e:
             assert str(e).startswith("the argument must be a tensor, not ")
+
+
+def test_same_manifold():
+    S, T = tf.Manifold.sphere(), tf.Manifold.sphere()                # two spheres that look the same
+    v, w = S.vector([1, 0]), T.vector([0, 1])
+    for bad in (lambda: v.otimes(w), lambda: v + w, lambda: v - w, lambda: S.covector([1, 0]) @ w,
+                lambda: v.contract(T.covector([1, 0]), 0, 0), lambda: S.one_form([1, 0])(w),
+                lambda: T.scalar(2) * v, lambda: v / T.scalar(2), lambda: S.g.lie(w)):
+        try:
+            bad()
+            raise AssertionError("expected a refusal")
+        except tf.ManifoldMismatchError as e:
+            assert str(e) == "the tensors must be on the same manifold"
+
