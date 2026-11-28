@@ -7,6 +7,7 @@
     A.otimes(B)            tensor product: pairs nothing
     A.wedge(B)             A ∧ B = k!/(p! q!) · Alt(AB) over all form indices
     A.odot(B)              A ⊙ B = k!/(p! q!) · Sym(AB)
+    X.apply(A, a, b)       X's index a summed with A's index b; A's other index takes a's place
 
 Results put value indices first, then A's form indices, then B's.
 """
@@ -14,6 +15,7 @@ import math
 
 import numpy as np
 import sympy as sp
+from .index import Index
 from .labels import _new_label
 from ..errors import IndexMismatchError, ManifoldMismatchError
 
@@ -148,6 +150,41 @@ class Products:
                                          "to pair with a larger tensor, use contract")
             X = _contract(X, u, X._form_positions()[0], 0)
         return X
+
+    def apply(self, A, a, b):
+        """X.apply(A, a, b): A acting on X's index a, which stays in place. As in contract, a is this
+        tensor's index and b is A's. A has exactly two value indices (and any form indices); its value
+        index b is summed against index a, and A's other value index moves into a's place, renamed to
+        a's label (a new label if it is in another space), keeping a's type and taking its own arrow
+        and space. A's form indices go first among X's form indices. No sign: v.apply(g, "μ", 1) is
+        v lowered."""
+        _assert_tensor(A)
+        _assert_same_manifold(self, A)
+        i, eat = self.position(a), A.position(b)
+        s, e = self.indices[i], A.indices[eat]
+        vals, forms = A._value_positions(), A._form_positions()
+        if len(vals) != 2:
+            raise IndexMismatchError(f"apply: A must have exactly two value indices, not {A.declaration()}")
+        if e.is_form:
+            raise IndexMismatchError(f"apply: A's {e!r} must be a value index")
+        if not e.pairs_with(s):
+            raise IndexMismatchError(f"apply: A's {e!r} must pair with {s!r}")
+        put = next(m for m in vals if m != eat)
+        p = A.index(put)
+        if s.is_form and p.is_up:
+            raise IndexMismatchError(f"apply: {s!r} is a form index, so A's {p!r} must be down")
+        data = np.tensordot(A.data, self.data, axes=([eat], [i]))   # [A's put and forms, in A's order; X's others]
+        a_rest = [m for m in range(len(A.indices)) if m != eat]
+        n, k = len(self.indices), len(forms)
+        x_axis = {m: k + 1 + pos for pos, m in enumerate(m for m in range(n) if m != i)}
+        source = [a_rest.index(put) if m == i else x_axis[m] for m in range(n)]
+        at = next((m for m, t in enumerate(self.indices) if t.is_form), n)    # first among the forms
+        data = np.transpose(data, source[:at] + [a_rest.index(f) for f in forms] + source[at:])
+        others = [t.label for m, t in enumerate(self.indices) if m != i]
+        label = s.label if p.space is s.space else _new_label(p.space, self.manifold, others)  # a new space: its own letters
+        rest = [Index(label, p.space, p.variance, s.type) if m == i else t for m, t in enumerate(self.indices)]
+        new = _rename_clashes(self.manifold, [t.label for t in rest], [A.indices[f] for f in forms])
+        return type(self)(self.manifold, data, rest[:at] + new + rest[at:], None, copy=False)
 
     def otimes(self, other):
         """Tensor product A ⊗ B: pair nothing, keep every index.

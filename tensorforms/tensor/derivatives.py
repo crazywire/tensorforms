@@ -37,65 +37,55 @@ class Derivatives:
     def wedge_d(self):
         """Wedge d: d∧X. Antisymmetrize X's form indices, take d, then (p+1)·Alt. No Γ."""
         p = len(self._form_positions())
-        Xa = self.alt()
-        pos, indices = _with_new_indices(Xa, 1)
-        Y = _wedge_new(type(self)(self.manifold, _d(Xa, pos), indices, copy=False), p, 1)
-        return Y._new(label=None)
+        return _wedge_new(self.alt().d(), p, 1)._new(label=None)
 
     def nabla(self):
         """Covariant derivative: ∇X = dX + Γ on every index."""
-        pos, indices = _with_new_indices(self, 1)
-        data = _d(self, pos)
         G, _ = _geometry(self)
-        if G is not None:
-            data = data + sum((1 if s.is_up else -1) * _apply(self, i, G)    # + on up, − on down and form
+        if G is None:
+            return self.d()
+        _tangent_only(self, "nabla")
+        return self.d() + sum((1 if s.is_up else -1) * self.apply(G, i, _summed(s))    # + on up, − on down and form
                               for i, s in enumerate(self.indices))
-        return type(self)(self.manifold, data, indices, None, copy=False)
 
     def wedge_nabla(self):
         """Wedge derivative: ∇∧X = d∧X + Γ∧ on value indices."""
         p = len(self._form_positions())
         Xa = self.alt()                                   # wedge factors are antisymmetric first
-        pos, indices = _with_new_indices(Xa, 1)
-        data = _d(Xa, pos)
+        Y = Xa.d()
         G, _ = _geometry(self)
         if G is not None:
-            data = data + sum((1 if s.is_up else -1) * _apply(Xa, i, G)      # value indices only
-                              for i, s in enumerate(Xa.indices) if not s.is_form)
-        Y = _wedge_new(type(self)(self.manifold, data, indices, copy=False), p, 1)
-        return Y._new(label=None)
+            _tangent_only(self, "wedge_nabla")
+            Y = Y + sum((1 if s.is_up else -1) * Xa.apply(G, i, _summed(s))          # value indices only
+                        for i, s in enumerate(Xa.indices) if not s.is_form)
+        return _wedge_new(Y, p, 1)._new(label=None)
 
     def curvature(self):
         """Curvature operator: ∇∧∇X = R on every index. X is never differentiated."""
-        pos, indices = _with_new_indices(self, 2)
+        Y = _zero_with_new_indices(self, 2)
         _, R = _geometry(self)
         if R is None:
-            data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
-        else:
-            R = R()
-            data = sum(((1 if s.is_up else -1) * _apply(self, i, R) for i, s in enumerate(self.indices)),
-                       np.zeros(tuple(s.space.dim for s in indices), dtype=object))
-        return type(self)(self.manifold, data, indices, None, copy=False)
+            return Y
+        _tangent_only(self, "curvature")
+        R = R()
+        return Y + sum((1 if s.is_up else -1) * self.apply(R, i, _summed(s)) for i, s in enumerate(self.indices))
 
     def wedge_curvature(self):
         """Wedge curvature: ∇∧∇∧X = R∧ on value indices. X is never differentiated."""
         p = len(self._form_positions())
         Xa = self.alt()
-        pos, indices = _with_new_indices(Xa, 2)
+        Y = _zero_with_new_indices(Xa, 2)
         _, R = _geometry(self)
-        if R is None:
-            data = np.zeros(tuple(s.space.dim for s in indices), dtype=object)
-        else:
+        if R is not None:
+            _tangent_only(self, "wedge_curvature")
             R = R()
-            data = sum(((1 if s.is_up else -1) * _apply(Xa, i, R) for i, s in enumerate(Xa.indices) if not s.is_form),
-                       np.zeros(tuple(s.space.dim for s in indices), dtype=object))
-        Y = _wedge_new(type(self)(self.manifold, data, indices, copy=False), p, 2)
-        return Y._new(label=None)
+            Y = Y + sum((1 if s.is_up else -1) * Xa.apply(R, i, _summed(s)) for i, s in enumerate(Xa.indices) if not s.is_form)
+        return _wedge_new(Y, p, 2)._new(label=None)
 
     def lie(self, v):
         """Lie derivative of X along the vector field v. The result has X's indices; no metric needed.
             L_v X = dX(v) − J on each up index + J on each down or form index,  J = (dv).as_value()
-        dX(v) evaluates d's new form index on v."""
+        dX(v) evaluates d's new form index (first among the form indices) on v."""
         M = self.manifold
         if isinstance(v, type(self)):
             _assert_same_manifold(self, v)
@@ -103,12 +93,10 @@ class Derivatives:
                 or not v.indices[0].is_up or v.indices[0].is_form or v.indices[0].space is not M.tangent):
             raise IndexMismatchError("lie: v must be a vector field (one up value index); "
                             f"got {getattr(v, 'declaration', lambda: v)()}")
-        # dX(v): d's new form index (first among the form indices) evaluated on v; the order is kept
-        data = np.tensordot(v.data, self.d().data, axes=([0], [_insert_position(self)]))
+        _tangent_only(self, "lie")
         J = v.d().as_value()                                        # J^a_c = ∂_c v^a
-        data = data + sum((-1 if s.is_up else 1) * _apply(self, i, J)   # − on up, + on down and form
-                          for i, s in enumerate(self.indices))
-        return type(self)(M, data, self.indices, None, copy=False)
+        return self.d()(v) + sum((-1 if s.is_up else 1) * self.apply(J, i, _summed(s))   # − on up, + on down and form
+                                 for i, s in enumerate(self.indices))
 
 
 # ---------------------------------------------------------------- helpers
@@ -137,6 +125,26 @@ def _new_form_indices(X, count):
     return indices
 
 
+def _summed(s):
+    """Which of Γ's, R's or J's value indices (↑ then ↓) is summed with X's index s: its ↓
+    (position 1) for an up index, as in Γv; its ↑ (position 0) for a down or form index, as in wΓ."""
+    return 1 if s.is_up else 0
+
+
+def _tangent_only(X, what):
+    """The derivatives correct tangent-space indices only (Γ and R act there)."""
+    for s in X.indices:
+        if s.space is not X.manifold.tangent:
+            raise NotImplementedError(f"{what}: index {s.label} is not in {X.manifold.tangent.label}; "
+                                      "only tangent-space indices are supported")
+
+
+def _zero_with_new_indices(X, count):
+    """The zero tensor with X's indices and `count` new form indices (the curvatures start here)."""
+    pos, indices = _with_new_indices(X, count)
+    return type(X)(X.manifold, np.zeros(tuple(s.space.dim for s in indices), dtype=object), indices, None, copy=False)
+
+
 def _with_new_indices(X, count):
     pos = _insert_position(X)
     return pos, (*X.indices[:pos], *_new_form_indices(X, count), *X.indices[pos:])
@@ -147,33 +155,6 @@ def _d(X, pos):
     D = np.stack([np.vectorize(lambda e, xi=xi: sp.diff(e, xi), otypes=[object])(X.data)
                   for xi in X.manifold.coords], axis=-1)
     return np.moveaxis(D, -1, pos)
-
-
-def _apply(X, i, A):
-    """The numbers of A applied to X's index i, in X's layout. A has exactly two value indices
-    (and any form indices). The one of A's value indices that pairs with X's index i is summed
-    against it (A's second if both could); the other takes index i's place. A's form indices are
-    added first among X's form indices, where d puts new ones. Used by raise_/lower (g, g⁻¹),
-    the Lie derivative (J) and the covariant and curvature derivatives (Γ, R)."""
-    s = X.indices[i]
-    vals, forms = A._value_positions(), A._form_positions()
-    if len(vals) != 2:
-        raise IndexMismatchError(f"apply: needs exactly two value indices; got {A.declaration()}")
-    if s.space is not X.manifold.tangent:
-        raise NotImplementedError(f"apply: index {s.label} is not in {X.manifold.tangent.label}; only tangent-space indices are supported")
-    first, second = vals
-    eat, put = (second, first) if A.index(second).pairs_with(s) else (first, second)
-    if not A.index(eat).pairs_with(s):
-        raise IndexMismatchError(f"apply: {A.declaration()} has no index that pairs with {s.label}")
-    data = np.tensordot(A.data, X.data, axes=([eat], [i]))      # [A's put and forms, in A's order; X's others]
-    a_rest = [m for m in range(len(A.indices)) if m != eat]
-    put_axis = a_rest.index(put)
-    form_axes = [a_rest.index(f) for f in forms]
-    n, k = len(X.indices), len(forms)
-    x_axis = {m: k + 1 + pos for pos, m in enumerate(m for m in range(n) if m != i)}
-    source = [put_axis if m == i else x_axis[m] for m in range(n)]
-    pos = _insert_position(X)
-    return np.transpose(data, source[:pos] + form_axes + source[pos:])
 
 
 def _wedge_new(Y, p, new):
