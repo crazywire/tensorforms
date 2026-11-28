@@ -17,7 +17,7 @@ import numpy as np
 import sympy as sp
 from .index import Index
 from .labels import _new_label
-from ..errors import IndexMismatchError
+from ..errors import IndexMismatchError, ManifoldMismatchError
 
 
 def _rename_clashes(manifold, keep_names, indices):
@@ -89,6 +89,11 @@ def _assert_tensor(x):
         raise TypeError(f"the argument must be a tensor, not {type(x).__name__}")
 
 
+def _assert_same_manifold(A, B):
+    if A.manifold is not B.manifold:
+        raise ManifoldMismatchError("the tensors must be on the same manifold")
+
+
 def _wedge_like(A, B, pair, signed):
     p, q = len(A._form_positions()), len(B._form_positions())
     project = (lambda X: X.alt()) if signed else (lambda X: X.sym())
@@ -111,12 +116,14 @@ class Products:
     def __matmul__(self, other):
         """A @ B: A's column (last value index, down) with B's row (first value index, up), as in AB."""
         _assert_tensor(other)
+        _assert_same_manifold(self, other)
         return _contract(self, other, *_default_pair(self, other))
 
     def contract(self, other, a, b):
         """Pair index a of this tensor with index b of other (each by label or position) and sum.
         For the usual AB (column with row), write A @ B."""
         _assert_tensor(other)
+        _assert_same_manifold(self, other)
         return _contract(self, other, a, b)
 
     def __call__(self, *vectors):
@@ -137,6 +144,7 @@ class Products:
             if not isinstance(u, type(self)):
                 raise TypeError(f"call: arguments must be vectors, not {type(u).__name__}; "
                                 "to evaluate at a point, use .at({...})")
+            _assert_same_manifold(self, u)
             if len(u.indices) != 1 or not u.indices[0].is_up:
                 raise IndexMismatchError(f"call: arguments must be vectors (one up index); got {u.declaration()}; "
                                          "to pair with a larger tensor, use contract")
@@ -150,8 +158,7 @@ class Products:
         label if it is in another space), keeping i's type and taking its own arrow and space. A's form indices go first among X's form
         indices. No sign: v.apply(g, "μ") is v lowered; the derivatives add ± X.apply(Γ, i)."""
         _assert_tensor(A)
-        if A.manifold is not self.manifold:
-            raise IndexMismatchError("apply: the tensors are on different manifolds")
+        _assert_same_manifold(self, A)
         i = self.position(i)
         s = self.indices[i]
         vals, forms = A._value_positions(), A._form_positions()
@@ -182,6 +189,7 @@ class Products:
         """Tensor product A ⊗ B: pair nothing, keep every index.
         Result: value indices first, then A's form indices, then B's."""
         _assert_tensor(other)
+        _assert_same_manifold(self, other)
         keep_b = _rename_clashes(self.manifold, self._index_labels(), other.indices)
         return _joined(self, np.multiply.outer(self.data, other.data), (*self.indices, *keep_b),
                        len(self.indices), None)
@@ -190,9 +198,11 @@ class Products:
         """A ∧ B = k!/(p! q!) · Alt(AB) over all form indices (each interleaving once).
         AB pairs A's column with B's row (or the indices in pair); with a scalar-valued factor it is A ⊗ B."""
         _assert_tensor(other)
+        _assert_same_manifold(self, other)
         return _wedge_like(self, other, pair, signed=True)
 
     def odot(self, other, pair=None):
         """A ⊙ B = k!/(p! q!) · Sym(AB) over all form indices."""
         _assert_tensor(other)
+        _assert_same_manifold(self, other)
         return _wedge_like(self, other, pair, signed=False)

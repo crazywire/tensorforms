@@ -17,7 +17,7 @@ from sympy.combinatorics import Permutation
 from ..symbolic.simplify import is_zero as _is_zero, simplify_expr
 from .labels import index_label
 from .index import Index
-from .products import Products
+from .products import Products, _assert_same_manifold
 from .derivatives import Derivatives
 from ..errors import (IndexMismatchError, InvalidCoordinateError, MissingMetricError,
                       NonInvertibleError)
@@ -188,10 +188,8 @@ class Tensor(Derivatives, Products):
         other = self._operand(other)
         if other is None:                                     # X + 0 is X
             return self._new(label=self.label)
+        _assert_same_manifold(self, other)
         if not self.matches(other):
-            if other.manifold is not self.manifold:
-                raise IndexMismatchError(f"+: the tensors are on different manifolds "
-                                         f"({self.manifold} and {other.manifold})")
             raise IndexMismatchError(f"+: indices don't match ({self.declaration()} vs {other.declaration()})")
         return self._new(self._data + other._data, label=None)
 
@@ -201,10 +199,8 @@ class Tensor(Derivatives, Products):
         other = self._operand(other)
         if other is None:                                     # X − 0 is X
             return self._new(label=self.label)
+        _assert_same_manifold(self, other)
         if not self.matches(other):
-            if other.manifold is not self.manifold:
-                raise IndexMismatchError(f"−: the tensors are on different manifolds "
-                                         f"({self.manifold} and {other.manifold})")
             raise IndexMismatchError(f"−: indices don't match ({self.declaration()} vs {other.declaration()})")
         return self._new(self._data - other._data, label=None)
 
@@ -217,6 +213,8 @@ class Tensor(Derivatives, Products):
 
     def __mul__(self, c):
         """Multiply by a number, a sympy expression, or a scalar tensor (no indices)."""
+        if isinstance(c, Tensor):
+            _assert_same_manifold(self, c)
         if not self.indices and isinstance(c, Tensor) and c.indices:   # scalar × tensor
             return c * self
         c = _as_scalar(c)
@@ -227,6 +225,8 @@ class Tensor(Derivatives, Products):
     def __truediv__(self, c):
         """Divide by a number, a sympy expression, or a scalar tensor: exact (X / 2 is ½X, never 0.5X).
         Refused if sympy shows the divisor is 0."""
+        if isinstance(c, Tensor):
+            _assert_same_manifold(self, c)
         c = _as_scalar(c)
         if _is_zero(c) is True:
             raise ZeroDivisionError("/: division by zero")

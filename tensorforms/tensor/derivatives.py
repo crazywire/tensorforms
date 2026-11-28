@@ -22,6 +22,7 @@ import sympy as sp
 from .index import Index
 from .labels import _new_label
 from ..errors import IndexMismatchError
+from .products import _assert_same_manifold
 
 
 # ---------------------------------------------------------------- the derivatives
@@ -86,9 +87,11 @@ class Derivatives:
             L_v X = dX(v) − J on each up index + J on each down or form index,  J = (dv).as_value()
         dX(v) evaluates d's new form index (first among the form indices) on v."""
         M = self.manifold
-        if (not isinstance(v, type(self)) or v.manifold is not M or len(v.indices) != 1
+        if isinstance(v, type(self)):
+            _assert_same_manifold(self, v)
+        if (not isinstance(v, type(self)) or len(v.indices) != 1
                 or not v.indices[0].is_up or v.indices[0].is_form or v.indices[0].space is not M.tangent):
-            raise IndexMismatchError("lie: v must be a vector field (one up value index, same manifold); "
+            raise IndexMismatchError("lie: v must be a vector field (one up value index); "
                             f"got {getattr(v, 'declaration', lambda: v)()}")
         _tangent_only(self, "lie")
         J = v.d().as_value()                                        # J^a_c = ∂_c v^a
