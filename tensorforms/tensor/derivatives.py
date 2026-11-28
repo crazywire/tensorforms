@@ -98,7 +98,7 @@ class Derivatives:
         dX(v) evaluates d's new form index on v."""
         M = self.manifold
         if isinstance(v, type(self)):
-            _assert_same_manifold(v, M)
+            _assert_same_manifold(self, v)
         if (not isinstance(v, type(self)) or len(v.indices) != 1
                 or not v.indices[0].is_up or v.indices[0].is_form or v.indices[0].space is not M.tangent):
             raise IndexMismatchError("lie: v must be a vector field (one up value index); "

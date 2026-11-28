@@ -87,8 +87,8 @@ def _assert_tensor(x):
         raise TypeError(f"the argument must be a tensor, not {type(x).__name__}")
 
 
-def _assert_same_manifold(x, manifold):
-    if x.manifold is not manifold:
+def _assert_same_manifold(A, B):
+    if A.manifold is not B.manifold:
         raise ManifoldMismatchError("the tensors must be on the same manifold")
 
 
@@ -114,14 +114,14 @@ class Products:
     def __matmul__(self, other):
         """A @ B: A's column (last value index, down) with B's row (first value index, up), as in AB."""
         _assert_tensor(other)
-        _assert_same_manifold(other, self.manifold)
+        _assert_same_manifold(self, other)
         return _contract(self, other, *_default_pair(self, other))
 
     def contract(self, other, a, b):
         """Pair index a of this tensor with index b of other (each by label or position) and sum.
         For the usual AB (column with row), write A @ B."""
         _assert_tensor(other)
-        _assert_same_manifold(other, self.manifold)
+        _assert_same_manifold(self, other)
         return _contract(self, other, a, b)
 
     def __call__(self, *vectors):
@@ -142,7 +142,7 @@ class Products:
             if not isinstance(u, type(self)):
                 raise TypeError(f"call: arguments must be vectors, not {type(u).__name__}; "
                                 "to evaluate at a point, use .at({...})")
-            _assert_same_manifold(u, self.manifold)
+            _assert_same_manifold(self, u)
             if len(u.indices) != 1 or not u.indices[0].is_up:
                 raise IndexMismatchError(f"call: arguments must be vectors (one up index); got {u.declaration()}; "
                                          "to pair with a larger tensor, use contract")
@@ -153,7 +153,7 @@ class Products:
         """Tensor product A ⊗ B: pair nothing, keep every index.
         Result: value indices first, then A's form indices, then B's."""
         _assert_tensor(other)
-        _assert_same_manifold(other, self.manifold)
+        _assert_same_manifold(self, other)
         keep_b = _rename_clashes(self.manifold, self._index_labels(), other.indices)
         return _joined(self, np.multiply.outer(self.data, other.data), (*self.indices, *keep_b),
                        len(self.indices), None)
@@ -162,11 +162,11 @@ class Products:
         """A ∧ B = k!/(p! q!) · Alt(AB) over all form indices (each interleaving once).
         AB pairs A's column with B's row (or the indices in pair); with a scalar-valued factor it is A ⊗ B."""
         _assert_tensor(other)
-        _assert_same_manifold(other, self.manifold)
+        _assert_same_manifold(self, other)
         return _wedge_like(self, other, pair, signed=True)
 
     def odot(self, other, pair=None):
         """A ⊙ B = k!/(p! q!) · Sym(AB) over all form indices."""
         _assert_tensor(other)
-        _assert_same_manifold(other, self.manifold)
+        _assert_same_manifold(self, other)
         return _wedge_like(self, other, pair, signed=False)
