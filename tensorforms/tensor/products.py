@@ -163,7 +163,7 @@ class Products:
         s = self.indices[i]
         vals, forms = A._value_positions(), A._form_positions()
         if len(vals) != 2:
-            raise IndexMismatchError(f"apply: needs exactly two value indices; got {A.declaration()}")
+            raise IndexMismatchError(f"apply: A must have exactly two value indices, not {A.declaration()}")
         first, second = vals
         eat, put = (second, first) if A.index(second).pairs_with(s) else (first, second)
         if not A.index(eat).pairs_with(s):
